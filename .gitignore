@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 interfaz_emg/data/*.csv
 .vscode/
+
+# Artefactos de compilación de ESP-IDF (se regeneran solos, no corresponde versionarlos)
+firmware/**/build/
+firmware/**/sdkconfig.old
