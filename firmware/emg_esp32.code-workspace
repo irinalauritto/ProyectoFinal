@@ -1,0 +1,10 @@
+{
+    "folders": [
+        {
+            "path": "emg_esp32"
+        }
+    ],
+    "settings": {
+        "idf.flashType": "JTAG"
+    }
+}
