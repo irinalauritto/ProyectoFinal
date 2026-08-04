@@ -3,6 +3,7 @@
 Proyecto final de la carrera de Bioingeniería para el control de un sistema de comunicación aumentativa y alternativa (AsTeRICS AAC) a partir de señales de electroencefalografía y electromiografía.
 
 **Autora:** Irina E. Lauritto
+
 **Directora:** L. Carolina Carrere
 
 ## Estructura 
