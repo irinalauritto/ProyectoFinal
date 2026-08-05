@@ -110,6 +110,16 @@ K_MIN, K_MAX, K_DEFAULT = 1.0, 3.0, 3.0
 REFRACTARIO_MIN_MS, REFRACTARIO_MAX_MS, REFRACTARIO_DEFAULT_MS = 100, 2500, 500
 DURACION_TECLA_MIN_MS, DURACION_TECLA_MAX_MS, DURACION_TECLA_DEFAULT_MS = 50, 5000, 200
 
+
+def _espejar_escala_k(valor):
+    # k alto = umbral más lejos del reposo = MENOS sensible: es una escala
+    # de "insensibilidad". Para mostrarla en la interfaz como "Sensibilidad"
+    # (más alto = más sensible) se espeja dentro del mismo rango [K_MIN,
+    # K_MAX]. La operación es su propia inversa (espejar dos veces devuelve
+    # el valor original), así que sirve tanto para k->sensibilidad como
+    # para sensibilidad->k.
+    return K_MIN + K_MAX - valor
+
 LOGS_DIR = "logs"
 
 TECLAS_DISPONIBLES = {
@@ -191,11 +201,14 @@ class DialogoDatosPaciente(QDialog):
 class VentanaEmg(QWidget):
     """Ventana principal: gráfico en tiempo real + panel de control del switch EMG."""
 
-    def __init__(self, ser, nombre_paciente):
+    def __init__(self, ser):
         super().__init__()
-        self.nombre_paciente = nombre_paciente
-        self.setWindowTitle(f"Switch EMG — MyoWare 2.0 — {nombre_paciente}")
-        self.resize(1100, 700)
+        # El paciente se pide con la ventana emergente inicial (ver
+        # establecer_paciente), que se muestra con esta ventana ya abierta
+        # de fondo: acá todavía no se conoce el nombre.
+        self.nombre_paciente = None
+        self.setWindowTitle("Control para Asterics AAC con EMG")
+        self.resize(1000, 800)
 
         self.ser = ser
         self.teclado = ControladorTeclado()
@@ -224,15 +237,6 @@ class VentanaEmg(QWidget):
 
         # --- Filtro de media móvil aplicado a cada muestra (tras generar la envolvente si corresponde) ---
         self.ventana_ma = deque(maxlen=VENTANA_MA_MUESTRAS)
-
-        # --- Diagnóstico: frecuencia de muestreo real medida ---
-        # FS_HZ es una suposición (2 ms de delay en el firmware = ~500 Hz
-        # nominales); si la tasa real difiere, los filtros quedan diseñados
-        # para un corte real distinto del que dicen sus constantes. Se mide
-        # la tasa real cada 1 s a partir de las muestras efectivamente
-        # recibidas, para poder comparar contra FS_HZ.
-        self._contador_muestras_fs = 0
-        self._tiempo_ultima_medicion_fs = time.monotonic()
 
         # --- Parámetros configurables ---
         self.k = K_DEFAULT
@@ -265,10 +269,9 @@ class VentanaEmg(QWidget):
         self.eventos_intento_actual = 0
         self.eventos_por_intento = []
 
-        # El nombre ya se pidió en el diálogo inicial: la sesión arranca a
-        # registrarse desde que se abre la ventana, no recién en la primera
-        # calibración.
-        self.registro = RegistroSesion(nombre_paciente)
+        # El registro de sesión se crea recién cuando se confirma el nombre
+        # del paciente en la ventana emergente (ver establecer_paciente).
+        self.registro = None
 
         self._armar_ui()
 
@@ -280,23 +283,25 @@ class VentanaEmg(QWidget):
     # Construcción de la interfaz
     # ------------------------------------------------------------------
     def _armar_ui(self):
-        # Layout de dos columnas: gráfico chico a la izquierda, controles
-        # (más anchos y prominentes, sobre todo "Parámetros") a la derecha.
-        layout_principal = QHBoxLayout(self)
+        # Gráfico arriba ocupando todo el ancho, controles abajo (como en la
+        # versión original).
+        layout_principal = QVBoxLayout(self)
 
-        columna_izquierda = QVBoxLayout()
+        # --- Paciente (el nombre se completa con la ventana emergente inicial) ---
+        self.lbl_paciente = QLabel("Paciente: -")
+        self.lbl_paciente.setStyleSheet("font-size: 11pt; font-weight: bold;")
+        layout_principal.addWidget(self.lbl_paciente)
 
         # Gráfico en tiempo real (se mantiene la base existente con pyqtgraph)
         self.win = pg.GraphicsLayoutWidget()
         self.win.setBackground("w")
-        self.win.setMinimumHeight(280)
-        self.win.setMaximumWidth(420)
-        self.plot = self.win.addPlot(title="MyoWare 2.0 - ENV")
-        self.plot.setLabel("left", "Amplitud (unidades ADC)")
+        self.win.setMinimumHeight(400)
+        self.plot = self.win.addPlot(title="Señal de electromiografía")
+        self.plot.setLabel("left", "Amplitud (mV)")
         self.plot.setLabel("bottom", "Muestras")
         self.plot.setXRange(0, BUFFER_SIZE - 1, padding=0)
         self.plot.enableAutoRange(axis="y")  # visualización original: autoescala en cada refresco
-        # Intentos de eje Y fijo / en mV (a pedido puntual, luego revertidos): se
+        # Intentos de eje Y fijo (a pedido puntual, luego revertidos): se
         # dejan comentados en vez de borrarlos.
         # self.plot.enableAutoRange(axis="y", enable=False)
         # self.plot.setYRange(0, ADC_VREF_MV, padding=0)  # rango completo del ADC (0-3300 mV)
@@ -305,55 +310,62 @@ class VentanaEmg(QWidget):
         self.scatter_eventos = pg.ScatterPlotItem(size=10, brush=pg.mkBrush("r"), pen=pg.mkPen("r"))
         self.plot.addItem(self.scatter_eventos)
         self.linea_umbral = None  # se crea recién cuando hay un umbral calculado
-        self.linea_reactivacion = None  # ídem, umbral de reactivación (histéresis)
-        columna_izquierda.addWidget(self.win)
+        layout_principal.addWidget(self.win)
 
-        # Diagnóstico: frecuencia de muestreo real vs. la asumida en FS_HZ
-        self.lbl_fs = QLabel(f"Frecuencia de muestreo real: midiendo... (asumida FS_HZ = {FS_HZ:.0f} Hz)")
-        self.lbl_fs.setStyleSheet("color: #555555; font-size: 9pt;")
-        self.lbl_fs.setWordWrap(True)
-        columna_izquierda.addWidget(self.lbl_fs)
-        columna_izquierda.addStretch()
+        panel = QHBoxLayout()
 
-        layout_principal.addLayout(columna_izquierda, 1)
-
-        columna_derecha = QVBoxLayout()
-
-        # --- Paciente (el nombre se pidió en el diálogo inicial) ---
-        self.lbl_paciente = QLabel(f"Paciente: {self.nombre_paciente}")
-        self.lbl_paciente.setStyleSheet("font-size: 11pt; font-weight: bold;")
-        columna_derecha.addWidget(self.lbl_paciente)
+        # Formato uniforme de los tres grupos de controles: título en negrita.
+        estilo_titulo_negrita = "QGroupBox::title { font-weight: bold; }"
 
         # --- Calibración ---
         grupo_calib = QGroupBox(f"Calibración ({CALIBRACION_DURACION_S} s en reposo)")
+        grupo_calib.setStyleSheet(estilo_titulo_negrita)
         v_calib = QVBoxLayout(grupo_calib)
+        self.btn_ayuda_calib = QPushButton("Ayuda")
         self.btn_calibrar = QPushButton("Iniciar calibración")
         self.barra_calibracion = QProgressBar()
         self.barra_calibracion.setRange(0, CALIBRACION_DURACION_S)
         self.lbl_calibracion = QLabel("Sin calibrar")
         self.lbl_umbral = QLabel("Umbral actual: -")
+        v_calib.addWidget(self.btn_ayuda_calib)
         v_calib.addWidget(self.btn_calibrar)
         v_calib.addWidget(self.barra_calibracion)
         v_calib.addWidget(self.lbl_calibracion)
         v_calib.addWidget(self.lbl_umbral)
-        columna_derecha.addWidget(grupo_calib)
+        panel.addWidget(grupo_calib)
 
-        # --- Parámetros ajustables en cualquier momento: grupo destacado, ---
-        # --- es el que más va a tocar el terapeuta durante la sesión.     ---
+        # --- Prueba de validación guiada ---
+        grupo_prueba = QGroupBox("Prueba de validación (3 contracciones)")
+        grupo_prueba.setStyleSheet(estilo_titulo_negrita)
+        v_prueba = QVBoxLayout(grupo_prueba)
+        self.btn_ayuda_prueba = QPushButton("Ayuda")
+        self.btn_prueba = QPushButton("Iniciar prueba")
+        self.btn_prueba.setEnabled(False)
+        self.btn_omitir_prueba = QPushButton("Omitir prueba")
+        self.btn_omitir_prueba.setEnabled(False)
+        self.btn_siguiente_intento = QPushButton("Registrar intento y continuar")
+        self.btn_siguiente_intento.setEnabled(False)
+        self.lbl_prueba = QLabel("Requiere calibración previa")
+        self.lbl_prueba.setWordWrap(True)
+        v_prueba.addWidget(self.btn_ayuda_prueba)
+        v_prueba.addWidget(self.btn_prueba)
+        v_prueba.addWidget(self.btn_omitir_prueba)
+        v_prueba.addWidget(self.btn_siguiente_intento)
+        v_prueba.addWidget(self.lbl_prueba)
+        panel.addWidget(grupo_prueba)
+
+        # --- Parámetros ajustables en cualquier momento ---
         grupo_param = QGroupBox("Parámetros")
-        grupo_param.setStyleSheet("""
-            QGroupBox { font-weight: bold; font-size: 13pt; border: 2px solid #2E5395;
-                        border-radius: 6px; margin-top: 12px; padding-top: 6px; }
-            QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 6px; color: #2E5395; }
-            QGroupBox QLabel, QGroupBox QComboBox, QGroupBox QSpinBox, QGroupBox QDoubleSpinBox {
-                font-size: 11pt; font-weight: normal; }
-        """)
+        grupo_param.setStyleSheet(estilo_titulo_negrita)
         f_param = QFormLayout(grupo_param)
         self.spin_k = QDoubleSpinBox()
         self.spin_k.setRange(K_MIN, K_MAX)
         self.spin_k.setSingleStep(0.1)
         self.spin_k.setDecimals(1)
-        self.spin_k.setValue(K_DEFAULT)
+        # El spinbox muestra "sensibilidad" (más alto = más sensible), que
+        # es la escala espejada de k (más alto = menos sensible). Ver
+        # _espejar_escala_k y _on_k_cambiado.
+        self.spin_k.setValue(_espejar_escala_k(K_DEFAULT))
         self.spin_refractario = QSpinBox()
         self.spin_refractario.setRange(REFRACTARIO_MIN_MS, REFRACTARIO_MAX_MS)
         self.spin_refractario.setSingleStep(50)
@@ -365,45 +377,89 @@ class VentanaEmg(QWidget):
         self.spin_duracion_tecla.setSingleStep(50)
         self.spin_duracion_tecla.setValue(DURACION_TECLA_DEFAULT_MS)
         self.spin_duracion_tecla.setSuffix(" ms")
-        f_param.addRow("k (sensibilidad):", self.spin_k)
+        f_param.addRow("Sensibilidad:", self.spin_k)
         f_param.addRow("Refractario (ms):", self.spin_refractario)
         f_param.addRow("Tecla enviada:", self.combo_tecla)
         f_param.addRow("Duración de la pulsación:", self.spin_duracion_tecla)
         self.lbl_aviso = QLabel("")
-        self.lbl_aviso.setStyleSheet("color: darkorange; font-weight: bold; font-size: 11pt;")
+        self.lbl_aviso.setStyleSheet("color: darkorange; font-weight: bold;")
         self.lbl_aviso.setWordWrap(True)
         self.lbl_aviso.setVisible(False)
         f_param.addRow(self.lbl_aviso)
-        columna_derecha.addWidget(grupo_param)
+        panel.addWidget(grupo_param)
 
-        # --- Prueba de validación guiada ---
-        grupo_prueba = QGroupBox("Prueba de validación (3 contracciones)")
-        v_prueba = QVBoxLayout(grupo_prueba)
-        self.btn_prueba = QPushButton("Iniciar prueba")
-        self.btn_prueba.setEnabled(False)
-        self.btn_omitir_prueba = QPushButton("Omitir prueba")
-        self.btn_omitir_prueba.setEnabled(False)
-        self.btn_siguiente_intento = QPushButton("Registrar intento y continuar")
-        self.btn_siguiente_intento.setEnabled(False)
-        self.lbl_prueba = QLabel("Requiere calibración previa")
-        self.lbl_prueba.setWordWrap(True)
-        v_prueba.addWidget(self.btn_prueba)
-        v_prueba.addWidget(self.btn_omitir_prueba)
-        v_prueba.addWidget(self.btn_siguiente_intento)
-        v_prueba.addWidget(self.lbl_prueba)
-        columna_derecha.addWidget(grupo_prueba)
-
-        columna_derecha.addStretch()
-
-        layout_principal.addLayout(columna_derecha, 2)
+        layout_principal.addLayout(panel)
 
         # Conexión de señales
         self.btn_calibrar.clicked.connect(self._iniciar_calibracion)
+        self.btn_ayuda_calib.clicked.connect(self._mostrar_ayuda_calibracion)
+        self.btn_ayuda_prueba.clicked.connect(self._mostrar_ayuda_prueba)
         self.spin_k.valueChanged.connect(self._on_k_cambiado)
         self.spin_refractario.valueChanged.connect(self._on_refractario_cambiado)
+        self.combo_tecla.currentIndexChanged.connect(self._avisar_si_no_calibrado)
+        self.spin_duracion_tecla.valueChanged.connect(self._avisar_si_no_calibrado)
         self.btn_prueba.clicked.connect(self._iniciar_prueba_validacion)
         self.btn_omitir_prueba.clicked.connect(self._omitir_prueba)
         self.btn_siguiente_intento.clicked.connect(self._registrar_intento_actual)
+
+    # ------------------------------------------------------------------
+    # Datos del paciente (llegan de la ventana emergente inicial, con esta
+    # ventana ya abierta de fondo)
+    # ------------------------------------------------------------------
+    def establecer_paciente(self, nombre_paciente):
+        self.nombre_paciente = nombre_paciente
+        self.registro = RegistroSesion(nombre_paciente)
+        self.lbl_paciente.setText(f"Paciente: {nombre_paciente}")
+        self._mostrar_aviso_calibracion()
+
+    def _mostrar_aviso_calibracion(self):
+        QMessageBox.warning(
+            self,
+            "Calibración requerida",
+            "Antes de usar el control por EMG es necesario calibrar el umbral de activación.\n\n"
+            f"La calibración consiste en permanecer relajado durante {CALIBRACION_DURACION_S} "
+            "segundos mientras se mide el nivel de reposo de la señal; con eso se calcula "
+            "automáticamente el umbral de disparo.\n\n"
+            "Después de calibrar, se recomienda además correr la prueba de validación "
+            "(3 contracciones) para confirmar que el ajuste es adecuado.\n\n"
+            "Presione \"Iniciar calibración\" para comenzar.",
+        )
+
+    def _avisar_si_no_calibrado(self, *_args):
+        # Se llama al tocar cualquier control de "Parámetros" (menos el
+        # propio botón de calibrar): si todavía no se calibró y no hay una
+        # calibración en curso, se repite el aviso.
+        if self.umbral is None and not self.calibrando:
+            self._mostrar_aviso_calibracion()
+
+    def _mostrar_ayuda_calibracion(self):
+        QMessageBox.information(
+            self,
+            "Ayuda — Calibración",
+            f"La calibración mide durante {CALIBRACION_DURACION_S} segundos el nivel de la señal "
+            "cuando el paciente está relajado, y lo usa como referencia de reposo. A partir de esa "
+            "referencia, calcula automáticamente el umbral. Este último es el nivel que la señal "
+            "tiene que superar para considerarse una contracción.\n\n"
+            "La Sensibilidad (ajustable en \"Parámetros\") regula qué tan intensa debe ser la "
+            "contracción para disparar un evento. Si este parámetro se halla elevado, puede "
+            "dispararse con ruido o movimientos involuntarios. Por el contrario, si se halla "
+            "reducido, puede resultarle dificultoso al paciente activarlo.\n\n"
+            "La sensibilidad se puede modificar en cualquier momento sin repetir la calibración; "
+            "no obstante, tras cada modificación se recomienda repetir la prueba de validación.",
+        )
+
+    def _mostrar_ayuda_prueba(self):
+        QMessageBox.information(
+            self,
+            "Ayuda — Prueba de validación",
+            "Esta prueba sirve para confirmar que el umbral calibrado es adecuado.\n\n"
+            "Se piden 3 intentos: en cada uno, el paciente debe contraer y relajar el músculo "
+            "una vez, y el terapeuta presiona \"Registrar intento y continuar\" cuando termina.\n\n"
+            "Lo esperable es que en cada intento se contabilice un evento. Si no se contabilizan "
+            "eventos, la contracción no ha sido detectada. En cambio, si se cuenta más de uno, se "
+            "han realizado dos o más disparos. En estos casos conviene ajustar la sensibilidad "
+            "y/o el tiempo refractario en \"Parámetros\" y repetir la prueba de validación.",
+        )
 
     # ------------------------------------------------------------------
     # Lectura serie + procesamiento de cada muestra (llamado por QTimer)
@@ -414,9 +470,9 @@ class VentanaEmg(QWidget):
             linea = self.ser.readline().decode(errors="ignore").strip()
             if not linea.isdigit():
                 continue
-            # valor = _adc_a_mv(int(linea))  # conversión a mV (a pedido puntual, luego revertida)
-            valor_crudo = int(linea)
-            self._contador_muestras_fs += 1
+            # Conversión a mV: todo lo que sigue (buffer, calibración, umbral,
+            # detección) trabaja directamente en mV, no en cuentas del ADC.
+            valor_crudo = _adc_a_mv(int(linea))
 
             if MODO_SENAL == "RAW":
                 # Señal EMG cruda: se genera la envolvente por software.
@@ -447,19 +503,6 @@ class VentanaEmg(QWidget):
             self._actualizar_progreso_calibracion()
         if self.esperando_intento:
             self._actualizar_contador_intento()
-
-        self._actualizar_fs_medida()
-
-    def _actualizar_fs_medida(self):
-        ahora = time.monotonic()
-        transcurrido = ahora - self._tiempo_ultima_medicion_fs
-        if transcurrido >= 1.0:
-            fs_medida = self._contador_muestras_fs / transcurrido
-            self.lbl_fs.setText(
-                f"Frecuencia de muestreo real: {fs_medida:.0f} Hz  (asumida FS_HZ = {FS_HZ:.0f} Hz)"
-            )
-            self._contador_muestras_fs = 0
-            self._tiempo_ultima_medicion_fs = ahora
 
     def _desplazar_marcadores(self):
         # El buffer tiene largo fijo: la muestra más nueva siempre queda en
@@ -597,10 +640,7 @@ class VentanaEmg(QWidget):
         self.sd_reposo = float(np.std(muestras, ddof=1))
         self._recalcular_umbral()
 
-        self.lbl_calibracion.setText(
-            f"Calibración completa ({len(muestras)} muestras). "
-            f"Media={self.media_reposo:.1f}  SD={self.sd_reposo:.1f}"
-        )
+        self.lbl_calibracion.setText("Calibración lista.")
         if self.registro is not None:
             self.registro.registrar(
                 "calibracion",
@@ -618,6 +658,9 @@ class VentanaEmg(QWidget):
     def _recalcular_umbral(self):
         self.umbral = self.media_reposo + self.k * self.sd_reposo
         margen = self.umbral - self.media_reposo
+        # El umbral de reactivación (histéresis) se sigue calculando y
+        # usando para la detección de eventos; sólo se dejó de mostrar en
+        # pantalla (ni en el gráfico ni en el texto de estado).
         self.umbral_reactivacion = self.umbral - HISTERESIS_FRACCION * margen
 
         if self.linea_umbral is None:
@@ -626,34 +669,34 @@ class VentanaEmg(QWidget):
         else:
             self.linea_umbral.setValue(self.umbral)
 
-        if self.linea_reactivacion is None:
-            self.linea_reactivacion = pg.InfiniteLine(
-                pos=self.umbral_reactivacion, angle=0, pen=pg.mkPen(color="orange", width=1)
-            )
-            self.plot.addItem(self.linea_reactivacion)
-        else:
-            self.linea_reactivacion.setValue(self.umbral_reactivacion)
-
         self.lbl_umbral.setText(
-            f"Umbral de disparo: {self.umbral:.1f}  |  Umbral de reactivación: {self.umbral_reactivacion:.1f}  "
-            f"(media={self.media_reposo:.1f}, SD={self.sd_reposo:.1f}, k={self.k:.1f})"
+            f"Umbral de disparo: {self.umbral:.1f}  "
+            f"(media={self.media_reposo:.1f}, SD={self.sd_reposo:.1f}, "
+            f"sensibilidad={_espejar_escala_k(self.k):.1f})"
         )
 
     # ------------------------------------------------------------------
     # Ajuste libre de parámetros (k y refractario) durante la sesión
     # ------------------------------------------------------------------
-    def _on_k_cambiado(self, valor):
-        self.k = valor
+    def _on_k_cambiado(self, sensibilidad_mostrada):
+        # El spinbox muestra "sensibilidad" (más alto = más sensible); el
+        # umbral se sigue calculando con k (más alto = menos sensible).
+        self.k = _espejar_escala_k(sensibilidad_mostrada)
         if self.media_reposo is None:
-            return  # todavía no hay calibración: nada que recalcular ni registrar
+            self._avisar_si_no_calibrado()
+            return
         self._recalcular_umbral()
         if self.registro is not None:
-            self.registro.registrar("cambio_parametro", parametro="k", valor=valor, modificado_por="terapeuta")
+            self.registro.registrar(
+                "cambio_parametro", parametro="k", valor=self.k,
+                sensibilidad_mostrada=sensibilidad_mostrada, modificado_por="terapeuta",
+            )
         self._mostrar_aviso_repetir_prueba()
 
     def _on_refractario_cambiado(self, valor):
         self.refractario_ms = valor
         if self.umbral is None:
+            self._avisar_si_no_calibrado()
             return  # todavía no hay calibración: nada que registrar
         if self.registro is not None:
             self.registro.registrar(
@@ -772,12 +815,6 @@ def main():
     paleta_clara.setColor(QPalette.ButtonText, QColor("#000000"))
     app.setPalette(paleta_clara)
 
-    # Ventana emergente inicial: pide el nombre del paciente antes de abrir
-    # la interfaz principal (la fecha/hora se toma automáticamente).
-    dialogo = DialogoDatosPaciente()
-    if dialogo.exec() != QDialog.Accepted:
-        sys.exit(0)
-
     # Apertura del puerto serie
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0)
@@ -785,8 +822,17 @@ def main():
         print(f"No se pudo abrir el puerto {SERIAL_PORT}: {e}")
         sys.exit(1)
 
-    ventana = VentanaEmg(ser, dialogo.nombre_paciente)
-    ventana.show()
+    # La ventana principal se abre primero (ya empieza a graficar la señal),
+    # y recién arriba de ella aparece la ventana emergente pidiendo los
+    # datos del paciente.
+    ventana = VentanaEmg(ser)
+    ventana.showMaximized()
+
+    dialogo = DialogoDatosPaciente()
+    if dialogo.exec() != QDialog.Accepted:
+        sys.exit(0)
+    ventana.establecer_paciente(dialogo.nombre_paciente)
+
     sys.exit(app.exec())
 
 
