@@ -50,7 +50,6 @@ pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
 
 # Retroalimentación sonora: winsound es de la biblioteca estándar en Windows
-# (no agrega dependencias nuevas) y no bloquea el hilo principal.
 try:
     import winsound
     _SONIDO_DISPONIBLE = True
@@ -67,35 +66,30 @@ UPDATE_MS = 20        # Intervalo de refresco del gráfico (ms)
 # Modo de la señal recibida por puerto serie:
 #   "ENVOLVENTE": se usa tal cual el valor que manda el sensor (salida ENV
 #                 del MyoWare 2.0, ya rectificada y filtrada en hardware).
-#                 Es el modo que se usó hasta ahora.
+#   
 #   "RAW": el valor recibido es la señal EMG cruda (sin rectificar). La
 #          envolvente se calcula por software en esta interfaz: pasaaltos
 #          1 Hz (elimina la continua/bias del ADC) -> notch 50 Hz (elimina
 #          la interferencia de la red eléctrica) -> rectificado de onda
 #          completa -> pasabajos 6 Hz (genera la envolvente).
-# Se elige editando esta constante antes de correr la interfaz, según a qué
-# salida del sensor (SIG/ENV o RAW) esté conectado el GPIO de la ESP32.
+
 MODO_SENAL = "RAW"   # "ENVOLVENTE" o "RAW"
 
 FS_HZ = 500.0          # Frecuencia de muestreo aproximada del firmware (SAMPLE_DELAY_MS = 2 ms)
 HP_CORTE_HZ = 1.0      # Pasaaltos: elimina la componente continua/bias de la señal cruda
 NOTCH_FREQ_HZ = 50.0   # Notch: frecuencia de la red eléctrica en Argentina (usar 60 Hz en países con esa red)
 NOTCH_Q = 30.0         # Factor de calidad del notch: cuanto más alto, más angosto (afecta menos a la señal vecina)
-LP_CORTE_HZ = 3.0      # Pasabajos: genera la envolvente a partir de la señal rectificada
-                       # (bajado de 6 a 3 Hz: con EMG cruda real, 6 Hz + MA de 20 ms dejaba
-                       # pasar demasiado temblor; a costa de ~45 ms más de retardo, la
-                       # envolvente queda notablemente más limpia — ver conversación)
+LP_CORTE_HZ = 4.0      # Pasabajos: genera la envolvente a partir de la señal rectificada
 
-VENTANA_MA_MUESTRAS = 30   # Tamaño de la ventana del filtro de media móvil (a ~500 Hz, ~60 ms)
+
+# VENTANA_MA_MUESTRAS = 30   # Tamaño de la ventana del filtro de media móvil (a ~500 Hz, ~60 ms)
 
 # Histéresis del detector: el umbral de "reactivación" (para volver a poder
 # disparar) queda esta fracción por debajo del umbral de disparo, dentro del
-# margen (umbral - media_reposo). Sin esto, el ruido de una señal real puede
-# hacer que la envolvente oscile alrededor del umbral durante una misma
-# contracción y dispare varias veces seguidas.
+# margen (umbral - media_reposo). Es la lógica de un disparador de Schmitt, básicamente.
 HISTERESIS_FRACCION = 0.5
 
-# Conversión ADC -> mV: ESP32-C6, ADC de 12 bits (0-4095) con atenuación de
+# Conversión ADC a mV: ESP32-C6, ADC de 12 bits (0-4095) con atenuación de
 # 12 dB, rango completo 0-3.3 V (ver emg_esp32.c).
 ADC_RESOLUCION = 4095
 ADC_VREF_MV = 3300.0
@@ -115,9 +109,9 @@ def _espejar_escala_k(valor):
     # k alto = umbral más lejos del reposo = MENOS sensible: es una escala
     # de "insensibilidad". Para mostrarla en la interfaz como "Sensibilidad"
     # (más alto = más sensible) se espeja dentro del mismo rango [K_MIN,
-    # K_MAX]. La operación es su propia inversa (espejar dos veces devuelve
-    # el valor original), así que sirve tanto para k->sensibilidad como
-    # para sensibilidad->k.
+    # K_MAX]. 
+    # La operación que se realiza es la inversa (espejar dos veces devuelve
+    # el valor original).
     return K_MIN + K_MAX - valor
 
 LOGS_DIR = "logs"
@@ -199,13 +193,12 @@ class DialogoDatosPaciente(QDialog):
 
 
 class VentanaEmg(QWidget):
-    """Ventana principal: gráfico en tiempo real + panel de control del switch EMG."""
+    """Ventana principal: gráfico en tiempo real de la señal y panel de control del switch EMG."""
 
     def __init__(self, ser):
         super().__init__()
         # El paciente se pide con la ventana emergente inicial (ver
-        # establecer_paciente), que se muestra con esta ventana ya abierta
-        # de fondo: acá todavía no se conoce el nombre.
+        # establecer_paciente).
         self.nombre_paciente = None
         self.setWindowTitle("Control para Asterics AAC con EMG")
         self.resize(1000, 800)
@@ -224,19 +217,12 @@ class VentanaEmg(QWidget):
             self._sos_pasaaltos = butter(2, HP_CORTE_HZ, btype="highpass", fs=FS_HZ, output="sos")
             self._sos_notch = tf2sos(*iirnotch(NOTCH_FREQ_HZ, NOTCH_Q, fs=FS_HZ))
             self._sos_pasabajos = butter(2, LP_CORTE_HZ, btype="lowpass", fs=FS_HZ, output="sos")
-            # El estado inicial del pasaaltos se fija recién con la primera
-            # muestra real (ver _generar_envolvente): si se asumiera un
-            # historial en 0, el bias del ADC (~2000 counts) generaría un
-            # escalón artificial y un transitorio espurio de casi 1 s al
-            # arrancar la aplicación. El notch y el pasabajos no tienen ese
-            # problema porque reciben una señal ya centrada en 0 (la salida
-            # del pasaaltos), así que su estado inicial puede quedar en 0.
             self._zi_pasaaltos = None
             self._zi_notch = sosfilt_zi(self._sos_notch)
             self._zi_pasabajos = sosfilt_zi(self._sos_pasabajos)
 
         # --- Filtro de media móvil aplicado a cada muestra (tras generar la envolvente si corresponde) ---
-        self.ventana_ma = deque(maxlen=VENTANA_MA_MUESTRAS)
+        # self.ventana_ma = deque(maxlen=VENTANA_MA_MUESTRAS)
 
         # --- Parámetros configurables ---
         self.k = K_DEFAULT
@@ -251,7 +237,7 @@ class VentanaEmg(QWidget):
         self.umbral = None
         self.umbral_reactivacion = None
 
-        # --- Estado de detección de eventos (flanco ascendente + histéresis + refractario) ---
+        # --- Estado de detección de eventos (flanco ascendente, histéresis y refractario) ---
         # armado=True: la señal está en zona de reposo, lista para detectar
         # un nuevo cruce ascendente. Se desarma apenas cruza el umbral hacia
         # arriba, y sólo vuelve a armarse cuando la señal cae por debajo del
@@ -283,8 +269,7 @@ class VentanaEmg(QWidget):
     # Construcción de la interfaz
     # ------------------------------------------------------------------
     def _armar_ui(self):
-        # Gráfico arriba ocupando todo el ancho, controles abajo (como en la
-        # versión original).
+        # Gráfico arriba y panel de control abajo.
         layout_principal = QVBoxLayout(self)
 
         # --- Paciente (el nombre se completa con la ventana emergente inicial) ---
@@ -403,8 +388,7 @@ class VentanaEmg(QWidget):
         self.btn_siguiente_intento.clicked.connect(self._registrar_intento_actual)
 
     # ------------------------------------------------------------------
-    # Datos del paciente (llegan de la ventana emergente inicial, con esta
-    # ventana ya abierta de fondo)
+    # Datos del paciente
     # ------------------------------------------------------------------
     def establecer_paciente(self, nombre_paciente):
         self.nombre_paciente = nombre_paciente
@@ -478,13 +462,15 @@ class VentanaEmg(QWidget):
                 # Señal EMG cruda: se genera la envolvente por software.
                 valor_muestra = self._generar_envolvente(valor_crudo)
             else:
-                # Señal ya envuelta por el sensor (salida ENV del MyoWare).
+                # Salida ENV del MyoWare.
                 valor_muestra = valor_crudo
 
             # Filtro de media móvil: suaviza el ruido de muestra a muestra
             # antes de graficar y de usar la señal para calibración/detección.
-            self.ventana_ma.append(valor_muestra)
-            valor = sum(self.ventana_ma) / len(self.ventana_ma)
+            # Comentado para esta prueba (solo pasabajos de 6 Hz):
+            # self.ventana_ma.append(valor_muestra)
+            # valor = sum(self.ventana_ma) / len(self.ventana_ma)
+            valor = valor_muestra
 
             marca_tiempo = time.monotonic()
 
@@ -659,8 +645,7 @@ class VentanaEmg(QWidget):
         self.umbral = self.media_reposo + self.k * self.sd_reposo
         margen = self.umbral - self.media_reposo
         # El umbral de reactivación (histéresis) se sigue calculando y
-        # usando para la detección de eventos; sólo se dejó de mostrar en
-        # pantalla (ni en el gráfico ni en el texto de estado).
+        # usando para la detección de eventos
         self.umbral_reactivacion = self.umbral - HISTERESIS_FRACCION * margen
 
         if self.linea_umbral is None:
