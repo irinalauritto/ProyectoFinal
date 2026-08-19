@@ -1,0 +1,454 @@
+{
+  "paciente": "Lautaro",
+  "inicio_sesion": "2026-08-12T08:30:30",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-08-12T08:31:06",
+      "media_reposo": 4.2,
+      "sd_reposo": 1.45,
+      "k": 3.0,
+      "umbral": 8.55,
+      "n_muestras": 15012
+    },
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-08-12T08:31:40",
+      "media_reposo": 2.02,
+      "sd_reposo": 1.28,
+      "k": 3.0,
+      "umbral": 5.88,
+      "n_muestras": 15010
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:31:43",
+      "valor": 5.892410103608853,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:31:58",
+      "valor": 5.884685983865621,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:31:59",
+      "valor": 5.992024764130291,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:01",
+      "valor": 5.921246595282373,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:01",
+      "valor": 5.927277743330581,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:07",
+      "valor": 5.875508784660248,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:10",
+      "valor": 5.89507580941761,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:13",
+      "valor": 5.890458019786289,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:15",
+      "valor": 5.885825003874027,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:16",
+      "valor": 5.896436762599908,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:17",
+      "valor": 5.993078890018969,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:21",
+      "valor": 5.9372707234198785,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:23",
+      "valor": 5.8835223073121545,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:25",
+      "valor": 5.892350542373308,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:27",
+      "valor": 5.8927200392989105,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:29",
+      "valor": 5.881091563958215,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:31",
+      "valor": 5.897976130375236,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:32:32",
+      "valor": 5.905480331820188,
+      "umbral": 5.88
+    },
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-08-12T08:33:04",
+      "media_reposo": 3.15,
+      "sd_reposo": 1.86,
+      "k": 3.0,
+      "umbral": 8.71,
+      "n_muestras": 15009
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:33:09",
+      "valor": 8.722135414660146,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:33:15",
+      "valor": 8.772868521876509,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:33:32",
+      "valor": 8.771732668462551,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-08-12T08:33:32",
+      "parametro": "k",
+      "valor": 3.0,
+      "sensibilidad_mostrada": 1.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-08-12T08:33:44",
+      "intento": 1,
+      "eventos": 1
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:33:52",
+      "valor": 8.917082233424187,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-08-12T08:33:52",
+      "parametro": "k",
+      "valor": 3.0,
+      "sensibilidad_mostrada": 1.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-08-12T08:33:54",
+      "intento": 2,
+      "eventos": 1
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:33:56",
+      "valor": 8.76857564423771,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-08-12T08:33:56",
+      "parametro": "k",
+      "valor": 3.0,
+      "sensibilidad_mostrada": 1.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-08-12T08:33:58",
+      "intento": 3,
+      "eventos": 1
+    },
+    {
+      "tipo": "prueba_validacion",
+      "timestamp": "2026-08-12T08:33:58",
+      "resultado": "completada",
+      "eventos_por_intento": [
+        1,
+        1,
+        1
+      ],
+      "correcta": true,
+      "k": 3.0,
+      "refractario_ms": 500
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:34:36",
+      "valor": 8.791099709068455,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:34:41",
+      "valor": 8.865650947866223,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:35:07",
+      "valor": 8.939485280454747,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:35:08",
+      "valor": 8.879781132065478,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:36:18",
+      "valor": 8.791519880233896,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:36:21",
+      "valor": 9.049834630712631,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:36:47",
+      "valor": 8.91196539957396,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:36:54",
+      "valor": 8.762434427097297,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:37:09",
+      "valor": 8.810038842696159,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:37:25",
+      "valor": 8.94424663887604,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:37:35",
+      "valor": 8.732841457263847,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:09",
+      "valor": 9.021974772779858,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:10",
+      "valor": 8.827340539069311,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:16",
+      "valor": 9.241461960478595,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:26",
+      "valor": 8.801267842219728,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:38",
+      "valor": 8.809659904859789,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:39",
+      "valor": 9.499746689520398,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:40",
+      "valor": 8.850922754316425,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:38:54",
+      "valor": 8.795205404983355,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:03",
+      "valor": 8.782218138634278,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:14",
+      "valor": 8.830802546581035,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:23",
+      "valor": 9.622699478292175,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:27",
+      "valor": 9.14845183939476,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:36",
+      "valor": 8.855743081865281,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:41",
+      "valor": 8.76664171939661,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:53",
+      "valor": 8.971253366904532,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:39:58",
+      "valor": 8.894462763264627,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:40:12",
+      "valor": 8.718878485054798,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:40:21",
+      "valor": 8.72871870452277,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:40:33",
+      "valor": 9.388724151793532,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:40:35",
+      "valor": 8.720470449113144,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:46:40",
+      "valor": 8.774185566570008,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:49:53",
+      "valor": 8.939086697711907,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:50:24",
+      "valor": 8.789476210126322,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:50:31",
+      "valor": 8.760890714841441,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:50:31",
+      "valor": 8.783384661169848,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:50:34",
+      "valor": 8.769978500451877,
+      "umbral": 8.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-12T08:53:33",
+      "valor": 8.718991377721002,
+      "umbral": 8.71
+    }
+  ]
+}

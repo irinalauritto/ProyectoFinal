@@ -1,0 +1,64 @@
+{
+  "paciente": "iri",
+  "inicio_sesion": "2026-08-11T10:25:57",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-08-11T10:26:31",
+      "media_reposo": 17.53,
+      "sd_reposo": 3.08,
+      "k": 3.0,
+      "umbral": 26.76,
+      "n_muestras": 15010
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-08-11T10:26:43",
+      "intento": 1,
+      "eventos": 0
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-08-11T10:26:52",
+      "intento": 2,
+      "eventos": 0
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-08-11T10:26:55",
+      "intento": 3,
+      "eventos": 0
+    },
+    {
+      "tipo": "prueba_validacion",
+      "timestamp": "2026-08-11T10:26:55",
+      "resultado": "completada",
+      "eventos_por_intento": [
+        0,
+        0,
+        0
+      ],
+      "correcta": false,
+      "k": 3.0,
+      "refractario_ms": 500
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-11T10:27:40",
+      "valor": 26.777495766765714,
+      "umbral": 26.76
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-11T10:31:22",
+      "valor": 27.238462303095318,
+      "umbral": 26.76
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-08-11T10:31:22",
+      "valor": 26.844986611658985,
+      "umbral": 26.76
+    }
+  ]
+}
