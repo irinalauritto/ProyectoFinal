@@ -22,6 +22,7 @@ from datetime import datetime
 
 import numpy as np
 import serial
+import serial.tools.list_ports
 from scipy.signal import butter, iirnotch, tf2sos, sosfilt, sosfilt_zi
 import pyqtgraph as pg
 from PySide6.QtCore import QTimer
@@ -58,7 +59,11 @@ except ImportError:  # en plataformas no Windows simplemente se omite el sonido
 
 
 # Definición de constantes globales
-SERIAL_PORT = "COM8"   # Ajustar según el puerto asignado a la ESP32 (Administrador de dispositivos de Windows)
+# SERIAL_PORT en None: el puerto se detecta automáticamente al arrancar
+# (ver _detectar_puerto_esp32), para que quien use la interfaz no tenga que
+# editar el código ni saber en qué COM quedó la ESP32. Si se prefiere forzar
+# un puerto fijo, se puede poner un string acá, por ejemplo "COM8".
+SERIAL_PORT = None
 BAUD_RATE = 115200
 BUFFER_SIZE = 2000    # Cantidad de muestras visibles en el gráfico
 UPDATE_MS = 20        # Intervalo de refresco del gráfico (ms)
@@ -784,6 +789,66 @@ class VentanaEmg(QWidget):
         super().closeEvent(event)
 
 
+def _detectar_puerto_esp32(muestras_necesarias=2, timeout_lectura=0.3, intentos_maximos=8):
+    # Recorre los puertos serie disponibles y prueba cada uno brevemente:
+    # si dentro de unos pocos intentos aparecen líneas que son puramente
+    # dígitos (el formato en el que la ESP32 envía cada muestra), se asume
+    # que es el puerto correcto. Así no hace falta que quien use la interfaz
+    # sepa (ni edite en el código) en qué COM quedó la placa.
+    for puerto in serial.tools.list_ports.comports():
+        try:
+            with serial.Serial(puerto.device, BAUD_RATE, timeout=timeout_lectura) as prueba:
+                time.sleep(0.5)  # margen para que la placa termine de resetear y arrancar a enviar
+                prueba.reset_input_buffer()
+                lineas_validas = 0
+                for _ in range(intentos_maximos):
+                    linea = prueba.readline().decode(errors="ignore").strip()
+                    if linea.isdigit():
+                        lineas_validas += 1
+                        if lineas_validas >= muestras_necesarias:
+                            return puerto.device
+        except (serial.SerialException, OSError):
+            continue  # puerto ocupado, sin permisos u otro dispositivo: se prueba el siguiente
+    return None
+
+
+def _elegir_puerto_manualmente():
+    # Respaldo cuando la detección automática no encuentra nada (o hay más
+    # de un dispositivo serie y no se puede distinguir con certeza): se le
+    # pide a quien esté usando la interfaz que elija de una lista, sin
+    # necesidad de tocar el código.
+    puertos = list(serial.tools.list_ports.comports())
+    if not puertos:
+        QMessageBox.critical(
+            None, "Sin puertos serie",
+            "No se detectó ningún puerto serie disponible. Conecte la ESP32 y vuelva a abrir el programa."
+        )
+        return None
+
+    dialogo = QDialog()
+    dialogo.setWindowTitle("Seleccionar puerto")
+    layout = QVBoxLayout(dialogo)
+    layout.addWidget(QLabel(
+        "No se pudo identificar automáticamente el puerto de la ESP32.\n"
+        "Elija el puerto correspondiente de la lista:"
+    ))
+    combo = QComboBox()
+    for puerto in puertos:
+        combo.addItem(f"{puerto.device} — {puerto.description}", puerto.device)
+    layout.addWidget(combo)
+
+    botones = QHBoxLayout()
+    botones.addStretch()
+    btn_aceptar = QPushButton("Aceptar")
+    btn_aceptar.clicked.connect(dialogo.accept)
+    botones.addWidget(btn_aceptar)
+    layout.addLayout(botones)
+
+    if dialogo.exec() == QDialog.Accepted:
+        return combo.currentData()
+    return None
+
+
 def main():
     app = QApplication(sys.argv)  # Creación de la aplicación Qt
 
@@ -800,11 +865,19 @@ def main():
     paleta_clara.setColor(QPalette.ButtonText, QColor("#000000"))
     app.setPalette(paleta_clara)
 
-    # Apertura del puerto serie
+    # Puerto serie: si SERIAL_PORT no está fijado a mano, se detecta
+    # automáticamente probando los puertos disponibles; si eso falla, se le
+    # pide a quien use la interfaz que elija de una lista (sin tocar código).
+    puerto = SERIAL_PORT or _detectar_puerto_esp32()
+    if puerto is None:
+        puerto = _elegir_puerto_manualmente()
+        if puerto is None:
+            sys.exit(1)
+
     try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0)
+        ser = serial.Serial(puerto, BAUD_RATE, timeout=0)
     except serial.SerialException as e:
-        print(f"No se pudo abrir el puerto {SERIAL_PORT}: {e}")
+        print(f"No se pudo abrir el puerto {puerto}: {e}")
         sys.exit(1)
 
     # La ventana principal se abre primero (ya empieza a graficar la señal),
