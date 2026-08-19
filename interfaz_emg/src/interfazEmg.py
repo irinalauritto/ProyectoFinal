@@ -12,7 +12,7 @@ registro de sesión en un archivo JSON.
 
 """
 
-# Importación de librerías
+# Librerías
 import sys
 import os
 import json
@@ -46,11 +46,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPalette, QColor
 from pynput.keyboard import Controller as ControladorTeclado, Key
 
-# Interfaz clara (fondo blanco) en vez del tema oscuro por defecto de pyqtgraph
+# Se setea el fondo blanco y el color de línea negro
 pg.setConfigOption("background", "w")
 pg.setConfigOption("foreground", "k")
 
-# Retroalimentación sonora: winsound es de la biblioteca estándar en Windows
+# Retroalimentación sonora
 try:
     import winsound
     _SONIDO_DISPONIBLE = True
@@ -59,10 +59,9 @@ except ImportError:  # en plataformas no Windows simplemente se omite el sonido
 
 
 # Definición de constantes globales
-# SERIAL_PORT en None: el puerto se detecta automáticamente al arrancar
+# El puerto serie se detecta automáticamente al iniciar la aplicación
 # (ver _detectar_puerto_esp32), para que quien use la interfaz no tenga que
-# editar el código ni saber en qué COM quedó la ESP32. Si se prefiere forzar
-# un puerto fijo, se puede poner un string acá, por ejemplo "COM8".
+# editar el código ni saber en qué COM quedó la ESP32. 
 SERIAL_PORT = None
 BAUD_RATE = 115200
 BUFFER_SIZE = 2000    # Cantidad de muestras visibles en el gráfico
@@ -80,18 +79,18 @@ UPDATE_MS = 20        # Intervalo de refresco del gráfico (ms)
 
 MODO_SENAL = "RAW"   # "ENVOLVENTE" o "RAW"
 
-FS_HZ = 500.0          # Frecuencia de muestreo aproximada del firmware (SAMPLE_DELAY_MS = 2 ms)
-HP_CORTE_HZ = 1.0      # Pasaaltos: elimina la componente continua/bias de la señal cruda
-NOTCH_FREQ_HZ = 50.0   # Notch: frecuencia de la red eléctrica en Argentina (usar 60 Hz en países con esa red)
-NOTCH_Q = 30.0         # Factor de calidad del notch: cuanto más alto, más angosto (afecta menos a la señal vecina)
-LP_CORTE_HZ = 4.0      # Pasabajos: genera la envolvente a partir de la señal rectificada
+FS_HZ = 500.0          # Frecuencia de muestreo
+HP_CORTE_HZ = 1.0      # Pasaaltos
+NOTCH_FREQ_HZ = 50.0   # Notch: frecuencia de la red eléctrica en Argentina
+NOTCH_Q = 30.0         # Factor de calidad del notch: cuanto más alto, más angosto
+LP_CORTE_HZ = 4.0      # Pasabajos
 
 
 # VENTANA_MA_MUESTRAS = 30   # Tamaño de la ventana del filtro de media móvil (a ~500 Hz, ~60 ms)
 
 # Histéresis del detector: el umbral de "reactivación" (para volver a poder
 # disparar) queda esta fracción por debajo del umbral de disparo, dentro del
-# margen (umbral - media_reposo). Es la lógica de un disparador de Schmitt, básicamente.
+# margen (umbral - media_reposo).
 HISTERESIS_FRACCION = 0.5
 
 # Conversión ADC a mV: ESP32-C6, ADC de 12 bits (0-4095) con atenuación de
@@ -226,7 +225,7 @@ class VentanaEmg(QWidget):
             self._zi_notch = sosfilt_zi(self._sos_notch)
             self._zi_pasabajos = sosfilt_zi(self._sos_pasabajos)
 
-        # --- Filtro de media móvil aplicado a cada muestra (tras generar la envolvente si corresponde) ---
+        # --- Filtro de media móvil aplicado a cada muestra ---
         # self.ventana_ma = deque(maxlen=VENTANA_MA_MUESTRAS)
 
         # --- Parámetros configurables ---
@@ -282,7 +281,7 @@ class VentanaEmg(QWidget):
         self.lbl_paciente.setStyleSheet("font-size: 11pt; font-weight: bold;")
         layout_principal.addWidget(self.lbl_paciente)
 
-        # Gráfico en tiempo real (se mantiene la base existente con pyqtgraph)
+        # Gráfico en tiempo real 
         self.win = pg.GraphicsLayoutWidget()
         self.win.setBackground("w")
         self.win.setMinimumHeight(400)
@@ -290,12 +289,7 @@ class VentanaEmg(QWidget):
         self.plot.setLabel("left", "Amplitud (mV)")
         self.plot.setLabel("bottom", "Muestras")
         self.plot.setXRange(0, BUFFER_SIZE - 1, padding=0)
-        self.plot.enableAutoRange(axis="y")  # visualización original: autoescala en cada refresco
-        # Intentos de eje Y fijo (a pedido puntual, luego revertidos): se
-        # dejan comentados en vez de borrarlos.
-        # self.plot.enableAutoRange(axis="y", enable=False)
-        # self.plot.setYRange(0, ADC_VREF_MV, padding=0)  # rango completo del ADC (0-3300 mV)
-        # self.plot.setYRange(0, 1000, padding=0)  # acotado a 0-1000 mV para ver mejor la envolvente
+        self.plot.enableAutoRange(axis="y")  
         self.curve = self.plot.plot(pen=pg.mkPen(color="b", width=1))
         self.scatter_eventos = pg.ScatterPlotItem(size=10, brush=pg.mkBrush("r"), pen=pg.mkPen("r"))
         self.plot.addItem(self.scatter_eventos)
@@ -304,7 +298,7 @@ class VentanaEmg(QWidget):
 
         panel = QHBoxLayout()
 
-        # Formato uniforme de los tres grupos de controles: título en negrita.
+        # Formato de los tres grupos de controles: título en negrita.
         estilo_titulo_negrita = "QGroupBox::title { font-weight: bold; }"
 
         # --- Calibración ---
@@ -352,9 +346,6 @@ class VentanaEmg(QWidget):
         self.spin_k.setRange(K_MIN, K_MAX)
         self.spin_k.setSingleStep(0.1)
         self.spin_k.setDecimals(1)
-        # El spinbox muestra "sensibilidad" (más alto = más sensible), que
-        # es la escala espejada de k (más alto = menos sensible). Ver
-        # _espejar_escala_k y _on_k_cambiado.
         self.spin_k.setValue(_espejar_escala_k(K_DEFAULT))
         self.spin_refractario = QSpinBox()
         self.spin_refractario.setRange(REFRACTARIO_MIN_MS, REFRACTARIO_MAX_MS)
@@ -415,9 +406,8 @@ class VentanaEmg(QWidget):
         )
 
     def _avisar_si_no_calibrado(self, *_args):
-        # Se llama al tocar cualquier control de "Parámetros" (menos el
-        # propio botón de calibrar): si todavía no se calibró y no hay una
-        # calibración en curso, se repite el aviso.
+        # Se llama al tocar cualquier control de "Parámetros" si todavía no se calibró y no hay una
+        # calibración en curso. Se repite el aviso.
         if self.umbral is None and not self.calibrando:
             self._mostrar_aviso_calibracion()
 
@@ -451,7 +441,7 @@ class VentanaEmg(QWidget):
         )
 
     # ------------------------------------------------------------------
-    # Lectura serie + procesamiento de cada muestra (llamado por QTimer)
+    # Lectura serie y  procesamiento de cada muestra 
     # ------------------------------------------------------------------
     def _tick(self):
         # Lee todas las líneas disponibles en el buffer serie sin bloquear
@@ -459,12 +449,11 @@ class VentanaEmg(QWidget):
             linea = self.ser.readline().decode(errors="ignore").strip()
             if not linea.isdigit():
                 continue
-            # Conversión a mV: todo lo que sigue (buffer, calibración, umbral,
-            # detección) trabaja directamente en mV, no en cuentas del ADC.
+            # Conversión a mV
             valor_crudo = _adc_a_mv(int(linea))
 
             if MODO_SENAL == "RAW":
-                # Señal EMG cruda: se genera la envolvente por software.
+                # Se genera la envolvente por software.
                 valor_muestra = self._generar_envolvente(valor_crudo)
             else:
                 # Salida ENV del MyoWare.
@@ -472,7 +461,6 @@ class VentanaEmg(QWidget):
 
             # Filtro de media móvil: suaviza el ruido de muestra a muestra
             # antes de graficar y de usar la señal para calibración/detección.
-            # Comentado para esta prueba (solo pasabajos de 6 Hz):
             # self.ventana_ma.append(valor_muestra)
             # valor = sum(self.ventana_ma) / len(self.ventana_ma)
             valor = valor_muestra
@@ -496,7 +484,7 @@ class VentanaEmg(QWidget):
             self._actualizar_contador_intento()
 
     def _desplazar_marcadores(self):
-        # El buffer tiene largo fijo: la muestra más nueva siempre queda en
+        # El buffer tiene largo fijo, la muestra más nueva siempre queda en
         # el índice BUFFER_SIZE-1, por lo que los marcadores previos deben
         # correrse una posición hacia la izquierda en cada muestra nueva.
         nuevos_x, nuevos_y = [], []
@@ -509,18 +497,17 @@ class VentanaEmg(QWidget):
 
     def _generar_envolvente(self, valor_crudo):
         if self._zi_pasaaltos is None:
-            # Primera muestra real: se fija el estado inicial del pasaaltos
+            # Se fija el estado inicial del pasaaltos
             # a partir de este valor para no generar un escalón artificial.
             self._zi_pasaaltos = sosfilt_zi(self._sos_pasaaltos) * valor_crudo
 
-        # Pasaaltos 1 Hz: elimina la continua/bias del ADC y centra la señal
-        # cruda en torno a 0 (recién ahí tiene sentido rectificar).
+        # Pasaaltos
         filtrado_hp, self._zi_pasaaltos = sosfilt(self._sos_pasaaltos, [valor_crudo], zi=self._zi_pasaaltos)
-        # Notch 50 Hz: elimina la interferencia de la red eléctrica.
+        # Notch 50 Hz
         filtrado_notch, self._zi_notch = sosfilt(self._sos_notch, filtrado_hp, zi=self._zi_notch)
         # Rectificado de onda completa.
         rectificado = abs(filtrado_notch[0])
-        # Pasabajos 6 Hz: suaviza el rectificado y genera la envolvente.
+        # Pasabajos
         envolvente, self._zi_pasabajos = sosfilt(self._sos_pasabajos, [rectificado], zi=self._zi_pasabajos)
         return envolvente[0]
 
@@ -528,14 +515,14 @@ class VentanaEmg(QWidget):
     # Detección de eventos: flanco ascendente + tiempo refractario
     # ------------------------------------------------------------------
     def _procesar_deteccion(self, valor, marca_tiempo):
-        # Seguro de flanco ascendente con histéresis (disparador de Schmitt):
-        # mientras self.armado es True la señal está en zona de reposo y se
+        # Se implementa un seguro de flanco ascendente con histéresis medinate la lógica de un comparador Schmitt.
+        # Mientras self.armado es True la señal está en zona de reposo y se
         # vigila el cruce hacia arriba del umbral de disparo. En cuanto cruza,
-        # se desarma de inmediato: ya no se vuelve a evaluar un nuevo evento
-        # aunque la señal siga oscilando por encima del umbral (eso evita
-        # "rebotes" — varios disparos dentro de una misma contracción por
-        # ruido de la señal real). Sólo se rearma cuando la señal cae por
-        # debajo del umbral de reactivación, más bajo que el de disparo.
+        # se desarma de inmediato, ya no se vuelve a evaluar un nuevo evento
+        # aunque la señal siga oscilando por encima del umbral (para evitar rebotes)
+        # Sólo se rearma cuando la señal cae por debajo del umbral de reactivación, más bajo que el de disparo.
+        # Armar = estar listo para detectar un nuevo evento.
+
         if self.armado:
             if valor >= self.umbral:
                 refractario_cumplido = (
@@ -573,16 +560,14 @@ class VentanaEmg(QWidget):
 
     def _enviar_tecla(self, tecla):
         if self.tecla_activa is not None:
-            # Un evento nuevo llegó antes de soltar la tecla del evento
-            # anterior (duración configurada mayor que el refractario):
-            # se suelta ya la anterior para no dejarla "pegada".
+            # SI un evento nuevo llegó antes de soltar la tecla del evento
+            # anterior (duración configurada mayor que el refractario),
+            # se "suelta" la anterior para no dejarla "pegada".
             self.teclado.release(self.tecla_activa)
 
         self.tecla_activa = tecla
         self.teclado.press(tecla)
 
-        # Se usa QTimer.singleShot en vez de time.sleep para no bloquear la
-        # interfaz mientras se mantiene la tecla "pulsada".
         duracion_ms = self.spin_duracion_tecla.value()
         QTimer.singleShot(duracion_ms, self._soltar_tecla)
 
@@ -595,8 +580,7 @@ class VentanaEmg(QWidget):
     # Calibración
     # ------------------------------------------------------------------
     def _iniciar_calibracion(self):
-        # El nombre del paciente ya se pidió en el diálogo inicial y el
-        # registro de sesión ya está creado (ver __init__).
+
         self.calibrando = True
         self.calibracion_muestras = []
         self.calibracion_inicio = time.monotonic()
@@ -669,8 +653,6 @@ class VentanaEmg(QWidget):
     # Ajuste libre de parámetros (k y refractario) durante la sesión
     # ------------------------------------------------------------------
     def _on_k_cambiado(self, sensibilidad_mostrada):
-        # El spinbox muestra "sensibilidad" (más alto = más sensible); el
-        # umbral se sigue calculando con k (más alto = menos sensible).
         self.k = _espejar_escala_k(sensibilidad_mostrada)
         if self.media_reposo is None:
             self._avisar_si_no_calibrado()
@@ -702,7 +684,7 @@ class VentanaEmg(QWidget):
         self.lbl_aviso.setVisible(False)
 
     # ------------------------------------------------------------------
-    # Prueba de validación guiada (3 contracciones)
+    # Prueba de validación (3 contracciones)
     # ------------------------------------------------------------------
     def _iniciar_prueba_validacion(self):
         if self.umbral is None:
@@ -790,11 +772,9 @@ class VentanaEmg(QWidget):
 
 
 def _detectar_puerto_esp32(muestras_necesarias=2, timeout_lectura=0.3, intentos_maximos=8):
-    # Recorre los puertos serie disponibles y prueba cada uno brevemente:
-    # si dentro de unos pocos intentos aparecen líneas que son puramente
-    # dígitos (el formato en el que la ESP32 envía cada muestra), se asume
-    # que es el puerto correcto. Así no hace falta que quien use la interfaz
-    # sepa (ni edite en el código) en qué COM quedó la placa.
+    # Recorre los puertos serie disponibles y prueba cada uno brevemente
+    # De esta forma no hace falta que quien use la interfaz
+    # sepa en qué COM quedó la placa.
     for puerto in serial.tools.list_ports.comports():
         try:
             with serial.Serial(puerto.device, BAUD_RATE, timeout=timeout_lectura) as prueba:
@@ -813,9 +793,9 @@ def _detectar_puerto_esp32(muestras_necesarias=2, timeout_lectura=0.3, intentos_
 
 
 def _elegir_puerto_manualmente():
-    # Respaldo cuando la detección automática no encuentra nada (o hay más
+    # Cuando la detección automática no encuentra nada (o hay más
     # de un dispositivo serie y no se puede distinguir con certeza): se le
-    # pide a quien esté usando la interfaz que elija de una lista, sin
+    # solicita a quien esté usando la interfaz que elija de una lista, sin
     # necesidad de tocar el código.
     puertos = list(serial.tools.list_ports.comports())
     if not puertos:
@@ -852,8 +832,6 @@ def _elegir_puerto_manualmente():
 def main():
     app = QApplication(sys.argv)  # Creación de la aplicación Qt
 
-    # Fuerza una paleta clara para toda la interfaz, sin depender de si
-    # Windows tiene activado el modo oscuro.
     app.setStyle("Fusion")
     paleta_clara = QPalette()
     paleta_clara.setColor(QPalette.Window, QColor("#ffffff"))
@@ -865,9 +843,7 @@ def main():
     paleta_clara.setColor(QPalette.ButtonText, QColor("#000000"))
     app.setPalette(paleta_clara)
 
-    # Puerto serie: si SERIAL_PORT no está fijado a mano, se detecta
-    # automáticamente probando los puertos disponibles; si eso falla, se le
-    # pide a quien use la interfaz que elija de una lista (sin tocar código).
+
     puerto = SERIAL_PORT or _detectar_puerto_esp32()
     if puerto is None:
         puerto = _elegir_puerto_manualmente()
