@@ -1,0 +1,254 @@
+@startuml
+' Plantilla base de diagrama de clases para src.app
+' Ajusta, agrega o quita clases segun la parte del sistema que quieras documentar.
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+title Vision - Diagrama de Clases (src.app)
+
+package "Datos y Configuracion" {
+  enum ClassificationMethods {
+    eTRCA
+    CCA
+  }
+
+  enum StimulusTypes {
+    flic
+    check
+  }
+
+  class Stimulus <<dataclass>> {
+    +freq: float
+    +theta: float
+    +stim_type: str
+    +shape_type: str
+    +direction: str | None
+  }
+
+  class UserPreferences <<dataclass>> {
+    +classification_method: str
+    +time_window: float
+    +channels: dict[int, str]
+    +stimulus: list<Stimulus>
+    +stimulus_on: list<bool>
+  }
+
+  class StimulusConfig <<dataclass>> {
+    +screen_height: int
+    +screen_width: int
+    +stimulus_data: dict[int, Any]
+    +stimulus_positions: list<Tuple[int, int]]
+    +stimulus_size: int
+    +height_margin: int
+    +width_margin: int
+    +monitor_index: int
+  }
+
+  class Settings {
+    +database_filename: str
+    +intf_name: str
+    +intf_port_name: str | None
+    +intf_port_auto: bool
+    +out_port_name: str | None
+    +out_port_baud: int
+    +notch_enabled: bool
+    +bandpass_enabled: bool
+    +speed_scale: float
+    +amplitude_scale: int
+    +amplitude_value: int
+    +px_per_cm: int
+    +sequence_evaluation: list<int>
+    +default_user_preferences: UserPreferences
+    +locked_channels: dict<int, str>
+    +max_channels: int
+  }
+}
+
+package "Dominio" {
+  class User {
+    +id: int | None
+    +name: str
+    +to_dict(): dict
+  }
+
+  class Preferences {
+    +user_id: int | None
+    +classification_method: str
+    +time_windows: float
+    +stimulus_frequency: list<float>
+    +stimulus_shape: list<str>
+    +channels: dict<int, str>
+    +stimulus_on: list<bool>
+    +stimulus_type: list<str>
+    +stimulus_theta: list<float>
+    +stimulus_direction: list<str | None>
+  }
+
+  class TrainingWeights {
+    +user_id: int | None
+    +trains: np.ndarray
+    +w: np.ndarray
+    +num_fbs: int
+    +num_targets: int
+  }
+}
+
+package "Persistencia" {
+  abstract class AbstractRepository {
+    +save(entity)
+    +get_all()
+    +update(updated_entity)
+    +get_by_filter(filter_key, value)
+    +delete(entity_id)
+  }
+
+  class Base <<SQLAlchemy>>
+
+  class UserModel <<ORM>> {
+    +id: int
+    +name: str
+  }
+
+  class PreferencesModel <<ORM>> {
+    +user_id: int
+    +classification_method: str
+    +time_windows: float
+    +stim_frequency: str
+    +stim_shape: str
+    +channels: str
+    +stim_on: str
+    +stim_theta: str
+    +stim_type: str
+    +stim_direction: str
+  }
+
+  class TrainingWeightsModel <<ORM>> {
+    +user_id: int
+    +trains: str
+    +w: str
+    +num_fbs: int
+    +num_targets: int
+  }
+
+  class UserRepositorySQLAlchemy
+  class PreferencesRepositorySQLAlchemy
+  class TrainingWeightsRepositorySQLAlchemy
+}
+
+package "Negocio" {
+  class UserManager {
+    +register_new_user(name: str): User
+    +get_all_users(): list<User>
+    +remove_user(user_id: int)
+    +get_user(user_id: int): dict
+  }
+
+  class PreferencesManager {
+    +save_or_update_preferences(user_id: int, user_prefs: UserPreferences): Preferences
+    +get_user_preferences(user_id: int): UserPreferences
+    +remove_user_preferences(user_id: int)
+  }
+
+  class TrainingWeightsManager {
+    +save_or_update_weights(user_id: int, training_result: dict): TrainingWeights
+    +get_user_weights(user_id: int): dict | None
+    +remove_user_weights(user_id: int)
+  }
+}
+
+package "Control y UI" {
+  class AppController <<QObject>>
+  class UserUI
+  class StimulusViewer
+  class EEGWidget
+  class ElectrodeHeadWidget
+  class PSDWidget
+  class EEGSignalProcessor <<QObject>>
+  class SignalFilters
+  class PSDEstimator <<QObject>>
+  class EEGSerialInterface <<QObject>>
+  class EEGFileInterface <<QObject>>
+  class EEGSignalTRCAClassifier
+  class EEGSignalCCAClassifier
+  class TrainingManager <<QObject>>
+  class BCIEvaluator <<QObject>>
+  class BCIEvaluatorOperator
+  class BCIEvaluatorUser
+  class SequenceWidget
+  class GameManager <<QObject>>
+  class KeyboardController
+}
+
+' Relaciones principales de la arquitectura
+UserPreferences *-- "1..*" Stimulus
+Preferences o-- "many" Stimulus
+TrainingWeights ..> "np.ndarray" : uses
+
+UserRepositorySQLAlchemy --|> AbstractRepository
+PreferencesRepositorySQLAlchemy --|> AbstractRepository
+TrainingWeightsRepositorySQLAlchemy --|> AbstractRepository
+
+Settings ..> UserPreferences
+Settings ..> Stimulus
+
+UserManager ..> AbstractRepository
+PreferencesManager ..> AbstractRepository
+TrainingWeightsManager ..> AbstractRepository
+
+UserManager ..> User
+PreferencesManager ..> Preferences
+PreferencesManager ..> UserPreferences
+PreferencesManager ..> Stimulus
+TrainingWeightsManager ..> TrainingWeights
+
+UserRepositorySQLAlchemy ..> UserModel
+UserRepositorySQLAlchemy ..> User
+PreferencesRepositorySQLAlchemy ..> PreferencesModel
+PreferencesRepositorySQLAlchemy ..> Preferences
+TrainingWeightsRepositorySQLAlchemy ..> TrainingWeightsModel
+TrainingWeightsRepositorySQLAlchemy ..> TrainingWeights
+
+AppController ..> UserUI
+AppController ..> StimulusViewer
+AppController ..> EEGSignalProcessor
+AppController ..> SignalFilters
+AppController ..> PSDEstimator
+AppController ..> EEGWidget
+AppController ..> ElectrodeHeadWidget
+AppController ..> GameManager
+AppController ..> KeyboardController
+AppController ..> UserManager
+AppController ..> PreferencesManager
+AppController ..> TrainingWeightsManager
+AppController ..> BCIEvaluator
+AppController ..> EEGSerialInterface
+AppController ..> EEGFileInterface
+AppController ..> EEGSignalTRCAClassifier
+AppController ..> EEGSignalCCAClassifier
+AppController ..> TrainingManager
+AppController ..> BCIEvaluatorOperator
+AppController ..> BCIEvaluatorUser
+AppController ..> SequenceWidget
+AppController ..> Settings
+
+EEGSignalProcessor ..> SignalFilters
+EEGSignalProcessor ..> PSDEstimator
+TrainingManager ..> SignalFilters
+TrainingManager ..> UserPreferences
+BCIEvaluator ..> UserPreferences
+BCIEvaluator ..> SequenceWidget
+BCIEvaluatorOperator ..> SequenceWidget
+BCIEvaluatorUser ..> SequenceWidget
+
+note right of AppController
+  Plantilla base.
+  Puedes ampliar:
+  - atributos privados
+  - firmas completas de metodos
+  - multiplicidades
+  - paquetes auxiliares
+end note
+
+@enduml

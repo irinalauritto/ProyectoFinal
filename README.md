@@ -9,7 +9,7 @@ Proyecto final de la carrera de Bioingeniería para el control de un sistema de 
 ## Estructura 
 
 - `firmware/emg_esp32/` – Firmware cargado en la  ESP32, el mismo lee la salida ENV del sensor MyoWare 2.0 por ADC.
-- `interfaz_emg/src/` – Aplicación en Python: adquisición serie, filtrado, detección
+- `interfaz_emg/emg/` – Aplicación en Python: adquisición serie, filtrado, detección
   de activación muscular y disparo del evento de teclado para la activación de AsTeRICS Grid.
 - `interfaz_eeg/` – Reservado para el módulo de EEG (aun no desarrollado).
 

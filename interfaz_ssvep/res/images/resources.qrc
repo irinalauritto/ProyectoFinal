@@ -1,0 +1,26 @@
+<RCC>
+  <qresource prefix="images">
+    <file>stims_icons/esc_hit.png</file>
+    <file>stims_icons/esc_miss.png</file>
+    <file>stims_icons/space_hit.png</file>
+    <file>stims_icons/space_miss.png</file>
+    <file>stims_icons/down_hit.png</file>
+    <file>stims_icons/down_miss.png</file>
+    <file>stims_icons/left_hit.png</file>
+    <file>stims_icons/left_miss.png</file>
+    <file>stims_icons/right_hit.png</file>
+    <file>stims_icons/right_miss.png</file>
+    <file>stims_icons/up_hit.png</file>
+    <file>stims_icons/up_miss.png</file>
+    <file>stims_icons/esc_neutral.png</file>
+    <file>stims_icons/space_neutral.png</file>
+    <file>stims_icons/down_neutral.png</file>
+    <file>stims_icons/left_neutral.png</file>
+    <file>stims_icons/right_neutral.png</file>
+    <file>stims_icons/up_neutral.png</file>
+    <file>fondo.svg</file>
+    <file>logo_gir.png</file>
+    <file>logo_ingenieria.svg</file>
+    <file>electrodes_placement.svg</file>
+  </qresource>
+</RCC>

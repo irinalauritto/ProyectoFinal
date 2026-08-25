@@ -1,0 +1,25 @@
+site_name: Documentación de la App EEG
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google  
+            show_source: true        
+            show_root_heading: true
+            show_category_heading: true
+            members_order: source    
+
+# Aquí defines el menú de navegación
+nav:
+  - Inicio: index.md
+  - API Reference: api.md

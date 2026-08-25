@@ -1,0 +1,17 @@
+# PyInstaller
+build/
+dist/
+
+
+
+# Virtual env
+.venv/
+
+.agents/
+
+data/
+
+*.spec
+
+# If you generate extra artifacts
+*.exe

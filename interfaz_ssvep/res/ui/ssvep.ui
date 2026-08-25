@@ -1,0 +1,3202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SSVEP</class>
+ <widget class="QMainWindow" name="SSVEP">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1212</width>
+    <height>811</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">QWidget#centralwidget { 
+border-image: url(:/images/fondo.svg) 0 0 0 0 stretch stretch; 
+background-position: center; 
+}</string>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <property name="currentIndex">
+       <number>3</number>
+      </property>
+      <widget class="QWidget" name="page_main_menu">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="1" column="1">
+           <widget class="QLabel" name="label_5">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>:/images/logo_gir.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>false</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="4">
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="4">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="1">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="3">
+           <widget class="QPushButton" name="btn_start_main">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Inicio</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0" colspan="7">
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>877</width>
+              <height>74</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="3">
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>17</width>
+              <height>75</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="4" column="1">
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="4">
+           <widget class="QLabel" name="logo_fiuner">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>:/images/logo_ingenieria.svg</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>false</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <spacer name="verticalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>17</width>
+              <height>75</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="4" column="3">
+           <widget class="QPushButton" name="btn_settings_main">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Configuración</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <spacer name="horizontalSpacer_19">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_info">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 12pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Información</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_info">
+       <layout class="QHBoxLayout" name="horizontalLayout_12">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_11">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_17">
+            <item>
+             <widget class="QPushButton" name="btn_exit_info">
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 12pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+              </property>
+              <property name="text">
+               <string>Salir</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_9">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_16">
+            <item>
+             <widget class="QTextBrowser" name="html_viewer"/>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_user_selection">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="titulo">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+font: 12 22pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+</string>
+            </property>
+            <property name="text">
+             <string>Seleccionar Usuario</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_12">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <spacer name="horizontalSpacer_14">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QListWidget" name="ql_user_list">
+            <property name="styleSheet">
+             <string notr="true">QListWidget {
+    font-family: &quot;Cascadia Mono Extralight&quot;;
+    font-size: 18pt;
+    color: white;
+}
+
+QListWidget {
+    background-color: rgba(0, 51, 102, 120);
+    color: white;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+/* Cuando pasás el mouse por TODO el cuadro */
+QListWidget:hover {
+    background-color: rgba(0, 51, 102, 160);
+}
+
+/* Ítems normales */
+QListWidget::item {
+    padding: 8px;
+    background-color: transparent;
+}
+
+/* Cuando pasás el mouse sobre un ítem */
+QListWidget::item:hover {
+    background-color: rgba(255, 255, 255, 40);
+}
+
+/* Ítem seleccionado */
+QListWidget::item:selected {
+    background-color: rgba(0, 51, 102, 220);
+    color: white;
+}
+
+/* Ítem seleccionado + hover (opcional, queda más fluido) */
+QListWidget::item:selected:hover {
+    background-color: rgba(0, 51, 102, 255);
+}</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_13">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_6">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QLabel" name="nuevo_usuario">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+font: 15pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+            </property>
+            <property name="text">
+             <string>Nuevo usuario</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_9">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="le_input_username">
+            <property name="maximumSize">
+             <size>
+              <width>250</width>
+              <height>16777215</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_10">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_user_save">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Guardar</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_7">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QPushButton" name="btn_user_exit">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Salir</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_11">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_user_continue">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Continuar</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_user_config">
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_15">
+          <item>
+           <widget class="QLabel" name="user_cfg_tile">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+font: 12 18pt &quot;Cascadia Mono ExtraLight&quot;;</string>
+            </property>
+            <property name="text">
+             <string>Configuraciones de usuario</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_36">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="lbl_user_cfg_user_n">
+            <property name="styleSheet">
+             <string notr="true">    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;</string>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_16">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_16">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_18">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_9">
+                <item>
+                 <widget class="QLabel" name="label_21">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Tiempo de respuesta</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_8">
+                  <item>
+                   <widget class="QLabel" name="label_27">
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                    </property>
+                    <property name="text">
+                     <string>Velocidad</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_7">
+                    <item>
+                     <widget class="QLabel" name="lbl_time_response">
+                      <property name="styleSheet">
+                       <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                      </property>
+                      <property name="text">
+                       <string/>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignCenter</set>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSlider" name="hsld_time_window">
+                      <property name="focusPolicy">
+                       <enum>Qt::ClickFocus</enum>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">QSlider::groove:horizontal {
+    height: 6px;
+    background: #BDBDBD;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #2D89EF;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 2px solid #2D89EF;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;    /* centra el círculo sobre la barra */
+    border-radius: 9px; /* hace el handle circular */
+}
+
+QSlider::handle:horizontal:hover {
+    background: #F5F5F5;
+}
+
+QSlider::handle:horizontal:pressed {
+    background: #E0E0E0;
+}</string>
+                      </property>
+                      <property name="minimum">
+                       <number>10</number>
+                      </property>
+                      <property name="maximum">
+                       <number>40</number>
+                      </property>
+                      <property name="singleStep">
+                       <number>5</number>
+                      </property>
+                      <property name="sliderPosition">
+                       <number>20</number>
+                      </property>
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_28">
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                    </property>
+                    <property name="text">
+                     <string>Exactitud</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_28">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_34">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_23">
+                <item>
+                 <widget class="QLabel" name="label_20">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Estilo de
+estímulos</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="qc_estimulus_method">
+                  <property name="styleSheet">
+                   <string notr="true">font: bold 12pt &quot;Cascadia Mono Extralight&quot;;</string>
+                  </property>
+                  <item>
+                   <property name="text">
+                    <string>Lleno</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>Cuadriculado</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_26">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_24">
+                <item>
+                 <widget class="QLabel" name="label_6">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Método de
+clasificación</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="qc_cass_method">
+                  <property name="styleSheet">
+                   <string notr="true">font: bold 12pt &quot;Cascadia Mono Extralight&quot;;</string>
+                  </property>
+                  <item>
+                   <property name="text">
+                    <string>Sin calibración</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_27">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_18">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_33">
+              <item>
+               <layout class="QGridLayout" name="gridLayout_2">
+                <item row="1" column="2">
+                 <widget class="QLineEdit" name="led_user_cfg_esc">
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QLineEdit {
+    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;
+}</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QLabel" name="label_11">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 15pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Frec. [Hz]</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="2">
+                 <widget class="QLineEdit" name="led_user_cfg_space">
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QLineEdit {
+    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;
+}</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_12">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 15pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Acciones</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="3">
+                 <widget class="QCheckBox" name="chk_cfg_show_space">
+                  <property name="font">
+                   <font>
+                    <family>Cascadia Mono Extralight</family>
+                    <pointsize>12</pointsize>
+                    <weight>75</weight>
+                    <italic>false</italic>
+                    <bold>true</bold>
+                    <strikeout>false</strikeout>
+                    <kerning>true</kerning>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="2">
+                 <widget class="QLineEdit" name="led_user_cfg_down">
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QLineEdit {
+    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;
+}</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="2">
+                 <widget class="QLineEdit" name="led_user_cfg_left">
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QLineEdit {
+    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;
+}</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QCheckBox" name="chk_cfg_show_esc">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="4">
+                 <widget class="QCheckBox" name="chk_toggle_space">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="4">
+                 <widget class="QLabel" name="label_24">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 15pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Sostener</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_13">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>Escape</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QLabel" name="label_10">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 15pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>✕—✓</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0">
+                 <widget class="QLabel" name="label_16">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Arriba</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_14">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Espacio</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="0">
+                 <widget class="QLabel" name="label_18">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Abajo</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QLabel" name="label_15">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Derecha</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="0">
+                 <widget class="QLabel" name="label_17">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Izquierda</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="2">
+                 <widget class="QLineEdit" name="led_user_cfg_right">
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QLineEdit {
+    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;
+}</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="2">
+                 <widget class="QLineEdit" name="led_user_cfg_up">
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QLineEdit {
+    background-color: rgb(210, 177, 252);
+    border: 2px solid rgb(100, 170, 255);
+    border-radius: 12px;
+    padding-left: 10px;
+    color: black;
+    font: 12pt &quot;Cascadia Mono&quot;;
+}</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="3">
+                 <widget class="QCheckBox" name="chk_cfg_show_up">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QCheckBox" name="chk_cfg_show_right">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="3">
+                 <widget class="QCheckBox" name="chk_cfg_show_left">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="3">
+                 <widget class="QCheckBox" name="chk_cfg_show_down">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QLabel" name="label_23">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>■</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QLabel" name="label_29">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>●</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QLabel" name="label_30">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>→</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="1">
+                 <widget class="QLabel" name="label_31">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>↑</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="5" column="1">
+                 <widget class="QLabel" name="label_32">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>←</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="1">
+                 <widget class="QLabel" name="label_33">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 13pt &quot;Cascadia Mono ExtraLight&quot;;
+
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;
+
+</string>
+                  </property>
+                  <property name="text">
+                   <string>↓</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_press_duration">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_press_duration">
+                <item>
+                 <widget class="QLabel" name="label_press_duration_title">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 15pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Duración de pulsación (ms)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_press_duration_row">
+                  <item>
+                   <widget class="QSlider" name="hsld_press_duration">
+                    <property name="focusPolicy">
+                     <enum>Qt::ClickFocus</enum>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QSlider::groove:horizontal {
+    height: 6px;
+    background: #BDBDBD;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #2D89EF;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 2px solid #2D89EF;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: #F5F5F5;
+}
+
+QSlider::handle:horizontal:pressed {
+    background: #E0E0E0;
+}</string>
+                    </property>
+                    <property name="minimum">
+                     <number>100</number>
+                    </property>
+                    <property name="maximum">
+                     <number>10000</number>
+                    </property>
+                    <property name="singleStep">
+                     <number>100</number>
+                    </property>
+                    <property name="sliderPosition">
+                     <number>250</number>
+                    </property>
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="lbl_press_duration_value">
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                    </property>
+                    <property name="text">
+                     <string>250 ms</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_press_duration">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QWidget" name="head_widet" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>30</width>
+              <height>10</height>
+             </size>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_22">
+             <item>
+              <layout class="QVBoxLayout" name="head_channels_layout"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_38">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_17">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_17">
+          <item>
+           <widget class="QPushButton" name="btn_user_cfg_exit">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Salir</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_39">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_user_cfg_remove">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Eliminar</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_18">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_user_cfg_save">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Guardar</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_user_cfg_continue">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 25pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Continuar</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_game_setup">
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QLabel" name="label">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(255, 255, 255);
+font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+              </property>
+              <property name="text">
+               <string>Filtros</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_bandpass">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+              </property>
+              <property name="text">
+               <string>Pasa banda</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_notch">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+              </property>
+              <property name="text">
+               <string>Notch</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_average">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+              </property>
+              <property name="text">
+               <string>Media</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_21">
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_19">
+                <item>
+                 <widget class="QLabel" name="label_22">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Umbral de
+detección</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="threshold_indicator">
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgb(210, 177, 252);
+border: 2px solid rgb(100, 170, 255);
+border-radius: 12px;
+padding-left: 10px;
+color: black;
+font: 10pt &quot;Cascadia Mono&quot;;
+</string>
+                  </property>
+                  <property name="text">
+                   <string>TextLabel</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_20">
+                <item>
+                 <widget class="QSlider" name="hsld_threshold">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="focusPolicy">
+                   <enum>Qt::NoFocus</enum>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QSlider::groove:horizontal {
+    height: 6px;
+    background: #BDBDBD;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #2D89EF;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 2px solid #2D89EF;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;    /* centra el círculo sobre la barra */
+    border-radius: 9px; /* hace el handle circular */
+}
+
+QSlider::handle:horizontal:hover {
+    background: #F5F5F5;
+}
+
+QSlider::handle:horizontal:pressed {
+    background: #E0E0E0;
+}</string>
+                  </property>
+                  <property name="singleStep">
+                   <number>5</number>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_10">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_30">
+              <item>
+               <widget class="QLabel" name="label_25">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                </property>
+                <property name="text">
+                 <string>Enviar teclas</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="chk_enable_control">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QWidget" name="press_duration_widget" native="true">
+              <property name="visible">
+               <bool>false</bool>
+              </property>
+              <layout class="QHBoxLayout" name="press_duration_widget_layout">
+               <item>
+                <widget class="QLabel" name="label_press_duration_row2">
+                 <property name="styleSheet">
+                  <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                 </property>
+                 <property name="text">
+                  <string>Duración (ms)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSlider" name="hsld_press_duration_2">
+                 <property name="focusPolicy">
+                  <enum>Qt::ClickFocus</enum>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QSlider::groove:horizontal {
+    height: 6px;
+    background: #BDBDBD;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #2D89EF;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 2px solid #2D89EF;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;
+    border-radius: 9px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: #F5F5F5;
+}
+
+QSlider::handle:horizontal:pressed {
+    background: #E0E0E0;
+}</string>
+                 </property>
+                 <property name="minimum">
+                  <number>100</number>
+                 </property>
+                 <property name="maximum">
+                  <number>10000</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>100</number>
+                 </property>
+                 <property name="sliderPosition">
+                  <number>250</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="lbl_press_duration_value_2">
+                 <property name="styleSheet">
+                  <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 80);
+border-radius: 10px;
+padding: 5px;</string>
+                 </property>
+                 <property name="text">
+                  <string>250 ms</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_31">
+              <item>
+               <widget class="QLabel" name="label_26">
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                </property>
+                <property name="text">
+                 <string>Clasificar</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="chk_enable_classify">
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(255, 255, 255);
+font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+              </property>
+              <property name="text">
+               <string>Aplicaciones</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QListWidget" name="lw_games">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QListWidget {
+    font-family: &quot;Cascadia Mono Extralight&quot;;
+    font-size: 12pt;
+    color: white;
+}
+
+QListWidget {
+    background-color: rgba(0, 51, 102, 200);
+    color: white;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+/* Cuando pasás el mouse por TODO el cuadro */
+QListWidget:hover {
+    background-color: rgba(0, 51, 102, 160);
+}
+
+/* Ítems normales */
+QListWidget::item {
+    padding: 8px;
+    background-color: transparent;
+}
+
+/* Cuando pasás el mouse sobre un ítem */
+QListWidget::item:hover {
+    background-color: rgba(255, 255, 255, 40);
+}
+
+/* Ítem seleccionado */
+QListWidget::item:selected {
+    background-color: rgb(0, 120, 215);
+    color: white;
+    border: 2px solid rgb(120, 200, 255);
+    border-radius: 6px;
+    font-weight: bold;
+}
+/* Ítem seleccionado + hover (opcional, queda más fluido) */
+QListWidget::item:selected:hover {
+    background-color: rgb(0, 140, 255);
+}</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>Solo estímulos</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPlainTextEdit" name="pte_messages">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <item>
+               <widget class="QLabel" name="label_3">
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(255, 255, 255);
+font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                </property>
+                <property name="text">
+                 <string>EEG en tiempor real</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_13">
+                <item>
+                 <widget class="QLabel" name="label_9">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 8pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Velocidad</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="cb_eeg_speed">
+                  <item>
+                   <property name="text">
+                    <string>x1.0</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>x0.5</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>x2.0</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_12">
+                <item>
+                 <widget class="QLabel" name="label_8">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 8pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Escala</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="cb_eeg_scale">
+                  <item>
+                   <property name="text">
+                    <string>x100</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>x1</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>x10</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>x1000</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <item>
+                 <widget class="QLabel" name="label_7">
+                  <property name="styleSheet">
+                   <string notr="true">color: rgb(255, 255, 255);
+font: 8pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                  </property>
+                  <property name="text">
+                   <string>Amplitud</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="cb_eeg_amplitude">
+                  <item>
+                   <property name="text">
+                    <string>mV</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>uV</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>nV</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QWidget" name="eeg_container" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true"/>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_19">
+               <item>
+                <layout class="QVBoxLayout" name="eeg_container_layout">
+                 <property name="spacing">
+                  <number>7</number>
+                 </property>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="welch_settings_layout">
+              <item>
+               <spacer name="horizontalSpacer_23">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="chk_psd">
+                <property name="styleSheet">
+                 <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+    background-color: rgba(210, 177, 252, 180);
+    border: 1px solid rgba(255,255,255,40);
+    border-radius: 10px;
+
+    padding: 6px 10px;
+}
+
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}
+
+</string>
+                </property>
+                <property name="text">
+                 <string>Graficar PSD</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_15">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QWidget" name="welch_settings_widget" native="true">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_7">
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_32">
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_14">
+                     <item>
+                      <widget class="QLabel" name="label_4">
+                       <property name="styleSheet">
+                        <string notr="true">color: rgb(255, 255, 255);
+font: 8pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                       </property>
+                       <property name="text">
+                        <string>Canales</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QComboBox" name="cb_psd_channel"/>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_24">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_15">
+                     <item>
+                      <widget class="QLabel" name="label_19">
+                       <property name="styleSheet">
+                        <string notr="true">color: rgb(255, 255, 255);
+font: 8pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                       </property>
+                       <property name="text">
+                        <string>Visualización</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QComboBox" name="cb_psd_mode">
+                       <item>
+                        <property name="text">
+                         <string>Valor absoluto</string>
+                        </property>
+                       </item>
+                       <item>
+                        <property name="text">
+                         <string>Decibeles (dB)</string>
+                        </property>
+                       </item>
+                       <item>
+                        <property name="text">
+                         <string>Normalizada</string>
+                        </property>
+                       </item>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_25">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_18">
+                     <item>
+                      <widget class="QLabel" name="lbl_windows_welch">
+                       <property name="styleSheet">
+                        <string notr="true">background-color: rgb(210, 177, 252);
+border: 2px solid rgb(100, 170, 255);
+border-radius: 8px;
+padding-left: 10px;
+color: black;
+font: 10pt &quot;Cascadia Mono&quot;;
+</string>
+                       </property>
+                       <property name="text">
+                        <string>TextLabel</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QSlider" name="hsld_windows_welch">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="focusPolicy">
+                        <enum>Qt::NoFocus</enum>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">QSlider::groove:horizontal {
+    height: 6px;
+    background: #BDBDBD;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #2D89EF;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 2px solid #2D89EF;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;    /* centra el círculo sobre la barra */
+    border-radius: 9px; /* hace el handle circular */
+}
+
+QSlider::handle:horizontal:hover {
+    background: #F5F5F5;
+}
+
+QSlider::handle:horizontal:pressed {
+    background: #E0E0E0;
+}</string>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>4</number>
+                       </property>
+                       <property name="singleStep">
+                        <number>1</number>
+                       </property>
+                       <property name="pageStep">
+                        <number>1</number>
+                       </property>
+                       <property name="value">
+                        <number>1</number>
+                       </property>
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_20">
+                     <item>
+                      <widget class="QLabel" name="lbl_overlap_percentage">
+                       <property name="styleSheet">
+                        <string notr="true">background-color: rgb(210, 177, 252);
+border: 2px solid rgb(100, 170, 255);
+border-radius: 8px;
+padding-left: 10px;
+color: black;
+font: 10pt &quot;Cascadia Mono&quot;;
+</string>
+                       </property>
+                       <property name="text">
+                        <string>TextLabel</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QSlider" name="hsld_overlap">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="focusPolicy">
+                        <enum>Qt::NoFocus</enum>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">QSlider::groove:horizontal {
+    height: 6px;
+    background: #BDBDBD;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #2D89EF;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 2px solid #2D89EF;
+    width: 18px;
+    height: 18px;
+    margin: -7px 0;    /* centra el círculo sobre la barra */
+    border-radius: 9px; /* hace el handle circular */
+}
+
+QSlider::handle:horizontal:hover {
+    background: #F5F5F5;
+}
+
+QSlider::handle:horizontal:pressed {
+    background: #E0E0E0;
+}</string>
+                       </property>
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_16">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_14">
+              <item>
+               <spacer name="horizontalSpacer_22">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QWidget" name="psd_container" native="true">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>200</height>
+                 </size>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: white;</string>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_21">
+                 <item>
+                  <layout class="QHBoxLayout" name="psd_container_layout"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_21">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QPushButton" name="btn_exit_game_setup">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Salir</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_7">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_start_train">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Iniciar
+ calibración </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_8">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_start_game">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Iniciar
+juego</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_start_test">
+            <property name="styleSheet">
+             <string notr="true">QPushButton {
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0, 51, 102, 250);
+    background-color: rgba(0, 51, 102, 160); /* transparencia */
+    color: rgb(255,255,255);
+    border-radius: 10px;
+    font: 18pt &quot;Cascadia Mono ExtraLight&quot;;
+}
+
+QPushButton:hover {
+    background-color: rgba(0,70,140,180);
+}
+
+QPushButton:pressed {
+    background-color: rgba(0,35,70,200);
+    padding-left: 2px;
+    padding-top: 2px;
+}</string>
+            </property>
+            <property name="text">
+             <string>Prueba de
+ desempeño</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1212</width>
+     <height>26</height>
+    </rect>
+   </property>
+  </widget>
+ </widget>
+ <resources>
+  <include location="images/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
