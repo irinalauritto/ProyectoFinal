@@ -206,6 +206,12 @@ class BCIEvaluator(QObject):
             self.stop()
             return
 
+        # Sin clasificación válida (no superó el umbral o no hay muestras
+        # suficientes): no es un intento resuelto, se sigue esperando en la
+        # misma posición sin avanzar ni registrar acierto/fallo.
+        if classification < 0:
+            return
+
         target = self.__sequence[self.__sequence_index]
 
         # Guardamos el intento completo para la matriz de confusión
@@ -217,17 +223,19 @@ class BCIEvaluator(QObject):
             print(f"ACIERTO: {classification} == {target}")
             self.__hits.append(self.__sequence_index)
             self.index_hit.emit(classification)
-
-            self.__sequence_index += 1
-
-            if self.__sequence_index < len(self.__sequence):
-                self.index_sequence.emit(self.__sequence_index)
-            else:
-                self.stop()
         else:
-            # classification puede ser una clase incorrecta, NO_THRESHOLD o NO_ENOUGH_SAMPLES
+            # classification es una clase incorrecta (pero válida)
             self.__misses.append(self.__sequence_index)
             self.index_miss.emit(classification)
+
+        # Cada posición de la secuencia se resuelve con un único intento
+        # (acierte o falle) y siempre avanza a la siguiente.
+        self.__sequence_index += 1
+
+        if self.__sequence_index < len(self.__sequence):
+            self.index_sequence.emit(self.__sequence_index)
+        else:
+            self.stop()
 
     # ------------------------------------------------------------------
     # PROPIEDADES (GETTERS)

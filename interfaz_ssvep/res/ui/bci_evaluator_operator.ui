@@ -110,7 +110,7 @@
    <string>Form</string>
   </property>
   <property name="autoFillBackground">
-   <bool>true</bool>
+   <bool>false</bool>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(255, 255, 255);</string>
@@ -260,7 +260,7 @@ border-radius: 8px;
 padding: 5px;</string>
            </property>
            <property name="text">
-            <string>Aciertos</string>
+            <string>Aciertos: 0</string>
            </property>
           </widget>
          </item>
@@ -277,7 +277,7 @@ border-radius: 8px;
 padding: 5px;</string>
            </property>
            <property name="text">
-            <string>Errores</string>
+            <string>Errores: 0</string>
            </property>
           </widget>
          </item>

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1212</width>
-    <height>811</height>
+    <height>906</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,7 +27,7 @@ background-position: center;
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="page_main_menu">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -45,7 +45,7 @@ background-position: center;
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/images/logo_gir.png</pixmap>
+             <pixmap resource="../images/resources.qrc">:/images/logo_gir.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>false</bool>
@@ -179,7 +179,7 @@ QPushButton:pressed {
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>:/images/logo_ingenieria.svg</pixmap>
+             <pixmap resource="../images/resources.qrc">:/images/logo_ingenieria.svg</pixmap>
             </property>
             <property name="scaledContents">
              <bool>false</bool>
@@ -2118,19 +2118,6 @@ QSlider::handle:horizontal:pressed {
              </layout>
             </item>
             <item>
-             <spacer name="verticalSpacer_10">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_30">
               <item>
                <widget class="QLabel" name="label_25">
@@ -2190,6 +2177,80 @@ QCheckBox::indicator:checked {
                </widget>
               </item>
              </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_audio_feedback">
+              <item>
+               <widget class="QLabel" name="label_34">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">color: rgb(255, 255, 255);
+font: 10pt &quot;Cascadia Mono ExtraLight&quot;;
+font-weight: bold;
+
+background-color: rgba(210, 177, 252, 120);
+border-radius: 10px;
+padding: 5px;</string>
+                </property>
+                <property name="text">
+                 <string>Retroalimentación auditiva</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="chk_enable_audio_feedback">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCheckBox {
+    color: white;
+    font: bold 12pt &quot;Cascadia Mono Extralight&quot;;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px; /* círculo */
+    border: 2px solid rgb(100, 180, 255);
+    background-color: rgba(255,255,255,80);
+}
+
+QCheckBox::indicator:checked {
+    background-color: rgb(0, 170, 255);
+    border: 2px solid white;
+}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_10">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
             </item>
             <item>
              <widget class="QWidget" name="press_duration_widget" native="true">
@@ -2303,6 +2364,9 @@ padding: 5px;</string>
               </item>
               <item>
                <widget class="QCheckBox" name="chk_enable_classify">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
                 <property name="layoutDirection">
                  <enum>Qt::RightToLeft</enum>
                 </property>
@@ -2331,6 +2395,19 @@ QCheckBox::indicator:checked {
                </widget>
               </item>
              </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
             </item>
             <item>
              <widget class="QLabel" name="label_2">
@@ -2422,29 +2499,6 @@ QListWidget::item:selected:hover {
                 <string>Solo estímulos</string>
                </property>
               </item>
-             </widget>
-            </item>
-            <item>
-             <spacer name="verticalSpacer_8">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QPlainTextEdit" name="pte_messages">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
              </widget>
             </item>
            </layout>
@@ -3196,7 +3250,7 @@ QPushButton:pressed {
   </widget>
  </widget>
  <resources>
-  <include location="images/resources.qrc"/>
+  <include location="../images/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

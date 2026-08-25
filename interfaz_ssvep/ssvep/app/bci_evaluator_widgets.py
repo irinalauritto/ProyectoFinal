@@ -67,12 +67,12 @@ class BCIEvaluatorOperator(QWidget):
     def register_hit(self) -> None:
         """Incrementa el contador de aciertos y actualiza la interfaz."""
         self.__hits += 1
-        self.__ui.lbl_hits.setText(f"Acertadas: {self.__hits}")
+        self.__ui.lbl_hits.setText(f"Aciertos: {self.__hits}")
         
     def register_miss(self) -> None:
         """Incrementa el contador de fallos y actualiza la interfaz."""
         self.__misses += 1
-        self.__ui.lbl_miss.setText(f"Falladas: {self.__misses}")
+        self.__ui.lbl_miss.setText(f"Errores: {self.__misses}")
         
     def load_sequence_widget(self, widget: QWidget) -> None:
         """
@@ -316,8 +316,6 @@ class SequenceWidget(QWidget):
 
         self.__ui.detectedSequenceLayout.addWidget(label_img, row, col)
         self.__detected_count += 1
-        
-        QApplication.processEvents()
 
     def __clear_layout(self, layout) -> None:
         """

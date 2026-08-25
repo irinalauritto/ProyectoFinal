@@ -37,6 +37,7 @@ from ssvep.app.signal_filters import SignalFilters
 from ssvep.app.stimulus_viewer import StimulusViewer
 from ssvep.app.training_manager import TrainingManager
 from ssvep.app.user_ui import UserUI
+from ssvep.app.voice_feedback import VoiceFeedback
 
 # Usuarios de prueba respaldados por una grabación SSVEP real (en vez de
 # adquisición en vivo), keyed por nombre de usuario. Ruta relativa a data_dir.
@@ -104,9 +105,11 @@ class AppController(QObject):
         self.__training_in_progress = False
         self.__game_start_requested = False
         self.__enable_control = False
+        self.__audio_feedback_enabled = False
+        self.__voice_feedback = VoiceFeedback()
         self.__test_is_running = False
         self.__add_test_data = False
-        
+
         # EEG signals.
         self.__eeg_iface.streamStarted.connect(self.__on_stream_started)
         self.__eeg_iface.dataDecoded.connect(self.__processing_worker.on_data_decoded)
@@ -163,6 +166,7 @@ class AppController(QObject):
         self.__ui.overlap_request.connect(self.__psd_estimator.load_overlap)
         self.__ui.windows_welch_request.connect(self.__psd_estimator.load_time_windows)
         self.__ui.enable_control_request.connect(self.__on_enable_control_changed)
+        self.__ui.audio_feedback_request.connect(self.__on_audio_feedback_changed)
         self.__ui.enable_classify_request.connect(self.__processing_worker.set_enable_classify)
         self.__ui.press_duration_request.connect(self.__on_press_duration_changed)
 
@@ -1001,6 +1005,22 @@ class AppController(QObject):
         """
         self.__enable_control = val
 
+    def __on_audio_feedback_changed(self, val):
+        """
+        Actualiza la bandera interna que indica si el sistema debe anunciar
+        por voz el estímulo detectado en cada resultado de clasificación.
+
+        Parámetros
+        ----------
+        val : bool
+            True para habilitar la retroalimentación auditiva, False para deshabilitarla.
+
+        Retorna
+        -------
+        Ninguno
+        """
+        self.__audio_feedback_enabled = val
+
     def __on_press_duration_changed(self, value):
         """
         Actualiza la duración del pulso de tecla (envío único al detectar
@@ -1063,6 +1083,8 @@ class AppController(QObject):
         """
         if result < -1:
             return
+        if self.__audio_feedback_enabled:
+            self.__voice_feedback.announce(result)
         if self.__add_test_data:
             self.__bci_evaluator.add_classification(result)
         if self.__enable_control:

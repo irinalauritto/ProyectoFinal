@@ -91,6 +91,7 @@ class UserUI(QMainWindow):
     enable_control_request = Signal(bool)
     enable_classify_request = Signal(bool)
     press_duration_request = Signal(int)
+    audio_feedback_request = Signal(bool)
 
     def __init__(self) -> None:
         """Inicializa la ventana principal, carga la interfaz .ui y conecta las señales."""
@@ -128,6 +129,11 @@ class UserUI(QMainWindow):
 
         # --- Conexión de señales y slots ---
         self._connect_signals()
+
+        # Sincroniza el indicador de umbral con el valor real del slider
+        # desde el arranque, para que nunca quede con el texto de relleno
+        # de Qt Designer ("TextLabel").
+        self.__on_threshold_changed()
 
     def _init_widget_lists(self) -> None:
         """Inicializa las listas de referencia a widgets de la interfaz."""
@@ -215,6 +221,9 @@ class UserUI(QMainWindow):
         
         self.__ui.chk_enable_control.clicked.connect(self.__on_enable_control_changed)
         self.__ui.chk_enable_control.setChecked(False)
+
+        self.__ui.chk_enable_audio_feedback.clicked.connect(self.__on_audio_feedback_changed)
+        self.__ui.chk_enable_audio_feedback.setChecked(False)
 
         self.__ui.chk_enable_classify.clicked.connect(self.__on_enable_classify_changed)
         self.__ui.chk_enable_classify.setChecked(False)
@@ -551,6 +560,11 @@ class UserUI(QMainWindow):
         checked = self.__ui.chk_enable_control.isChecked()
         self.__ui.press_duration_widget.setVisible(checked)
         self.enable_control_request.emit(checked)
+
+    def __on_audio_feedback_changed(self) -> None:
+        """Emite el estado de activación de la retroalimentación auditiva."""
+        checked = self.__ui.chk_enable_audio_feedback.isChecked()
+        self.audio_feedback_request.emit(checked)
 
     def __on_press_duration_changed(self, value: int) -> None:
         """

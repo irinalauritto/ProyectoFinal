@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'ssvep.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.11.1
+## Created by: Qt User Interface Compiler version 6.10.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -18,17 +18,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QGridLayout, QHBoxLayout, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QMainWindow, QMenuBar,
-    QPlainTextEdit, QPushButton, QSizePolicy, QSlider,
-    QSpacerItem, QStackedWidget, QStatusBar, QTextBrowser,
-    QVBoxLayout, QWidget)
+    QPushButton, QSizePolicy, QSlider, QSpacerItem,
+    QStackedWidget, QStatusBar, QTextBrowser, QVBoxLayout,
+    QWidget)
 from res.images import resources_rc
-
 
 class Ui_SSVEP(object):
     def setupUi(self, SSVEP):
         if not SSVEP.objectName():
             SSVEP.setObjectName(u"SSVEP")
-        SSVEP.resize(1212, 811)
+        SSVEP.resize(1212, 906)
         SSVEP.setStyleSheet(u"")
         self.centralwidget = QWidget(SSVEP)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -1523,10 +1522,6 @@ class Ui_SSVEP(object):
 
         self.verticalLayout_5.addLayout(self.verticalLayout_21)
 
-        self.verticalSpacer_10 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.verticalLayout_5.addItem(self.verticalSpacer_10)
-
         self.horizontalLayout_30 = QHBoxLayout()
         self.horizontalLayout_30.setObjectName(u"horizontalLayout_30")
         self.label_25 = QLabel(self.page_game_setup)
@@ -1570,6 +1565,54 @@ class Ui_SSVEP(object):
 
 
         self.verticalLayout_5.addLayout(self.horizontalLayout_30)
+
+        self.horizontalLayout_audio_feedback = QHBoxLayout()
+        self.horizontalLayout_audio_feedback.setObjectName(u"horizontalLayout_audio_feedback")
+        self.label_34 = QLabel(self.page_game_setup)
+        self.label_34.setObjectName(u"label_34")
+        sizePolicy1.setHeightForWidth(self.label_34.sizePolicy().hasHeightForWidth())
+        self.label_34.setSizePolicy(sizePolicy1)
+        self.label_34.setStyleSheet(u"color: rgb(255, 255, 255);\n"
+"font: 10pt \"Cascadia Mono ExtraLight\";\n"
+"font-weight: bold;\n"
+"\n"
+"background-color: rgba(210, 177, 252, 120);\n"
+"border-radius: 10px;\n"
+"padding: 5px;")
+
+        self.horizontalLayout_audio_feedback.addWidget(self.label_34)
+
+        self.chk_enable_audio_feedback = QCheckBox(self.page_game_setup)
+        self.chk_enable_audio_feedback.setObjectName(u"chk_enable_audio_feedback")
+        sizePolicy2.setHeightForWidth(self.chk_enable_audio_feedback.sizePolicy().hasHeightForWidth())
+        self.chk_enable_audio_feedback.setSizePolicy(sizePolicy2)
+        self.chk_enable_audio_feedback.setLayoutDirection(Qt.RightToLeft)
+        self.chk_enable_audio_feedback.setStyleSheet(u"QCheckBox {\n"
+"    color: white;\n"
+"    font: bold 12pt \"Cascadia Mono Extralight\";\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    width: 18px;\n"
+"    height: 18px;\n"
+"    border-radius: 9px; /* c\u00edrculo */\n"
+"    border: 2px solid rgb(100, 180, 255);\n"
+"    background-color: rgba(255,255,255,80);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background-color: rgb(0, 170, 255);\n"
+"    border: 2px solid white;\n"
+"}")
+
+        self.horizontalLayout_audio_feedback.addWidget(self.chk_enable_audio_feedback)
+
+
+        self.verticalLayout_5.addLayout(self.horizontalLayout_audio_feedback)
+
+        self.verticalSpacer_10 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_5.addItem(self.verticalSpacer_10)
 
         self.press_duration_widget = QWidget(self.page_game_setup)
         self.press_duration_widget.setObjectName(u"press_duration_widget")
@@ -1657,6 +1700,7 @@ class Ui_SSVEP(object):
 
         self.chk_enable_classify = QCheckBox(self.page_game_setup)
         self.chk_enable_classify.setObjectName(u"chk_enable_classify")
+        self.chk_enable_classify.setEnabled(True)
         self.chk_enable_classify.setLayoutDirection(Qt.RightToLeft)
         self.chk_enable_classify.setStyleSheet(u"QCheckBox {\n"
 "    color: white;\n"
@@ -1680,6 +1724,10 @@ class Ui_SSVEP(object):
 
 
         self.verticalLayout_5.addLayout(self.horizontalLayout_31)
+
+        self.verticalSpacer_8 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_5.addItem(self.verticalSpacer_8)
 
         self.label_2 = QLabel(self.page_game_setup)
         self.label_2.setObjectName(u"label_2")
@@ -1749,20 +1797,6 @@ class Ui_SSVEP(object):
 "}")
 
         self.verticalLayout_5.addWidget(self.lw_games)
-
-        self.verticalSpacer_8 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.verticalLayout_5.addItem(self.verticalSpacer_8)
-
-        self.pte_messages = QPlainTextEdit(self.page_game_setup)
-        self.pte_messages.setObjectName(u"pte_messages")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.pte_messages.sizePolicy().hasHeightForWidth())
-        self.pte_messages.setSizePolicy(sizePolicy4)
-
-        self.verticalLayout_5.addWidget(self.pte_messages)
 
 
         self.horizontalLayout_6.addLayout(self.verticalLayout_5)
@@ -1865,11 +1899,11 @@ class Ui_SSVEP(object):
 
         self.eeg_container = QWidget(self.page_game_setup)
         self.eeg_container.setObjectName(u"eeg_container")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        sizePolicy5.setHorizontalStretch(0)
-        sizePolicy5.setVerticalStretch(0)
-        sizePolicy5.setHeightForWidth(self.eeg_container.sizePolicy().hasHeightForWidth())
-        self.eeg_container.setSizePolicy(sizePolicy5)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.eeg_container.sizePolicy().hasHeightForWidth())
+        self.eeg_container.setSizePolicy(sizePolicy4)
         self.eeg_container.setStyleSheet(u"")
         self.verticalLayout_19 = QVBoxLayout(self.eeg_container)
         self.verticalLayout_19.setObjectName(u"verticalLayout_19")
@@ -2001,11 +2035,11 @@ class Ui_SSVEP(object):
 
         self.hsld_windows_welch = QSlider(self.welch_settings_widget)
         self.hsld_windows_welch.setObjectName(u"hsld_windows_welch")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        sizePolicy6.setHorizontalStretch(0)
-        sizePolicy6.setVerticalStretch(0)
-        sizePolicy6.setHeightForWidth(self.hsld_windows_welch.sizePolicy().hasHeightForWidth())
-        self.hsld_windows_welch.setSizePolicy(sizePolicy6)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.hsld_windows_welch.sizePolicy().hasHeightForWidth())
+        self.hsld_windows_welch.setSizePolicy(sizePolicy5)
         self.hsld_windows_welch.setFocusPolicy(Qt.NoFocus)
         self.hsld_windows_welch.setStyleSheet(u"QSlider::groove:horizontal {\n"
 "    height: 6px;\n"
@@ -2062,11 +2096,11 @@ class Ui_SSVEP(object):
 
         self.hsld_overlap = QSlider(self.welch_settings_widget)
         self.hsld_overlap.setObjectName(u"hsld_overlap")
-        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy7.setHorizontalStretch(0)
-        sizePolicy7.setVerticalStretch(0)
-        sizePolicy7.setHeightForWidth(self.hsld_overlap.sizePolicy().hasHeightForWidth())
-        self.hsld_overlap.setSizePolicy(sizePolicy7)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy6.setHorizontalStretch(0)
+        sizePolicy6.setVerticalStretch(0)
+        sizePolicy6.setHeightForWidth(self.hsld_overlap.sizePolicy().hasHeightForWidth())
+        self.hsld_overlap.setSizePolicy(sizePolicy6)
         self.hsld_overlap.setFocusPolicy(Qt.NoFocus)
         self.hsld_overlap.setStyleSheet(u"QSlider::groove:horizontal {\n"
 "    height: 6px;\n"
@@ -2123,8 +2157,8 @@ class Ui_SSVEP(object):
 
         self.psd_container = QWidget(self.page_game_setup)
         self.psd_container.setObjectName(u"psd_container")
-        sizePolicy5.setHeightForWidth(self.psd_container.sizePolicy().hasHeightForWidth())
-        self.psd_container.setSizePolicy(sizePolicy5)
+        sizePolicy4.setHeightForWidth(self.psd_container.sizePolicy().hasHeightForWidth())
+        self.psd_container.setSizePolicy(sizePolicy4)
         self.psd_container.setMaximumSize(QSize(16777215, 200))
         self.psd_container.setStyleSheet(u"background-color: white;")
         self.horizontalLayout_21 = QHBoxLayout(self.psd_container)
@@ -2278,7 +2312,7 @@ class Ui_SSVEP(object):
 
         self.retranslateUi(SSVEP)
 
-        self.stackedWidget.setCurrentIndex(3)
+        self.stackedWidget.setCurrentIndex(4)
 
 
         QMetaObject.connectSlotsByName(SSVEP)
@@ -2350,6 +2384,8 @@ class Ui_SSVEP(object):
         self.threshold_indicator.setText(QCoreApplication.translate("SSVEP", u"TextLabel", None))
         self.label_25.setText(QCoreApplication.translate("SSVEP", u"Enviar teclas", None))
         self.chk_enable_control.setText("")
+        self.label_34.setText(QCoreApplication.translate("SSVEP", u"Retroalimentaci\u00f3n auditiva", None))
+        self.chk_enable_audio_feedback.setText("")
         self.label_press_duration_row2.setText(QCoreApplication.translate("SSVEP", u"Duraci\u00f3n (ms)", None))
         self.lbl_press_duration_value_2.setText(QCoreApplication.translate("SSVEP", u"250 ms", None))
         self.label_26.setText(QCoreApplication.translate("SSVEP", u"Clasificar", None))
@@ -2359,7 +2395,7 @@ class Ui_SSVEP(object):
         __sortingEnabled = self.lw_games.isSortingEnabled()
         self.lw_games.setSortingEnabled(False)
         ___qlistwidgetitem = self.lw_games.item(0)
-        ___qlistwidgetitem.setText(QCoreApplication.translate("SSVEP", u"Solo est\u00edmulos", None))
+        ___qlistwidgetitem.setText(QCoreApplication.translate("SSVEP", u"Solo est\u00edmulos", None));
         self.lw_games.setSortingEnabled(__sortingEnabled)
 
         self.label_3.setText(QCoreApplication.translate("SSVEP", u"EEG en tiempor real", None))

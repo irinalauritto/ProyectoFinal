@@ -39,7 +39,7 @@ class Ui_BCIEvaluatorOperator(object):
         font = QFont()
         font.setFamilies([u"SansSerif"])
         BCIEvaluatorOperator.setFont(font)
-        BCIEvaluatorOperator.setAutoFillBackground(True)
+        BCIEvaluatorOperator.setAutoFillBackground(False)
         BCIEvaluatorOperator.setStyleSheet(u"background-color: rgb(255, 255, 255);")
         self.verticalLayout_2 = QVBoxLayout(BCIEvaluatorOperator)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
@@ -198,7 +198,7 @@ class Ui_BCIEvaluatorOperator(object):
         self.btn_start.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Iniciar", None))
         self.btn_stop.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Detener", None))
         self.lbl_time.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Tiempo:", None))
-        self.lbl_hits.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Aciertos", None))
-        self.lbl_miss.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Errores", None))
+        self.lbl_hits.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Aciertos: 0", None))
+        self.lbl_miss.setText(QCoreApplication.translate("BCIEvaluatorOperator", u"Errores: 0", None))
     # retranslateUi
 
