@@ -1,0 +1,2375 @@
+{
+  "paciente": "iri",
+  "inicio_sesion": "2026-09-06T20:46:07",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-09-06T20:49:53",
+      "media_reposo": 12.01,
+      "sd_reposo": 12.57,
+      "k": 3.0,
+      "umbral": 49.71,
+      "n_muestras": 15000
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:49:54",
+      "valor": 49.80294199806531,
+      "umbral": 49.71
+    },
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-09-06T20:50:29",
+      "media_reposo": 7.55,
+      "sd_reposo": 2.72,
+      "k": 3.0,
+      "umbral": 15.71,
+      "n_muestras": 14999
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:50:30",
+      "valor": 15.728929202171217,
+      "umbral": 15.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:50:31",
+      "valor": 15.747068821675962,
+      "umbral": 15.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:50:33",
+      "valor": 16.107473249249203,
+      "umbral": 15.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:50:34",
+      "valor": 15.834417167901977,
+      "umbral": 15.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:50:35",
+      "valor": 16.0520625620431,
+      "umbral": 15.71
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:50:36",
+      "valor": 16.231410696255125,
+      "umbral": 15.71
+    },
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-09-06T20:51:08",
+      "media_reposo": 12.5,
+      "sd_reposo": 23.45,
+      "k": 3.0,
+      "umbral": 82.86,
+      "n_muestras": 15001
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:21",
+      "parametro": "k",
+      "valor": 2.9,
+      "sensibilidad_mostrada": 1.1,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:22",
+      "parametro": "k",
+      "valor": 2.8,
+      "sensibilidad_mostrada": 1.2,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:25",
+      "parametro": "k",
+      "valor": 2.7,
+      "sensibilidad_mostrada": 1.3,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:25",
+      "parametro": "k",
+      "valor": 2.6,
+      "sensibilidad_mostrada": 1.4,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:25",
+      "parametro": "k",
+      "valor": 2.5,
+      "sensibilidad_mostrada": 1.5,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:25",
+      "parametro": "k",
+      "valor": 2.4,
+      "sensibilidad_mostrada": 1.6,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:26",
+      "parametro": "k",
+      "valor": 2.3,
+      "sensibilidad_mostrada": 1.7,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:26",
+      "parametro": "k",
+      "valor": 2.2,
+      "sensibilidad_mostrada": 1.8,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:26",
+      "parametro": "k",
+      "valor": 2.1,
+      "sensibilidad_mostrada": 1.9,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:26",
+      "parametro": "k",
+      "valor": 2.0,
+      "sensibilidad_mostrada": 2.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:26",
+      "parametro": "k",
+      "valor": 1.9,
+      "sensibilidad_mostrada": 2.1,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:27",
+      "parametro": "k",
+      "valor": 1.7999999999999998,
+      "sensibilidad_mostrada": 2.2,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:27",
+      "parametro": "k",
+      "valor": 1.7000000000000002,
+      "sensibilidad_mostrada": 2.3,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:28",
+      "parametro": "k",
+      "valor": 1.6,
+      "sensibilidad_mostrada": 2.4,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:29",
+      "parametro": "k",
+      "valor": 1.5,
+      "sensibilidad_mostrada": 2.5,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:29",
+      "parametro": "k",
+      "valor": 1.4,
+      "sensibilidad_mostrada": 2.6,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:29",
+      "parametro": "k",
+      "valor": 1.2999999999999998,
+      "sensibilidad_mostrada": 2.7,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:32",
+      "parametro": "k",
+      "valor": 1.2000000000000002,
+      "sensibilidad_mostrada": 2.8,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:32",
+      "parametro": "k",
+      "valor": 1.1,
+      "sensibilidad_mostrada": 2.9,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:33",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:35",
+      "valor": 35.99076463971724,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:35",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:36",
+      "valor": 36.43719897377303,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:36",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:38",
+      "valor": 36.69736169840232,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:38",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:44",
+      "valor": 36.65688391827743,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:44",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:45",
+      "valor": 37.386941239641146,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:45",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:49",
+      "valor": 36.73769133690908,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:49",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:50",
+      "valor": 37.035870012820055,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:50",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:51",
+      "valor": 36.50183961468047,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:51",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:53",
+      "valor": 36.26666272725389,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:53",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:55",
+      "valor": 36.41583018644096,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:55",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:56",
+      "valor": 36.40831715722205,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:56",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:57",
+      "valor": 36.434901559014335,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:57",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:51:58",
+      "valor": 36.018379391765826,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:51:58",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:01",
+      "valor": 36.586735121596035,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:01",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:02",
+      "valor": 36.294181002277604,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:02",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:03",
+      "valor": 37.14990043785437,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:03",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:04",
+      "valor": 36.74311216569418,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:04",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:04",
+      "valor": 36.46397823155352,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:04",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:07",
+      "valor": 35.959018647851636,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:07",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:09",
+      "valor": 36.117188288031905,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:09",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:10",
+      "valor": 36.05249868041401,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:10",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:12",
+      "valor": 36.15148130387148,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:12",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:12",
+      "valor": 36.447414027953045,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:12",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:13",
+      "valor": 36.08467637548468,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:13",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:14",
+      "valor": 36.0521609533124,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:15",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:15",
+      "valor": 36.603192283188314,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:15",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:16",
+      "valor": 36.523200704729284,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:16",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:17",
+      "valor": 36.55680190654874,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:17",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:18",
+      "valor": 36.136689003828785,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:18",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:20",
+      "valor": 36.53862880914713,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:20",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:21",
+      "valor": 36.452636204332066,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:21",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:21",
+      "valor": 36.419998123516955,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:21",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:24",
+      "valor": 35.9747703549783,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:24",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:26",
+      "valor": 36.029397692319975,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:26",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:26",
+      "valor": 36.1638777681624,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:26",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:28",
+      "valor": 36.13249914440131,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:28",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:31",
+      "valor": 36.65877671405177,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:31",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:34",
+      "valor": 36.40210094079236,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:34",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:35",
+      "valor": 36.26735685675177,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:35",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:37",
+      "valor": 36.3025662974316,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:37",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:37",
+      "valor": 36.165504215758936,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:37",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:39",
+      "valor": 37.95168659950542,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:39",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:40",
+      "valor": 36.66940452787529,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:40",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:41",
+      "valor": 36.13863735443007,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:41",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:42",
+      "valor": 37.00166577702086,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:42",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:42",
+      "valor": 36.16728220706699,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:43",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:45",
+      "valor": 37.55302986204298,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:45",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:46",
+      "valor": 36.47421964354392,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:46",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:46",
+      "valor": 36.15931691222704,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:46",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:47",
+      "valor": 36.60235913815897,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:47",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:48",
+      "valor": 37.86990698909457,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:48",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:49",
+      "valor": 36.91753028174504,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:49",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:50",
+      "valor": 36.2063991596608,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:50",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:53",
+      "valor": 36.40860852212048,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:53",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:55",
+      "valor": 37.56449661865575,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:55",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:52:58",
+      "valor": 37.32402283907102,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:52:58",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:00",
+      "valor": 36.98117450637457,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:00",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:02",
+      "valor": 36.93296378982493,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:02",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:03",
+      "valor": 35.98980411957912,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:03",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:05",
+      "valor": 37.03162957514538,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:05",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:05",
+      "valor": 36.16663032069694,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:05",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:08",
+      "valor": 36.31154449290305,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:08",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:12",
+      "valor": 37.12158166024531,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:12",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:13",
+      "valor": 36.60754635483247,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:13",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:14",
+      "valor": 36.29389154518597,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:14",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:15",
+      "valor": 36.20715381598643,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:15",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:15",
+      "valor": 36.41662698624082,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:15",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:16",
+      "valor": 36.4476031103435,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:16",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:19",
+      "valor": 37.31169714191207,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:19",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:21",
+      "valor": 36.28215919613224,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:21",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:23",
+      "valor": 37.909452832570295,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:23",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:27",
+      "valor": 36.07511322325865,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:27",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:28",
+      "valor": 36.9528893146223,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:28",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:29",
+      "valor": 36.898712499850475,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:29",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:30",
+      "valor": 36.72916701738363,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:30",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:37",
+      "valor": 35.995677795801065,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:38",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:41",
+      "valor": 37.13890891536741,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:41",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:46",
+      "valor": 36.10272590313337,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:46",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:48",
+      "valor": 36.01231595330008,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:48",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:48",
+      "valor": 37.250341184306905,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:48",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:50",
+      "valor": 36.14389207977456,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:50",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:51",
+      "valor": 36.5582845843164,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:52",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:52",
+      "valor": 36.08534348929331,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:53",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:54",
+      "valor": 36.45024937036054,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:54",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:56",
+      "valor": 36.98359784290277,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:56",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:53:58",
+      "valor": 36.48709720117066,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:53:58",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:02",
+      "valor": 35.98276100899245,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:02",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:05",
+      "valor": 36.03541423454329,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:06",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:09",
+      "valor": 36.04683877929884,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:09",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:14",
+      "valor": 36.356316369337264,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:14",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:15",
+      "valor": 36.199808264581755,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:15",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:16",
+      "valor": 36.2669052585334,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:16",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:18",
+      "valor": 35.98692799718607,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:18",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:22",
+      "valor": 36.63332434283102,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:22",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:28",
+      "valor": 36.04013800627385,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:28",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:30",
+      "valor": 36.040499383214005,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:30",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:35",
+      "valor": 36.12491329385797,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:35",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:36",
+      "valor": 36.028488461697634,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:36",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:38",
+      "valor": 36.008490925765784,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:38",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:39",
+      "valor": 36.15475919001384,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:39",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:40",
+      "valor": 36.51671152625961,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:40",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:45",
+      "valor": 36.04520113052204,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:45",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:47",
+      "valor": 36.05336800912272,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:47",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:53",
+      "valor": 36.813172746614704,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:53",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:54:57",
+      "valor": 36.06312805370803,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:54:57",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:01",
+      "valor": 36.20736421758737,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:01",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:03",
+      "valor": 36.16738189752659,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:03",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:05",
+      "valor": 36.25742569093327,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:05",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:08",
+      "valor": 36.018507554583394,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:08",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:09",
+      "valor": 36.199380916362394,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:09",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:16",
+      "valor": 36.11718559278381,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:16",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:17",
+      "valor": 37.454532064496014,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:17",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:17",
+      "valor": 36.95740004655673,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:17",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:19",
+      "valor": 36.66706418641444,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:19",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:21",
+      "valor": 36.22851938353608,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:21",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:22",
+      "valor": 37.040015036397506,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-06T20:55:22",
+      "parametro": "k",
+      "valor": 1.0,
+      "sensibilidad_mostrada": 3.0,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:24",
+      "valor": 36.68087474399828,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:26",
+      "valor": 36.06860090648342,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:39",
+      "valor": 36.38057451769795,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:41",
+      "valor": 36.92022890967239,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:49",
+      "valor": 36.21686039972103,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:50",
+      "valor": 36.32807754056505,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:55:51",
+      "valor": 36.46494993341013,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:01",
+      "valor": 35.99784347019357,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:03",
+      "valor": 36.45697526402074,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:06",
+      "valor": 38.03724449517264,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:09",
+      "valor": 36.34341913834488,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:28",
+      "valor": 36.158039808965526,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:29",
+      "valor": 36.044736035040366,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:29",
+      "valor": 37.181514538854614,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:31",
+      "valor": 36.045681781727154,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:33",
+      "valor": 36.039999831201655,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:39",
+      "valor": 36.30530412812764,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:40",
+      "valor": 36.08400192898804,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:43",
+      "valor": 36.17498615565737,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:43",
+      "valor": 36.262132472533644,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:48",
+      "valor": 36.026218733798544,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:54",
+      "valor": 36.01941869526619,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:56:57",
+      "valor": 36.35366513667405,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:14",
+      "valor": 36.09782643507478,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:25",
+      "valor": 36.27644078891268,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:35",
+      "valor": 36.04747886272318,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:37",
+      "valor": 36.86029794052885,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:38",
+      "valor": 37.799291525483625,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:51",
+      "valor": 36.7803677893715,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:51",
+      "valor": 35.95837026541494,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:53",
+      "valor": 36.29358461913466,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:54",
+      "valor": 35.980344749676235,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:57",
+      "valor": 36.41679153902835,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:57:59",
+      "valor": 36.62799031138355,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:05",
+      "valor": 36.61702677182499,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:06",
+      "valor": 36.85648568766788,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:06",
+      "valor": 36.753569322703065,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:07",
+      "valor": 36.52039469502257,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:12",
+      "valor": 36.3751103845578,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:13",
+      "valor": 35.993323164773685,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:16",
+      "valor": 36.671212251847145,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:20",
+      "valor": 36.880700306681206,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:21",
+      "valor": 36.045005626386384,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:22",
+      "valor": 37.259139439115565,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:24",
+      "valor": 37.42646855643854,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:24",
+      "valor": 37.97191131567402,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:27",
+      "valor": 36.219897359924985,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:32",
+      "valor": 36.16380360976256,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:58:35",
+      "valor": 36.65260333381683,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:04",
+      "valor": 35.98901525709899,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:06",
+      "valor": 37.57089073091301,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:08",
+      "valor": 36.125132225787326,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:13",
+      "valor": 35.98099964089713,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:14",
+      "valor": 36.13068110025758,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:14",
+      "valor": 36.22335424130925,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:18",
+      "valor": 36.157978476081894,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:43",
+      "valor": 36.287653330816426,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:46",
+      "valor": 36.44208983417584,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:50",
+      "valor": 35.955530621821886,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T20:59:55",
+      "valor": 36.11511066919256,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:00:17",
+      "valor": 35.98125844983448,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:00:33",
+      "valor": 36.007584388289665,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:00:33",
+      "valor": 37.06588910115906,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:00:34",
+      "valor": 36.19586450122735,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:00:57",
+      "valor": 36.13787973502699,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:09",
+      "valor": 36.757931025461154,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:10",
+      "valor": 37.201827356609854,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:18",
+      "valor": 36.09717098853783,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:21",
+      "valor": 36.022891465881564,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:27",
+      "valor": 36.41545781589957,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:28",
+      "valor": 36.468721195537505,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:30",
+      "valor": 36.40286565575438,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:31",
+      "valor": 36.0482228835959,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:33",
+      "valor": 36.153002636776776,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:34",
+      "valor": 36.00372462710106,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:36",
+      "valor": 36.53691308562973,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:37",
+      "valor": 36.27319773473931,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:38",
+      "valor": 36.44913663485745,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:39",
+      "valor": 35.96955268374117,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:41",
+      "valor": 36.451709444415094,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:43",
+      "valor": 35.99835380754484,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:47",
+      "valor": 37.02766960214005,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:50",
+      "valor": 36.45371042621251,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:58",
+      "valor": 36.761406620790105,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:58",
+      "valor": 36.02402691526431,
+      "umbral": 35.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-06T21:01:59",
+      "valor": 36.58778879682679,
+      "umbral": 35.95
+    }
+  ]
+}

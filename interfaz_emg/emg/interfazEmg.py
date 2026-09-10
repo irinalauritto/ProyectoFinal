@@ -761,13 +761,20 @@ class VentanaEmg(QWidget):
         self._ocultar_aviso_repetir_prueba()
 
     # ------------------------------------------------------------------
-    def closeEvent(self, event):
+    def liberar_recursos(self):
+        # Separado de closeEvent para que un contenedor externo (p. ej. una
+        # interfaz que embebe este widget en vez de mostrarlo como ventana
+        # top-level) pueda liberar el timer, la tecla y el puerto serie sin
+        # depender de que Qt dispare closeEvent.
         self.timer.stop()
         if self.tecla_activa is not None:
             self.teclado.release(self.tecla_activa)
             self.tecla_activa = None
         if self.ser.is_open:
             self.ser.close()
+
+    def closeEvent(self, event):
+        self.liberar_recursos()
         super().closeEvent(event)
 
 
