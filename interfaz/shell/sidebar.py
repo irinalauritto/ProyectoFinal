@@ -6,12 +6,13 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLay
 NAV_ITEMS = [
     ("inicio", "Inicio"),
     ("emg", "EMG"),
-    ("eeg", "EEG / SSVEP"),
+    ("eeg", "EEG"),
 ]
 
 
 class Sidebar(QWidget):
     navigate_requested = Signal(str)
+    collapse_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -24,7 +25,7 @@ class Sidebar(QWidget):
         layout.setSpacing(0)
 
         header = QHBoxLayout()
-        header.setContentsMargins(20, 22, 20, 18)
+        header.setContentsMargins(20, 22, 12, 18)
         header.setSpacing(10)
         logo = QLabel()
         logo.setObjectName("SidebarLogo")
@@ -34,6 +35,13 @@ class Sidebar(QWidget):
         title.setObjectName("SidebarTitle")
         header.addWidget(title)
         header.addStretch(1)
+        btn_collapse = QPushButton("‹")
+        btn_collapse.setObjectName("SidebarCollapseButton")
+        btn_collapse.setFixedSize(24, 24)
+        btn_collapse.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_collapse.setToolTip("Ocultar barra lateral")
+        btn_collapse.clicked.connect(self.collapse_requested.emit)
+        header.addWidget(btn_collapse)
         layout.addLayout(header)
 
         nav_layout = QVBoxLayout()

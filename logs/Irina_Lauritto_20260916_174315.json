@@ -1,0 +1,99 @@
+{
+  "paciente": "Irina Lauritto",
+  "inicio_sesion": "2026-09-16T17:43:15",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-09-16T17:43:52",
+      "media_reposo": 273.43,
+      "sd_reposo": 121.84,
+      "k": 3.0,
+      "umbral": 638.95,
+      "n_muestras": 15009
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:43:57",
+      "valor": 641.8787485230171,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:43:57",
+      "valor": 643.1392271171829,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:43:58",
+      "valor": 647.235311100847,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:43:59",
+      "valor": 646.1838454042276,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:44:01",
+      "valor": 642.3056506713297,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:44:03",
+      "valor": 653.315530596114,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:44:04",
+      "valor": 644.0955149511739,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:44:05",
+      "valor": 642.1928381974118,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:44:05",
+      "valor": 642.718370920886,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-16T17:44:07",
+      "valor": 656.4351458760555,
+      "umbral": 638.95
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-16T17:44:38",
+      "parametro": "k",
+      "valor": 2.9,
+      "sensibilidad_mostrada": 1.1,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-16T17:44:38",
+      "parametro": "k",
+      "valor": 2.8,
+      "sensibilidad_mostrada": 1.2000000000000002,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-09-16T17:44:38",
+      "parametro": "k",
+      "valor": 2.6999999999999997,
+      "sensibilidad_mostrada": 1.3000000000000003,
+      "modificado_por": "terapeuta"
+    }
+  ]
+}

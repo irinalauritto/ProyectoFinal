@@ -1,0 +1,93 @@
+{
+  "paciente": "Irina Lauritto",
+  "inicio_sesion": "2026-09-28T17:01:16",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-09-28T17:02:00",
+      "media_reposo": 3.42,
+      "sd_reposo": 0.3,
+      "k": 3.0,
+      "umbral": 4.33,
+      "n_muestras": 14999
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:03",
+      "valor": 4.33706168349925,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:04",
+      "valor": 4.3396919054113985,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:14",
+      "valor": 4.384503383768204,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-09-28T17:02:16",
+      "intento": 1,
+      "eventos": 0
+    },
+    {
+      "tipo": "intento_validacion",
+      "timestamp": "2026-09-28T17:02:18",
+      "intento": 2,
+      "eventos": 0
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:26",
+      "valor": 4.395917079105742,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:27",
+      "valor": 4.343742496022332,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:28",
+      "valor": 4.352348215689792,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:30",
+      "valor": 4.334789976574004,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:31",
+      "valor": 4.3444535954148495,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:33",
+      "valor": 4.387539465041234,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:34",
+      "valor": 4.398563830929948,
+      "umbral": 4.33
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:02:36",
+      "valor": 4.354201137806521,
+      "umbral": 4.33
+    }
+  ]
+}

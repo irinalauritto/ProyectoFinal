@@ -27,6 +27,21 @@ def load_patients() -> list[dict]:
 def save_patient(nombre: str, apellido: str, observaciones: str) -> dict:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     patients = load_patients()
+
+    # Si ya existe un paciente con el mismo nombre/apellido (sin importar
+    # mayusculas), se actualiza esa entrada en vez de agregar un duplicado
+    # -- pasa seguido al probar la app varias veces con el mismo paciente.
+    for existing in patients:
+        if (
+            existing["nombre"].strip().lower() == nombre.strip().lower()
+            and existing.get("apellido", "").strip().lower() == apellido.strip().lower()
+        ):
+            existing["observaciones"] = observaciones
+            existing["fecha"] = datetime.now().isoformat(timespec="seconds")
+            with open(PATIENTS_FILE, "w", encoding="utf-8") as f:
+                json.dump(patients, f, ensure_ascii=False, indent=2)
+            return existing
+
     entry = {
         "nombre": nombre,
         "apellido": apellido,

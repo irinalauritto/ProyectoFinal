@@ -18,7 +18,7 @@ for _path in (_REPO_ROOT, _EMG_DIR, _SSVEP_DIR):
         sys.path.insert(0, _path_str)
 
 import pyqtgraph as pg  # noqa: E402
-from PySide6.QtCore import Qt  # noqa: E402
+from PySide6.QtCore import Qt, QTimer  # noqa: E402
 from PySide6.QtGui import QColor, QPalette  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
@@ -67,7 +67,15 @@ def main() -> None:
     app.setStyleSheet(STYLESHEET)
 
     window = MainShell()
-    window.showMaximized()
+    # show() antes de showMaximized(): pedir el maximizado antes de que la
+    # ventana tenga su handle nativo (con DPI/geometria de pantalla ya
+    # resueltos por Windows) hacia que arrancara "maximizada" contra un
+    # tamaño chico/equivocado -- se notaba como que TODO en Inicio se veia
+    # de otro tamaño hasta el primer click (cualquiera), que forzaba a Qt a
+    # repreguntar el tamaño real y reacomodar. show() primero, y recien en
+    # el proximo ciclo de eventos (QTimer 0ms) el maximizado, evita eso.
+    window.show()
+    QTimer.singleShot(0, window.showMaximized)
 
     sys.exit(app.exec())
 

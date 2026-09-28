@@ -1,0 +1,111 @@
+{
+  "paciente": "Irina Lauritto",
+  "inicio_sesion": "2026-09-28T17:09:42",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-09-28T17:10:26",
+      "media_reposo": 3.4,
+      "sd_reposo": 0.58,
+      "k": 3.0,
+      "umbral": 5.15,
+      "n_muestras": 15010
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:10:38",
+      "valor": 5.159622842496083,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:01",
+      "valor": 5.162139421250326,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:06",
+      "valor": 5.162656520899033,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:12",
+      "valor": 5.188839358483932,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:15",
+      "valor": 5.184025291054144,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:16",
+      "valor": 5.157990394027828,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:21",
+      "valor": 5.184530334438505,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:36",
+      "valor": 5.165992048521422,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:38",
+      "valor": 5.150648706544052,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:42",
+      "valor": 5.15193590340012,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:43",
+      "valor": 5.153455827548037,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:52",
+      "valor": 5.2117774860749,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:11:57",
+      "valor": 5.160151707976853,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:12:08",
+      "valor": 5.1671316883015095,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:12:25",
+      "valor": 5.150256269420585,
+      "umbral": 5.15
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-09-28T17:12:29",
+      "valor": 5.166255442954261,
+      "umbral": 5.15
+    }
+  ]
+}

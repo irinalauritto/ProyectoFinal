@@ -77,6 +77,19 @@ QScrollArea > QWidget > QWidget {{
     color: {BLUE_HOVER};
 }}
 
+#SidebarCollapseButton, #SidebarExpandButton {{
+    border: 1px solid {BORDER};
+    border-radius: 6px;
+    background: {BG_SURFACE};
+    color: {TEXT_MUTED};
+    font-weight: 700;
+}}
+
+#SidebarCollapseButton:hover, #SidebarExpandButton:hover {{
+    background: {NAV_ACTIVE_BG};
+    color: {BLUE_HOVER};
+}}
+
 #SidebarFooter {{
     border-top: 1px solid {BORDER};
 }}
@@ -99,6 +112,12 @@ QScrollArea > QWidget > QWidget {{
     letter-spacing: 0.5px;
 }}
 
+#SectionTitle {{
+    font-size: 13px;
+    font-weight: 700;
+    color: {TEXT_PRIMARY};
+}}
+
 #MutedLabel {{
     font-size: 12px;
     color: {TEXT_MUTED};
@@ -116,16 +135,113 @@ QScrollArea > QWidget > QWidget {{
 
 #Card {{
     background: {BG_SURFACE};
-    border: 1px solid {BORDER};
+    border: 1px solid {BORDER_STRONG};
     border-radius: 8px;
 }}
 
-QComboBox, QLineEdit, QPlainTextEdit {{
+QComboBox, QLineEdit, QPlainTextEdit, QTextEdit, QSpinBox, QDoubleSpinBox {{
     border: 1px solid {BORDER_STRONG};
     border-radius: 6px;
     padding: 6px 10px;
     background: {BG_SURFACE};
     color: {TEXT_PRIMARY};
+}}
+
+/* Base generica para todo boton/lista/checkbox/slider/groupbox que no
+   tenga su propio object-name (p. ej. los controles propios de SSVEP y de
+   EMG embebidos, que no se tocan pero heredan la paleta igual). Los
+   selectores por #ObjectName de arriba/abajo (ID) ganan siempre sobre
+   estos por especificidad, asi que no rompen nada de lo ya estilizado. */
+QPushButton {{
+    padding: 8px 14px;
+    border: 1px solid {BORDER_STRONG};
+    border-radius: 6px;
+    background: {BG_SURFACE};
+    color: {TEXT_PRIMARY};
+}}
+
+QPushButton:hover {{
+    background: {NAV_ACTIVE_BG};
+    border-color: {BLUE};
+}}
+
+QPushButton:pressed {{
+    background: {NAV_ACTIVE_BG};
+}}
+
+QPushButton:disabled {{
+    background: {DISABLED_BG};
+    color: {DISABLED_TEXT};
+    border-color: {BORDER};
+}}
+
+QListWidget, QListView {{
+    border: 1px solid {BORDER_STRONG};
+    border-radius: 6px;
+    background: {BG_SURFACE};
+    color: {TEXT_PRIMARY};
+    outline: none;
+}}
+
+QListWidget::item:selected, QListView::item:selected {{
+    background: {NAV_ACTIVE_BG};
+    color: {BLUE_HOVER};
+}}
+
+QCheckBox, QRadioButton {{
+    color: {TEXT_PRIMARY};
+    spacing: 8px;
+}}
+
+QSlider::groove:horizontal {{
+    height: 4px;
+    background: {BORDER};
+    border-radius: 2px;
+}}
+
+QSlider::handle:horizontal {{
+    width: 14px;
+    height: 14px;
+    margin: -6px 0;
+    border-radius: 7px;
+    background: {BLUE};
+}}
+
+QSlider::sub-page:horizontal {{
+    background: {BLUE};
+    border-radius: 2px;
+}}
+
+QGroupBox {{
+    border: 1px solid {BORDER};
+    border-radius: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+    font-weight: 600;
+    color: {TEXT_PRIMARY};
+}}
+
+QGroupBox::title {{
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 4px;
+}}
+
+QTabWidget::pane {{
+    border: 1px solid {BORDER};
+    border-radius: 8px;
+}}
+
+QTabBar::tab {{
+    padding: 8px 14px;
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_STRONG};
+    color: {TEXT_MUTED};
+}}
+
+QTabBar::tab:selected {{
+    background: {BLUE};
+    color: white;
 }}
 
 #SegmentButton {{
@@ -145,13 +261,17 @@ QComboBox, QLineEdit, QPlainTextEdit {{
 
 #ModalityCard {{
     background: {BG_SURFACE};
-    border: 1px solid {BORDER};
+    border: 2px solid {BORDER_STRONG};
     border-radius: 8px;
     text-align: left;
 }}
 
+#ModalityCard:hover {{
+    border-color: {BLUE};
+}}
+
 #ModalityCard:checked {{
-    border: 2px solid {BLUE};
+    border-color: {BLUE};
     background: {NAV_ACTIVE_BG};
 }}
 
@@ -185,6 +305,153 @@ QComboBox, QLineEdit, QPlainTextEdit {{
     background: {DISABLED_BG};
     color: {DISABLED_TEXT};
     border-color: {BORDER};
+}}
+
+#SecondaryButton {{
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: {BLUE};
+    background: {BG_SURFACE};
+    border: 1px solid {BLUE};
+    border-radius: 6px;
+}}
+
+#SecondaryButton:hover {{
+    background: {NAV_ACTIVE_BG};
+}}
+
+#SecondaryButton:disabled {{
+    color: {DISABLED_TEXT};
+    border-color: {BORDER};
+}}
+
+#BadgeFixed {{
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: {DISABLED_BG};
+    color: {TEXT_MUTED};
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+#BadgeActive {{
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: {BLUE};
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+#BadgeInactive {{
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_STRONG};
+    color: {TEXT_MUTED};
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+#ChannelChip {{
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_STRONG};
+    color: {TEXT_MUTED};
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+#ChannelChip:hover {{
+    border-color: {BLUE};
+}}
+
+#ChannelChip:checked {{
+    background: {BLUE};
+    border-color: {BLUE};
+    color: white;
+}}
+
+#ChannelChip:disabled {{
+    color: {BORDER_STRONG};
+    background: {DISABLED_BG};
+}}
+
+#HelpButton {{
+    min-width: 18px;
+    max-width: 18px;
+    min-height: 18px;
+    max-height: 18px;
+    border-radius: 9px;
+    border: 1px solid {BORDER_STRONG};
+    background: transparent;
+    color: {TEXT_MUTED};
+    font-size: 11px;
+    padding: 0;
+}}
+
+#HelpButton:hover {{
+    border-color: {BLUE};
+    color: {BLUE};
+}}
+
+#FreqTile {{
+    background: {DISABLED_BG};
+    border-radius: 6px;
+}}
+
+#FreqTileLabel {{
+    font-size: 10px;
+    color: {TEXT_MUTED};
+    font-weight: 600;
+}}
+
+#FreqTileValue {{
+    font-size: 11px;
+    color: {TEXT_PRIMARY};
+    font-weight: 700;
+}}
+
+#GhostButton {{
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: {TEXT_MUTED};
+    background: {BG_SURFACE};
+    border: 1px solid {BORDER_STRONG};
+    border-radius: 6px;
+}}
+
+#GhostButton:hover {{
+    background: {DISABLED_BG};
+}}
+
+#GhostButton:disabled {{
+    color: {DISABLED_TEXT};
+    background: {DISABLED_BG};
+    border-color: {BORDER};
+}}
+
+QProgressBar#CalibrationBar {{
+    border: none;
+    border-radius: 4px;
+    background: {DISABLED_BG};
+    height: 8px;
+    max-height: 8px;
+    text-align: center;
+}}
+
+QProgressBar#CalibrationBar::chunk {{
+    background: {BLUE};
+    border-radius: 4px;
+}}
+
+#WarningLabel {{
+    font-size: 11px;
+    font-weight: 600;
+    color: #9a8130;
 }}
 
 QMessageBox {{

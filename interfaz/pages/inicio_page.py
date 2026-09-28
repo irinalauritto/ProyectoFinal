@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QFrame,
@@ -41,6 +42,28 @@ def _logo_label(filename: str, height: int) -> QLabel:
     return label
 
 
+class FixedHeightStack(QStackedWidget):
+    """QStackedWidget cuyo alto es siempre el de la pagina mas alta de las
+    que contiene (no el de la pagina actual, que es el comportamiento por
+    defecto). Sin esto, cambiar entre "Guardar paciente nuevo" (formulario
+    completo) y "Elegir paciente guardado" (un combo solo) hace que el
+    stack colapse/expanda su alto segun la pestaña activa, y todo lo que
+    esta debajo (Modalidad de control, boton Comenzar sesion) salta de
+    posicion cada vez -- se ve como si esos recuadros "cambiaran"."""
+
+    def sizeHint(self):
+        hint = super().sizeHint()
+        max_h = max((self.widget(i).sizeHint().height() for i in range(self.count())), default=hint.height())
+        return hint.expandedTo(hint.__class__(hint.width(), max_h))
+
+    def minimumSizeHint(self):
+        hint = super().minimumSizeHint()
+        max_h = max(
+            (self.widget(i).minimumSizeHint().height() for i in range(self.count())), default=hint.height()
+        )
+        return hint.expandedTo(hint.__class__(hint.width(), max_h))
+
+
 class ModalityCard(QPushButton):
     """Tarjeta seleccionable (EMG o EEG) con titulo y descripcion."""
 
@@ -48,7 +71,11 @@ class ModalityCard(QPushButton):
         super().__init__(parent)
         self.setObjectName("ModalityCard")
         self.setCheckable(True)
-        self.setMinimumHeight(90)
+        # Suficiente para 3 lineas de descripcion envueltas (la de EMG es la
+        # mas larga): un QPushButton con un QLabel de word-wrap adentro no
+        # calcula bien su sizeHint dentro de un QHBoxLayout, asi que se fija
+        # un minimo generoso en vez de confiar en el calculo automatico.
+        self.setMinimumHeight(120)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 14)
@@ -75,6 +102,9 @@ class InicioPage(QWidget):
         self._state = state
         self._modalidad: str | None = None
         self._pacientes_guardados: list[dict] = []
+        self._ssvep_users: list[tuple[int, str]] = []
+        self._ssvep_user_manager = None
+        self._ssvep_prefs_manager = None
 
         # Todo el contenido va dentro de un QScrollArea: en pantallas mas
         # bajas o con escalado de DPI alto, el formulario completo (logos +
@@ -149,13 +179,22 @@ class InicioPage(QWidget):
         content.addLayout(toggle_row)
 
         # --- Paginas del toggle ---
-        self.tab_stack = QStackedWidget()
+        self.tab_stack = FixedHeightStack()
         content.addWidget(self.tab_stack)
 
         guardado_widget = QWidget()
         guardado_layout = QVBoxLayout(guardado_widget)
         guardado_layout.setContentsMargins(0, 0, 0, 0)
         self.combo_pacientes = QComboBox()
+        # Sin esto, el ancho del combo se recalcula segun el texto de sus
+        # items actuales (por defecto en el primer show, pero en la practica
+        # alcanza a variar igual) -- como EMG (patients.json, "Nombre
+        # Apellido") y EEG (usuarios SSVEP, nombres sueltos) cargan listas
+        # de largo bien distinto, el recuadro se veia angostar/ensanchar al
+        # cambiar de modalidad. Fijo el largo minimo de contenido: el ancho
+        # real lo sigue dando el layout (QSizePolicy horizontal Expanding).
+        self.combo_pacientes.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.combo_pacientes.setMinimumContentsLength(1)
         self.combo_pacientes.currentIndexChanged.connect(self._refresh_start_button)
         guardado_layout.addWidget(self.combo_pacientes)
         self.tab_stack.addWidget(guardado_widget)
@@ -175,6 +214,9 @@ class InicioPage(QWidget):
         self.txt_observaciones.setFixedHeight(58)
         self.txt_observaciones.setPlaceholderText("Notas adicionales sobre la sesión… (opcional)")
         form.addRow("Observaciones", self.txt_observaciones)
+        self.chk_guardar = QCheckBox("Guardar este paciente para usarlo después")
+        self.chk_guardar.setChecked(True)
+        form.addRow(self.chk_guardar)
         self.tab_stack.addWidget(nuevo_widget)
 
         # --- Modalidad ---
@@ -199,6 +241,24 @@ class InicioPage(QWidget):
         bottom_row = QHBoxLayout()
         self.lbl_hint = QLabel("Seleccioná una modalidad para continuar.")
         self.lbl_hint.setObjectName("MutedLabel")
+        # ESTA es la causa real del "ensanchamiento": lbl_hint cambia de texto
+        # (ver _refresh_start_button) y, sin un ancho minimo fijo, cada largo
+        # de texto distinto le pide al layout un ancho distinto -- como
+        # "container" no tiene ancho fijo (solo un maximo de 620px, ver
+        # arriba), toda la pantalla se ensancha o angosta cada vez que este
+        # texto cambia (p. ej. al elegir EMG/EEG). Se reserva de una vez el
+        # ancho del mensaje mas largo para que el layout no dependa de cual
+        # de los 3 mensajes este mostrando.
+        _hint_font_metrics = self.lbl_hint.fontMetrics()
+        _hint_min_width = max(
+            _hint_font_metrics.horizontalAdvance(texto)
+            for texto in (
+                "Seleccioná una modalidad para continuar.",
+                "Completá los datos del paciente para continuar.",
+                "Todo listo.",
+            )
+        )
+        self.lbl_hint.setMinimumWidth(_hint_min_width)
         bottom_row.addWidget(self.lbl_hint)
         bottom_row.addStretch(1)
         self.btn_comenzar = QPushButton("Comenzar sesión")
@@ -220,9 +280,53 @@ class InicioPage(QWidget):
 
     def _on_modalidad_changed(self, modality_id: int) -> None:
         self._modalidad = "emg" if modality_id == 0 else "eeg"
+        # El checkbox queda siempre visible: ocultarlo por modalidad hacia
+        # que el formulario cambiara de alto ("relacion de aspecto") al
+        # tocar EMG/EEG. En EEG por ahora es solo informativo -- un usuario
+        # de SSVEP nuevo siempre se persiste en su base (lo exige su modelo
+        # de datos para poder correr la sesion), a diferencia de EMG donde
+        # controla si se guarda en patients.json.
+        self._reload_pacientes_guardados()
         self._refresh_start_button()
 
+    def _ensure_ssvep_connection(self) -> None:
+        """Conecta (una sola vez, recien cuando hace falta) a la base de
+        SSVEP para poder listar/crear sus usuarios. No importa nada de
+        ssvep.app hasta que se elige modalidad EEG por primera vez."""
+        if self._ssvep_user_manager is not None:
+            return
+        import sys
+
+        ssvep_dir = Path(__file__).resolve().parent.parent.parent / "interfaz_ssvep"
+        ssvep_dir_str = str(ssvep_dir)
+        if ssvep_dir_str not in sys.path:
+            sys.path.insert(0, ssvep_dir_str)
+
+        from ssvep.app.config import crear_engine, init_database
+        from ssvep.app.managers import PreferencesManager, UserManager
+        from ssvep.app.repositories import PreferencesRepositorySQLAlchemy, UserRepositorySQLAlchemy
+
+        data_dir = ssvep_dir / "vision_data"
+        init_database(str(data_dir))
+        engine_factory = crear_engine()
+        db_session = engine_factory()
+        self._ssvep_user_manager = UserManager(UserRepositorySQLAlchemy(db_session))
+        self._ssvep_prefs_manager = PreferencesManager(PreferencesRepositorySQLAlchemy(db_session))
+
     def _reload_pacientes_guardados(self) -> None:
+        if self._modalidad == "eeg":
+            self._ensure_ssvep_connection()
+            self._ssvep_users = list(self._ssvep_user_manager.get_all_users().items())
+            self.combo_pacientes.blockSignals(True)
+            self.combo_pacientes.clear()
+            if not self._ssvep_users:
+                self.combo_pacientes.addItem("No hay usuarios guardados todavía")
+            else:
+                for _uid, name in self._ssvep_users:
+                    self.combo_pacientes.addItem(name)
+            self.combo_pacientes.blockSignals(False)
+            return
+
         self._pacientes_guardados = load_patients()
         self.combo_pacientes.blockSignals(True)
         self.combo_pacientes.clear()
@@ -237,6 +341,11 @@ class InicioPage(QWidget):
     def _patient_seleccionado(self) -> PatientInfo | None:
         if self.btn_tab_guardado.isChecked():
             index = self.combo_pacientes.currentIndex()
+            if self._modalidad == "eeg":
+                if index < 0 or index >= len(self._ssvep_users):
+                    return None
+                _uid, name = self._ssvep_users[index]
+                return PatientInfo(nombre=name)
             if index < 0 or index >= len(self._pacientes_guardados):
                 return None
             entry = self._pacientes_guardados[index]
@@ -254,6 +363,31 @@ class InicioPage(QWidget):
             observaciones=self.txt_observaciones.toPlainText().strip(),
         )
 
+    def _resolve_ssvep_user_id(self, patient: PatientInfo) -> int | None:
+        """Busca (por nombre, sin distinguir mayusculas) un usuario SSVEP
+        existente que coincida con `patient`, o crea uno nuevo con las
+        preferencias por defecto si no existe."""
+        self._ensure_ssvep_connection()
+
+        if self.btn_tab_guardado.isChecked():
+            index = self.combo_pacientes.currentIndex()
+            if index < 0 or index >= len(self._ssvep_users):
+                return None
+            return self._ssvep_users[index][0]
+
+        username = patient.nombre_completo
+        for uid, name in self._ssvep_users:
+            if name.strip().lower() == username.strip().lower():
+                return uid
+
+        import builtins
+
+        new_user = self._ssvep_user_manager.register_new_user(username)
+        self._ssvep_prefs_manager.save_or_update_preferences(
+            new_user.id, builtins.SETTINGS.default_user_preferences
+        )
+        return new_user.id
+
     def _refresh_start_button(self) -> None:
         habilitado = self._patient_seleccionado() is not None and self._modalidad is not None
         self.btn_comenzar.setEnabled(habilitado)
@@ -269,17 +403,28 @@ class InicioPage(QWidget):
         if patient is None or self._modalidad is None:
             return
 
-        if self.btn_tab_nuevo.isChecked():
+        if self._modalidad == "eeg":
+            user_id = self._resolve_ssvep_user_id(patient)
+            if user_id is None:
+                return
+            self._state.ssvep_user_id = user_id
+            self._state.set_patient(patient)
+            self.session_started.emit(self._modalidad)
+            if self.btn_tab_nuevo.isChecked():
+                self._reload_pacientes_guardados()
+            return
+
+        if self.btn_tab_nuevo.isChecked() and self.chk_guardar.isChecked():
             save_patient(patient.nombre, patient.apellido, patient.observaciones)
             self._reload_pacientes_guardados()
 
         self._state.set_patient(patient)
         self.session_started.emit(self._modalidad)
 
-    def notificar_sesion_no_disponible(self) -> None:
+    def notificar_sesion_no_disponible(self, modalidad: str = "EMG") -> None:
         QMessageBox.information(
             self,
-            "Sesión EMG",
-            "Todavía no inició una sesión EMG. Complete los datos del paciente y elija"
-            " la modalidad EMG en Inicio.",
+            f"Sesión {modalidad}",
+            f"Todavía no inició una sesión {modalidad}. Complete los datos del paciente y elija"
+            f" la modalidad {modalidad} en Inicio.",
         )

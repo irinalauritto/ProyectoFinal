@@ -24,6 +24,11 @@ class SharedAppState(QObject):
     def __init__(self):
         super().__init__()
         self.patient: PatientInfo | None = None
+        # Solo tiene sentido cuando la modalidad activa es EEG: id del
+        # usuario de SSVEP ya resuelto/creado en InicioPage (ver
+        # inicio_page.py) -- EegPage lo recibe directo, nunca vuelve a
+        # preguntar quien es.
+        self.ssvep_user_id: int | None = None
 
     def set_patient(self, patient: PatientInfo) -> None:
         self.patient = patient
