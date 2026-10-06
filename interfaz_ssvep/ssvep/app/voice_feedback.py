@@ -11,10 +11,11 @@ from typing import Dict, Optional
 import win32com.client
 
 # Palabra a anunciar por índice de estímulo, según la convención de índices
-# usada en todo el proyecto (0=escape/cuadrado, 1=espacio/círculo,
-# 2=derecha, 3=arriba, 4=izquierda, 5=abajo).
+# usada en todo el proyecto (0=nulo/cuadrado, 1=espacio/círculo,
+# 2=derecha, 3=arriba, 4=izquierda, 5=abajo). El índice 0 era "Escape";
+# ahora es el estímulo nulo (no envía tecla), por eso se anuncia "Nulo".
 STIMULUS_WORDS: Dict[int, str] = {
-    0: "Escape",
+    0: "Nulo",
     1: "Espacio",
     2: "Derecha",
     3: "Arriba",

@@ -1,6 +1,7 @@
-"""Pantalla de Inicio: datos de paciente + eleccion de modalidad (EMG/EEG).
+"""Pantalla de Inicio
+Aquí se guardan los datos del pacientes y se selecciona la modalidad de control (EMG o EEG). 
+Se reutiliza el mismo formulario para crear un paciente nuevo o elegir uno guardado, y se valida que haya datos completos antes de habilitar el boton "Comenzar sesion".
 
-Basada en el mockup Main.dc.html del artefacto "Comando AAC".
 """
 
 from pathlib import Path
@@ -28,9 +29,7 @@ from PySide6.QtWidgets import (
 from interfaz.shell.app_state import PatientInfo, SharedAppState
 from interfaz.shell.patient_store import load_patients, save_patient
 
-# Los logos institucionales ya existen como recursos del modulo SSVEP; se
-# reutilizan tal cual (solo lectura del archivo, sin importar codigo de
-# ssvep) para no duplicar assets.
+# Los logos institucionales ya existen como recursos del modulo SSVEP proveniente de vision
 _LOGOS_DIR = Path(__file__).resolve().parent.parent.parent / "interfaz_ssvep" / "res" / "images"
 
 
@@ -43,13 +42,6 @@ def _logo_label(filename: str, height: int) -> QLabel:
 
 
 class FixedHeightStack(QStackedWidget):
-    """QStackedWidget cuyo alto es siempre el de la pagina mas alta de las
-    que contiene (no el de la pagina actual, que es el comportamiento por
-    defecto). Sin esto, cambiar entre "Guardar paciente nuevo" (formulario
-    completo) y "Elegir paciente guardado" (un combo solo) hace que el
-    stack colapse/expanda su alto segun la pestaña activa, y todo lo que
-    esta debajo (Modalidad de control, boton Comenzar sesion) salta de
-    posicion cada vez -- se ve como si esos recuadros "cambiaran"."""
 
     def sizeHint(self):
         hint = super().sizeHint()
@@ -65,16 +57,12 @@ class FixedHeightStack(QStackedWidget):
 
 
 class ModalityCard(QPushButton):
-    """Tarjeta seleccionable (EMG o EEG) con titulo y descripcion."""
+    """Tarjeta seleccionable EMG o EEG con titulo y descripcion."""
 
     def __init__(self, titulo: str, descripcion: str, parent=None):
         super().__init__(parent)
         self.setObjectName("ModalityCard")
         self.setCheckable(True)
-        # Suficiente para 3 lineas de descripcion envueltas (la de EMG es la
-        # mas larga): un QPushButton con un QLabel de word-wrap adentro no
-        # calcula bien su sizeHint dentro de un QHBoxLayout, asi que se fija
-        # un minimo generoso en vez de confiar en el calculo automatico.
         self.setMinimumHeight(120)
 
         layout = QVBoxLayout(self)
@@ -93,7 +81,7 @@ class ModalityCard(QPushButton):
 
 
 class InicioPage(QWidget):
-    """Pagina inicial: elegir/crear paciente y modalidad de control."""
+    """Pagina inicial: elegir o crear paciente, seleccionar modalidad de control."""
 
     session_started = Signal(str)  # "emg" | "eeg"
 
@@ -106,18 +94,9 @@ class InicioPage(QWidget):
         self._ssvep_user_manager = None
         self._ssvep_prefs_manager = None
 
-        # Todo el contenido va dentro de un QScrollArea: en pantallas mas
-        # bajas o con escalado de DPI alto, el formulario completo (logos +
-        # toggle + tarjetas + boton) puede no entrar en alto sin esto, y las
-        # tarjetas de modalidad terminaban recortadas/ilegibles.
         self_layout = QVBoxLayout(self)
         self_layout.setContentsMargins(0, 0, 0, 0)
-        # OJO: no usar scroll.setStyleSheet(...)/scroll_content.setStyleSheet(...)
-        # aca -- un stylesheet puesto directamente sobre un widget corta la
-        # cascada del QSS de la app para sus descendientes (asi se rompieron
-        # los bordes/fondos de las tarjetas y el segmented control la primera
-        # vez). La transparencia del QScrollArea se resuelve en el QSS
-        # global (ver QScrollArea > QWidget > QWidget en shell/style.py).
+ 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -186,13 +165,7 @@ class InicioPage(QWidget):
         guardado_layout = QVBoxLayout(guardado_widget)
         guardado_layout.setContentsMargins(0, 0, 0, 0)
         self.combo_pacientes = QComboBox()
-        # Sin esto, el ancho del combo se recalcula segun el texto de sus
-        # items actuales (por defecto en el primer show, pero en la practica
-        # alcanza a variar igual) -- como EMG (patients.json, "Nombre
-        # Apellido") y EEG (usuarios SSVEP, nombres sueltos) cargan listas
-        # de largo bien distinto, el recuadro se veia angostar/ensanchar al
-        # cambiar de modalidad. Fijo el largo minimo de contenido: el ancho
-        # real lo sigue dando el layout (QSizePolicy horizontal Expanding).
+      
         self.combo_pacientes.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         self.combo_pacientes.setMinimumContentsLength(1)
         self.combo_pacientes.currentIndexChanged.connect(self._refresh_start_button)
@@ -226,8 +199,8 @@ class InicioPage(QWidget):
 
         cards_row = QHBoxLayout()
         cards_row.setSpacing(16)
-        self.card_emg = ModalityCard("EMG", "Comando por contracción muscular (electromiografía de superficie).")
-        self.card_eeg = ModalityCard("EEG", "Comando por estimulación visual (SSVEP).")
+        self.card_emg = ModalityCard("EMG", "Comando por electromiografía de superficie.")
+        self.card_eeg = ModalityCard("EEG", "Comando por potenciales evocados de estado estacionario (SSVEP).")
         self._modalidad_group = QButtonGroup(self)
         self._modalidad_group.setExclusive(True)
         self._modalidad_group.addButton(self.card_emg, 0)
@@ -241,14 +214,7 @@ class InicioPage(QWidget):
         bottom_row = QHBoxLayout()
         self.lbl_hint = QLabel("Seleccioná una modalidad para continuar.")
         self.lbl_hint.setObjectName("MutedLabel")
-        # ESTA es la causa real del "ensanchamiento": lbl_hint cambia de texto
-        # (ver _refresh_start_button) y, sin un ancho minimo fijo, cada largo
-        # de texto distinto le pide al layout un ancho distinto -- como
-        # "container" no tiene ancho fijo (solo un maximo de 620px, ver
-        # arriba), toda la pantalla se ensancha o angosta cada vez que este
-        # texto cambia (p. ej. al elegir EMG/EEG). Se reserva de una vez el
-        # ancho del mensaje mas largo para que el layout no dependa de cual
-        # de los 3 mensajes este mostrando.
+    
         _hint_font_metrics = self.lbl_hint.fontMetrics()
         _hint_min_width = max(
             _hint_font_metrics.horizontalAdvance(texto)

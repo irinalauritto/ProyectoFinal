@@ -1,0 +1,1359 @@
+{
+  "paciente": "Irina Lauritto",
+  "inicio_sesion": "2026-10-06T10:18:53",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-10-06T10:19:31",
+      "media_reposo": 2.96,
+      "sd_reposo": 1.92,
+      "k": 3.0,
+      "umbral": 8.73,
+      "n_muestras": 15010
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:19:38",
+      "valor": 8.977110872582054,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:19:40",
+      "valor": 8.765461199655856,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:19:43",
+      "valor": 8.769406562883269,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:19:55",
+      "valor": 8.850871515122748,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:19:57",
+      "valor": 8.750765372985871,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:19:59",
+      "valor": 8.741730686616727,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:05",
+      "parametro": "refractario_ms",
+      "valor": 600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:07",
+      "parametro": "refractario_ms",
+      "valor": 650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:07",
+      "parametro": "refractario_ms",
+      "valor": 700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:07",
+      "parametro": "refractario_ms",
+      "valor": 750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:07",
+      "parametro": "refractario_ms",
+      "valor": 800,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:07",
+      "parametro": "refractario_ms",
+      "valor": 850,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:08",
+      "parametro": "refractario_ms",
+      "valor": 900,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:08",
+      "parametro": "refractario_ms",
+      "valor": 950,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:08",
+      "parametro": "refractario_ms",
+      "valor": 1000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:08",
+      "parametro": "refractario_ms",
+      "valor": 1050,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:08",
+      "parametro": "refractario_ms",
+      "valor": 1100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:08",
+      "parametro": "refractario_ms",
+      "valor": 1150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:09",
+      "parametro": "refractario_ms",
+      "valor": 1200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:09",
+      "parametro": "refractario_ms",
+      "valor": 1250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:09",
+      "parametro": "refractario_ms",
+      "valor": 1300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:09",
+      "parametro": "refractario_ms",
+      "valor": 1350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:09",
+      "parametro": "refractario_ms",
+      "valor": 1400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:10",
+      "parametro": "refractario_ms",
+      "valor": 1450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:10",
+      "parametro": "refractario_ms",
+      "valor": 1500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:10",
+      "parametro": "refractario_ms",
+      "valor": 1550,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:10",
+      "parametro": "refractario_ms",
+      "valor": 1600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:10",
+      "parametro": "refractario_ms",
+      "valor": 1650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:10",
+      "parametro": "refractario_ms",
+      "valor": 1700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:11",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:11",
+      "parametro": "refractario_ms",
+      "valor": 1800,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:11",
+      "parametro": "refractario_ms",
+      "valor": 1850,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:11",
+      "parametro": "refractario_ms",
+      "valor": 1900,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:11",
+      "parametro": "refractario_ms",
+      "valor": 1950,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:12",
+      "parametro": "refractario_ms",
+      "valor": 2000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:12",
+      "parametro": "refractario_ms",
+      "valor": 2050,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:12",
+      "parametro": "refractario_ms",
+      "valor": 2100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:12",
+      "parametro": "refractario_ms",
+      "valor": 2150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:12",
+      "parametro": "refractario_ms",
+      "valor": 2200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:13",
+      "parametro": "refractario_ms",
+      "valor": 2250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:13",
+      "parametro": "refractario_ms",
+      "valor": 2300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:13",
+      "parametro": "refractario_ms",
+      "valor": 2350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:13",
+      "parametro": "refractario_ms",
+      "valor": 2400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:13",
+      "parametro": "refractario_ms",
+      "valor": 2450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:13",
+      "parametro": "refractario_ms",
+      "valor": 2500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:16",
+      "parametro": "refractario_ms",
+      "valor": 2450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:16",
+      "parametro": "refractario_ms",
+      "valor": 2400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:17",
+      "parametro": "refractario_ms",
+      "valor": 2350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:17",
+      "parametro": "refractario_ms",
+      "valor": 2300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:17",
+      "parametro": "refractario_ms",
+      "valor": 2250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:17",
+      "parametro": "refractario_ms",
+      "valor": 2200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:17",
+      "parametro": "refractario_ms",
+      "valor": 2150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:18",
+      "parametro": "refractario_ms",
+      "valor": 2100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:18",
+      "parametro": "refractario_ms",
+      "valor": 2050,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:18",
+      "parametro": "refractario_ms",
+      "valor": 2000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:18",
+      "parametro": "refractario_ms",
+      "valor": 1950,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:18",
+      "parametro": "refractario_ms",
+      "valor": 1900,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:19",
+      "parametro": "refractario_ms",
+      "valor": 1850,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:19",
+      "parametro": "refractario_ms",
+      "valor": 1800,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:19",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:19",
+      "parametro": "refractario_ms",
+      "valor": 1700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:19",
+      "parametro": "refractario_ms",
+      "valor": 1650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:20",
+      "parametro": "refractario_ms",
+      "valor": 1600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:20",
+      "parametro": "refractario_ms",
+      "valor": 1550,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:20",
+      "parametro": "refractario_ms",
+      "valor": 1500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:20",
+      "parametro": "refractario_ms",
+      "valor": 1450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:20",
+      "parametro": "refractario_ms",
+      "valor": 1400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:20",
+      "parametro": "refractario_ms",
+      "valor": 1350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:21",
+      "parametro": "refractario_ms",
+      "valor": 1300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:21",
+      "parametro": "refractario_ms",
+      "valor": 1250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:21",
+      "parametro": "refractario_ms",
+      "valor": 1200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:21",
+      "parametro": "refractario_ms",
+      "valor": 1150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:21",
+      "parametro": "refractario_ms",
+      "valor": 1100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:22",
+      "parametro": "refractario_ms",
+      "valor": 1050,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:22",
+      "parametro": "refractario_ms",
+      "valor": 1000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:22",
+      "parametro": "refractario_ms",
+      "valor": 950,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:22",
+      "parametro": "refractario_ms",
+      "valor": 900,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:22",
+      "parametro": "refractario_ms",
+      "valor": 850,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:22",
+      "parametro": "refractario_ms",
+      "valor": 800,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:23",
+      "parametro": "refractario_ms",
+      "valor": 750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:23",
+      "parametro": "refractario_ms",
+      "valor": 700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:23",
+      "parametro": "refractario_ms",
+      "valor": 650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:23",
+      "parametro": "refractario_ms",
+      "valor": 600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:23",
+      "parametro": "refractario_ms",
+      "valor": 550,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:24",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:24",
+      "parametro": "refractario_ms",
+      "valor": 450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:24",
+      "parametro": "refractario_ms",
+      "valor": 400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:24",
+      "parametro": "refractario_ms",
+      "valor": 350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:24",
+      "parametro": "refractario_ms",
+      "valor": 300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:24",
+      "parametro": "refractario_ms",
+      "valor": 250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:25",
+      "parametro": "refractario_ms",
+      "valor": 200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:25",
+      "parametro": "refractario_ms",
+      "valor": 150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:25",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:20:37",
+      "valor": 11.470824994121351,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:37",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:20:38",
+      "valor": 8.865398833536608,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:38",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:20:52",
+      "valor": 11.0839292379965,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:52",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:20:54",
+      "valor": 8.908448429502617,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:20:54",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:08",
+      "valor": 10.907089019663012,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:08",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:09",
+      "valor": 8.812036800539685,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:09",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:10",
+      "valor": 10.415168694951698,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:10",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:11",
+      "valor": 8.785208595984287,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:11",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:12",
+      "valor": 14.055499410607242,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:12",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:14",
+      "valor": 8.753936239326476,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:14",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:18",
+      "valor": 8.826574929505497,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:18",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:20",
+      "valor": 8.745042106305954,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:20",
+      "parametro": "refractario_ms",
+      "valor": 100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:27",
+      "parametro": "refractario_ms",
+      "valor": 150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:28",
+      "parametro": "refractario_ms",
+      "valor": 200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:28",
+      "parametro": "refractario_ms",
+      "valor": 250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:28",
+      "parametro": "refractario_ms",
+      "valor": 300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:28",
+      "parametro": "refractario_ms",
+      "valor": 350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:29",
+      "parametro": "refractario_ms",
+      "valor": 400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:29",
+      "parametro": "refractario_ms",
+      "valor": 450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:30",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:31",
+      "valor": 11.015700877180443,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:31",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:32",
+      "valor": 8.785978722431137,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:32",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:34",
+      "valor": 8.97113240787768,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:34",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:35",
+      "valor": 8.811023828263977,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:35",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:35",
+      "parametro": "refractario_ms",
+      "valor": 550,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:35",
+      "parametro": "refractario_ms",
+      "valor": 600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:36",
+      "parametro": "refractario_ms",
+      "valor": 650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:36",
+      "parametro": "refractario_ms",
+      "valor": 700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:36",
+      "parametro": "refractario_ms",
+      "valor": 750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:36",
+      "parametro": "refractario_ms",
+      "valor": 800,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:37",
+      "parametro": "refractario_ms",
+      "valor": 850,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:37",
+      "parametro": "refractario_ms",
+      "valor": 900,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:37",
+      "parametro": "refractario_ms",
+      "valor": 950,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:39",
+      "parametro": "refractario_ms",
+      "valor": 1000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:40",
+      "valor": 8.759675080467378,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:40",
+      "parametro": "refractario_ms",
+      "valor": 1000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:41",
+      "valor": 8.789937371030893,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:41",
+      "parametro": "refractario_ms",
+      "valor": 1000,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:43",
+      "parametro": "refractario_ms",
+      "valor": 1050,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:43",
+      "parametro": "refractario_ms",
+      "valor": 1100,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:44",
+      "parametro": "refractario_ms",
+      "valor": 1150,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:44",
+      "parametro": "refractario_ms",
+      "valor": 1200,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:44",
+      "parametro": "refractario_ms",
+      "valor": 1250,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:44",
+      "parametro": "refractario_ms",
+      "valor": 1300,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:45",
+      "parametro": "refractario_ms",
+      "valor": 1350,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:45",
+      "parametro": "refractario_ms",
+      "valor": 1400,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:45",
+      "parametro": "refractario_ms",
+      "valor": 1450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:46",
+      "parametro": "refractario_ms",
+      "valor": 1500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:46",
+      "parametro": "refractario_ms",
+      "valor": 1550,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:47",
+      "parametro": "refractario_ms",
+      "valor": 1600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:47",
+      "parametro": "refractario_ms",
+      "valor": 1650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:48",
+      "parametro": "refractario_ms",
+      "valor": 1700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:49",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:49",
+      "valor": 8.759174094485235,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:49",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:57",
+      "valor": 8.761561199981369,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:57",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:21:59",
+      "valor": 9.892844188163119,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:21:59",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:01",
+      "valor": 9.991818968625044,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:01",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:04",
+      "valor": 8.735501857364007,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:04",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:07",
+      "valor": 8.836897881950817,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:07",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:09",
+      "valor": 8.763601626248551,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:09",
+      "parametro": "refractario_ms",
+      "valor": 1750,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:16",
+      "parametro": "refractario_ms",
+      "valor": 1700,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:16",
+      "parametro": "refractario_ms",
+      "valor": 1650,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:16",
+      "parametro": "refractario_ms",
+      "valor": 1600,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:19",
+      "parametro": "refractario_ms",
+      "valor": 1550,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:20",
+      "parametro": "refractario_ms",
+      "valor": 1500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:20",
+      "parametro": "refractario_ms",
+      "valor": 1450,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:31",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:31",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:33",
+      "valor": 10.919519201399783,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:33",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:35",
+      "valor": 10.224913569868566,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:35",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:22:38",
+      "valor": 10.461083537597135,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "cambio_parametro",
+      "timestamp": "2026-10-06T10:22:38",
+      "parametro": "refractario_ms",
+      "valor": 500,
+      "modificado_por": "terapeuta"
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:26:32",
+      "valor": 8.800405913629206,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:26:59",
+      "valor": 8.88249760891979,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:27:07",
+      "valor": 9.186260153151707,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:27:08",
+      "valor": 9.032526031609557,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:30:43",
+      "valor": 8.742912887217571,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:32:49",
+      "valor": 8.812688222687537,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:32:56",
+      "valor": 8.771100659791802,
+      "umbral": 8.73
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T10:32:59",
+      "valor": 8.74998867271962,
+      "umbral": 8.73
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""Punto de entrada de la interfaz unificada (shell + EMG + EEG/SSVEP embebidos)."""
+"""Punto de entrada de la interfaz unificada. Cuenta con página de Inicio, de control por  EMG  y de control por EEG."""
 
 import sys
 from pathlib import Path

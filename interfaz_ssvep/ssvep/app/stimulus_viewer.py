@@ -31,8 +31,13 @@ STIMULUS_COLOR_HEX: Dict[int, str] = {
     0: "#F2C200",  # Escape / cuadrado -> amarillo
     1: "#1E88E5",  # Espacio / círculo -> azul
     2: "#FB8C00",  # Derecha -> naranja
-    3: "#E53935",  # Abajo -> rojo
-    5: "#43A047" , # Arriba -> verde
+    # 3 y 5 estaban con los colores cambiados entre si (y con comentarios
+    # que ademas no correspondian al indice real de Settings.__stimuli_config:
+    # el 3 es "Arriba", el 5 es "Abajo") -- se corrigen para que coincidan
+    # con __stimulus_colors en bci_evaluator_widgets.py, como dice el
+    # comentario de arriba que deberian estar.
+    3: "#43A047",  # Arriba -> verde
+    5: "#E53935" , # Abajo -> rojo
     4: "#8E24AA",  # Izquierda -> violeta
     }
 
@@ -107,6 +112,10 @@ class StimulusViewer(QWidget):
 
         # --- Configuración de estímulos ---
         self.__stimulus_size: int = size
+        # Valor original, sin escalar por DPI -- __get_stimulus_regions()
+        # parte siempre de este valor (ver ahí, evita que el tamaño se
+        # achique de nuevo en cada apertura del estimulador).
+        self.__base_stimulus_size: int = size
         self.__all_stimuli: List[Any] = []
         self.__stimulus_config: Optional[Dict[int, Any]] = None
         self.__stimulus_positions: List[Tuple[int, int]] = []
@@ -398,9 +407,17 @@ class StimulusViewer(QWidget):
         """Obtiene y ajusta las regiones de la pantalla según la escala del monitor."""
         monitors = self.__monitor_scales()
         self.__monitor_index, self.__monitor_scale = monitors[-1]
-        
+
         self.__screen_width, self.__screen_height = self.__work_area(self.__monitor_index)
-        
+
+        # Parte siempre del tamaño ORIGINAL (no del ya escalado en una
+        # apertura anterior del estimulador) -- este método se llama de
+        # nuevo en cada start_stim() sobre la misma instancia, y sin este
+        # reset __stimulus_size se iba dividiendo por el factor de escala
+        # una vez más en cada apertura, encogiendo los estímulos cada vez
+        # más (confirmado: reportado como "se están cambiando los tamaños").
+        self.__stimulus_size = self.__base_stimulus_size
+
         if self.__monitor_scale and self.__monitor_scale > 1:
             self.__stimulus_size = int(self.__stimulus_size / self.__monitor_scale)
             self.__screen_width = int(self.__screen_width / self.__monitor_scale)
@@ -681,29 +698,36 @@ class _StimuliGenerator:
 
     @staticmethod
     def __arrow_mask(size: int, direction: str = 'up') -> np.ndarray:
-        """Genera una máscara de matriz para una forma de flecha."""
+        """Genera una máscara de matriz para una forma triangular (antes era
+        una flecha de 7 puntos -- vástago + punta; se cambió a un triángulo
+        simple de 3 puntos, misma convención de rotación por dirección)."""
         img = Image.new('L', (size, size), 0)
         draw = ImageDraw.Draw(img)
         w, h = size, size
 
         points = [
             (round(w*0.5), round(h)),
-            (round(0), round(h*0.5)),
-            (round(w*0.3), round(h*0.5)),
-            (round(w*0.3), round(1)),
-            (round(w-w*0.3), round(1)),
-            (round(w-w*0.3), round(h*0.5)),
-            (round(w), round(h*0.5))
+            (round(0), round(0)),
+            (round(w), round(0)),
         ]
         draw.polygon(points, fill=255)
-        # El polígono sin rotar apunta hacia abajo (punta en (w*0.5, h)).
+        # El polígono sin rotar apunta hacia abajo (punta en (w*0.5, h)) EN
+        # LA IMAGEN PIL (fila 0 = arriba). PsychoPy invierte verticalmente
+        # las máscaras de textura (ImageStim/mask=, a diferencia de un
+        # ShapeStim por vértices) al subirlas como textura OpenGL -- sin
+        # compensar eso acá, 'arriba' y 'abajo' se ven cambiados entre sí en
+        # pantalla (verificado: una compañera detectaba "arriba" al mirar el
+        # estímulo de "abajo" y viceversa). Izquierda/derecha no se ven
+        # afectados por un flip vertical, por eso esos sí quedaban bien.
         if direction == 'right':
             img = img.rotate(90)
         elif direction == 'left':
             img = img.rotate(-90)
-        elif direction == 'up':
+        elif direction == 'down':
             img = img.rotate(180)
-        # 'down': la máscara base ya apunta hacia abajo, sin rotación.
+        # 'up': la máscara base (apunta hacia abajo en PIL) ya queda
+        # apuntando hacia arriba en pantalla tras el flip de PsychoPy, sin
+        # rotación.
 
         return (np.array(img).astype(np.float32) / 127.5) - 1.0
     
@@ -800,22 +824,66 @@ def _create_flickers(win: visual.Window, config: StimulusConfig) -> List[_Stimul
     ]
 
 
-def _create_stimulus_frames(win: visual.Window, config: StimulusConfig) -> List[visual.Rect]:
-    """Crea el marco de color fijo (uno por estímulo activo) para la ventana de estímulos."""
+def _triangle_frame_vertices(direction: Optional[str], size: float) -> List[Tuple[float, float]]:
+    """Vértices (sistema de coordenadas de PsychoPy: centrado, Y hacia
+    arriba) de un triángulo que ocupa toda la caja de `size`, con la punta
+    apuntando hacia `direction` -- misma geometría que la máscara de
+    `_StimuliGenerator.__arrow_mask` (rotada por PIL), para que el marco
+    calce con el estímulo que encierra."""
+    h = size / 2
+    if direction == 'right':
+        return [(h, 0), (-h, h), (-h, -h)]
+    if direction == 'left':
+        return [(-h, 0), (h, h), (h, -h)]
+    if direction == 'down':
+        return [(0, -h), (-h, h), (h, h)]
+    return [(0, h), (-h, -h), (h, -h)]  # 'up' (y default si direction es None)
+
+
+def _create_stimulus_frames(win: visual.Window, config: StimulusConfig) -> List[visual.BaseShapeStim]:
+    """Crea el marco de color fijo (uno por estímulo activo) para la ventana
+    de estímulos -- con la misma forma que el estímulo que encierra (círculo,
+    cuadrado o triángulo), no siempre un rectángulo."""
     frames = []
     for i, stim_index in enumerate(config.stimulus_data.keys()):
         color_hex = STIMULUS_COLOR_HEX.get(stim_index)
         if color_hex is None:
             continue
-        frames.append(visual.Rect(
-            win=win,
-            width=config.stimulus_size,
-            height=config.stimulus_size,
-            pos=config.stimulus_positions[i],
-            lineColor=_hex_to_psychopy_rgb(color_hex),
-            lineWidth=3,
-            fillColor=None,
-        ))
+        stim_info = config.stimulus_data[stim_index]
+        color = _hex_to_psychopy_rgb(color_hex)
+        pos = config.stimulus_positions[i]
+        size = config.stimulus_size
+
+        if stim_info.shape_type == 'circle':
+            frame = visual.Circle(
+                win=win,
+                radius=size / 2,
+                pos=pos,
+                lineColor=color,
+                lineWidth=3,
+                fillColor=None,
+            )
+        elif stim_info.shape_type == 'arrow':
+            frame = visual.ShapeStim(
+                win=win,
+                vertices=_triangle_frame_vertices(stim_info.direction, size),
+                closeShape=True,
+                pos=pos,
+                lineColor=color,
+                lineWidth=3,
+                fillColor=None,
+            )
+        else:  # 'square' (y cualquier otro shape_type no contemplado, como respaldo)
+            frame = visual.Rect(
+                win=win,
+                width=size,
+                height=size,
+                pos=pos,
+                lineColor=color,
+                lineWidth=3,
+                fillColor=None,
+            )
+        frames.append(frame)
     return frames
 
 

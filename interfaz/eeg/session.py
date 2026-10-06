@@ -16,6 +16,11 @@ from typing import Optional
 
 from PySide6.QtCore import QObject, QThread, Signal
 
+# Índice del estímulo "nulo" (Escape en Settings.__stimuli_config, "Nulo" en
+# la interfaz): al detectarlo no se envía ninguna tecla, solo se inicia el
+# período refractario. Está activo en todos los métodos de entrada.
+NULL_STIMULUS_INDEX = 0
+
 
 class EegSession(QObject):
     # Señales re-emitidas del pipeline interno, para que la UI se conecte
@@ -36,7 +41,7 @@ class EegSession(QObject):
 
         from ssvep.app.bci_evaluator import BCIEvaluator
         from ssvep.app.config import crear_engine, init_database
-        from ssvep.app.eeg_serial_iface import EEGFileInterface
+        from ssvep.app.eeg_serial_iface import EEGFileInterface, EEGSerialInterface
         from ssvep.app.eeg_signal_classifier import EEGSignalCCAClassifier
         from ssvep.app.eeg_signal_procesor import EEGSignalProcessor
         from ssvep.app.game_manager import GameManager
@@ -65,9 +70,20 @@ class EegSession(QObject):
         self.user_manager = UserManager(UserRepositorySQLAlchemy(db_session))
         self.prefs_manager = PreferencesManager(PreferencesRepositorySQLAlchemy(db_session))
         self.weights_manager = TrainingWeightsManager(TrainingWeightsRepositorySQLAlchemy(db_session))
+        self._db_session = db_session
 
         # --- Pipeline de señal ---
-        self._eeg_iface = EEGFileInterface(arch_n=eeg_bin_path or "eeg_bin.bin")
+        # Dos interfaces de adquisicion posibles -- load_user() elige cual
+        # queda activa segun el usuario (ver _use_eeg_iface): EEGFileInterface
+        # reproduce una grabacion (el .bin generico, o el .mat real de un
+        # paciente de prueba, ver TEST_PATIENTS) y EEGSerialInterface lee el
+        # BioAmp real por puerto serie (autodetectado por firmware, ver
+        # Settings.intf_port_auto). Antes cualquier paciente que no fuera de
+        # prueba quedaba siempre con el archivo generico en loop, sin
+        # importar si el BioAmp estaba conectado o no.
+        self._file_iface = EEGFileInterface(arch_n=eeg_bin_path or "eeg_bin.bin")
+        self._serial_iface = EEGSerialInterface()
+        self._eeg_iface = self._file_iface
         self._filters = SignalFilters()
         self._psd_estimator = PSDEstimator()
         self._classifier = EEGSignalCCAClassifier()
@@ -87,11 +103,22 @@ class EegSession(QObject):
         self.enable_control = False
         self.add_test_data = False
         self.audio_feedback_enabled = False
+        # Tiempo minimo (seg) entre una tecla enviada y la proxima -- evita
+        # que clasificaciones seguidas disparen acciones en cadena mientras
+        # el usuario sigue mirando el mismo estimulo. Solo afecta el envio
+        # de teclas (KeyboardController), no el feedback auditivo ni el
+        # registro de datos de la prueba de validacion.
+        self.refractory_period_s: float = 5.0
+        self._last_action_time: float = 0.0
+
+        # Voz propia para anunciar el estimulo que hay que MIRAR durante la
+        # prueba de validacion (distinta de `voice`/VoiceFeedback, que
+        # anuncia el estimulo ya DETECTADO) -- import perezoso: no hace
+        # falta pagar el costo de SAPI si nunca se usa.
+        self._validation_voice = None
 
         # --- Wiring interno ---
-        self._eeg_iface.streamStarted.connect(self.stream_started)
-        self._eeg_iface.dataDecoded.connect(self._processing_worker.on_data_decoded)
-        self._eeg_iface.portException.connect(self.error_occurred)
+        self._wire_eeg_iface(self._eeg_iface)
 
         self._processing_worker.filteredData.connect(self.filtered_data)
         self._processing_worker.psdData.connect(self.psd_data)
@@ -99,6 +126,36 @@ class EegSession(QObject):
         self._processing_worker.errorOccurred.connect(self.error_occurred)
 
         self.stimulus_viewer.stimuli_ready.connect(self.stimuli_ready)
+
+    # ------------------------------------------------------------------
+    def _wire_eeg_iface(self, iface) -> None:
+        iface.streamStarted.connect(self.stream_started)
+        iface.dataDecoded.connect(self._processing_worker.on_data_decoded)
+        iface.portException.connect(self.error_occurred)
+
+    def _unwire_eeg_iface(self, iface) -> None:
+        iface.streamStarted.disconnect(self.stream_started)
+        iface.dataDecoded.disconnect(self._processing_worker.on_data_decoded)
+        iface.portException.disconnect(self.error_occurred)
+
+    def _use_eeg_iface(self, iface) -> None:
+        """Cambia cual interfaz de adquisicion (archivo o serie) esta
+        activa -- ver load_user(). Llamar siempre con el streaming detenido
+        (todos los llamadores de load_user() ya hacen stop_streaming() antes
+        si corresponde); igual se cierra la conexion previa por las dudas."""
+        if iface is self._eeg_iface:
+            return
+        if self._eeg_iface.is_open():
+            self._eeg_iface.end_connection()
+        self._unwire_eeg_iface(self._eeg_iface)
+        self._eeg_iface = iface
+        self._wire_eeg_iface(self._eeg_iface)
+
+    def is_simulated_source(self) -> bool:
+        """True si la adquisicion activa es una grabacion (EEGFileInterface)
+        en vez del BioAmp real por puerto serie -- para que la UI pueda
+        aclarar que lo que se ve no es una señal en vivo."""
+        return self._eeg_iface is self._file_iface
 
     # ------------------------------------------------------------------
     def start(self) -> None:
@@ -116,14 +173,12 @@ class EegSession(QObject):
         self.current_user_id = user_id
         self.current_preferences = prefs
 
-        # Todos los estimulos quedan siempre activos: todavia no existe la
-        # pantalla de "configuracion avanzada" (ver plan de Fase 3) que le
-        # permitiria al usuario elegir apagar alguno -- hasta que exista,
-        # cualquier `stimulus_on` guardado (de antes, o de otra fuente) se
-        # ignora en favor de todos activos. No se persiste este cambio (no
-        # se llama save_preferences aca): en cuanto exista esa pantalla,
-        # esto se saca y stimulus_on vuelve a reflejar la eleccion real.
-        prefs.stimulus_on = [True] * len(prefs.stimulus)
+        # Respeta el stimulus_on guardado (ver "Método de entrada" en
+        # eeg_main_page.py -- Barrido/Secuencial/Direccional). Salvo que el
+        # registro no tenga el largo esperado (ej. uno viejo/corrupto), en
+        # cuyo caso se cae a todos activos en vez de romper.
+        if len(prefs.stimulus_on) != len(prefs.stimulus):
+            prefs.stimulus_on = [True] * len(prefs.stimulus)
 
         list_freqs = [stim.freq for stim in prefs.stimulus]
         self._filters.stop()
@@ -141,6 +196,13 @@ class EegSession(QObject):
         self._psd_estimator.stop()
         self._psd_estimator.load_buffer_size(len(prefs.channels))
         self._psd_estimator.load_calc_interval(prefs.time_window)
+        # Ventana de Welch de 2s (no 1s, el default de PSDEstimator): da
+        # resolucion de 0.5Hz (fs/nperseg), que calza con el espaciado real
+        # entre las frecuencias de los estimulos (0.5Hz) -- con 1s de
+        # ventana (1Hz de resolucion) dos estimulos vecinos podian caer en
+        # el mismo bin y no distinguirse en el grafico de PSD. No afecta al
+        # clasificador CCA (usa su propia ventana temporal, no esta PSD).
+        self._psd_estimator.load_time_windows(2.0)
 
         self._classifier.load_data(self._builtins.SAMPLE_RATE, prefs, self._builtins.SETTINGS.f_bands)
         self._processing_worker.load_classifier(self._classifier)
@@ -161,6 +223,10 @@ class EegSession(QObject):
         from ssvep.app.app_controller import TEST_PATIENTS
 
         relative_path = TEST_PATIENTS.get(user_name)
+        # Pacientes de prueba (grabacion .mat real) usan EEGFileInterface;
+        # cualquier otro paciente usa el BioAmp real por puerto serie.
+        self._use_eeg_iface(self._file_iface if relative_path is not None else self._serial_iface)
+
         self.missing_channel_names = set()
         if hasattr(self._eeg_iface, "set_source_file"):
             if relative_path is not None:
@@ -193,13 +259,24 @@ class EegSession(QObject):
         """Secuencia de la prueba de desempeño: para pacientes de prueba
         (ej. Guille) es la secuencia realmente pedida al grabar su .mat
         (TEST_PATIENTS_SEQUENCES, igual que AppController); para el resto
-        se genera al azar entre los estimulos activos."""
+        se genera al azar entre los estimulos activos.
+
+        En ambos casos se filtra para dejar solo los pasos de estímulos
+        actualmente activos (según el "Método de entrada" elegido, ver
+        eeg_main_page.py) -- sin esto, un paciente de prueba podía terminar
+        evaluando estímulos que ni siquiera están parpadeando en pantalla
+        por no estar en el modo actual."""
         from ssvep.app.app_controller import TEST_PATIENTS_SEQUENCES
 
         name = self.user_manager.get_user(self.current_user_id)["name"]
-        if name in TEST_PATIENTS_SEQUENCES:
-            return list(TEST_PATIENTS_SEQUENCES[name])
         active = [i for i, on in enumerate(self.current_preferences.stimulus_on) if on]
+        if name in TEST_PATIENTS_SEQUENCES:
+            filtrada = [i for i in TEST_PATIENTS_SEQUENCES[name] if i in active]
+            # Si el modo actual no tiene ningún paso en común con la
+            # secuencia grabada (caso degenerado, no debería pasar con los
+            # modos existentes), se usa la secuencia completa sin filtrar
+            # antes que dejar una prueba vacía.
+            return filtrada if filtrada else list(TEST_PATIENTS_SEQUENCES[name])
         return self._builtins.SETTINGS.generate_evaluation_sequence(active)
 
     def save_preferences(self, prefs) -> None:
@@ -216,6 +293,36 @@ class EegSession(QObject):
         archivo; no aplica con EEGSerialInterface."""
         if hasattr(self._eeg_iface, "set_source_file"):
             self._eeg_iface.set_source_file(path)
+
+    # ------------------------------------------------------------------
+    # Calibracion: mientras corre, reemplaza temporalmente el clasificador
+    # activo del pipeline (ver interfaz_ssvep/ssvep/app/frequency_calibrator.py,
+    # que usa su propio EEGSignalCCAClassifier aislado, nunca el de produccion).
+    def use_classifier(self, classifier) -> None:
+        self._processing_worker.load_classifier(classifier)
+        self._processing_worker.set_classifier_ready(True)
+
+    def restore_main_classifier(self) -> None:
+        self._processing_worker.load_classifier(self._classifier)
+        self._processing_worker.set_classifier_ready(True)
+
+    def reports_dir(self) -> str:
+        """Mismo directorio que ya usa BCIEvaluator (`<data_dir>/reportes`),
+        para que los reportes de calibración queden juntos con los de
+        validación."""
+        import os
+
+        return os.path.join(self._data_dir, "reportes")
+
+    def calibration_repository(self):
+        """Repositorio para persistir el detalle completo de una corrida de
+        calibracion (opcional -- ver calibration_repository.py). Import
+        perezoso: no hace falta pagar su costo si nunca se calibra."""
+        from ssvep.app.calibration_repository import CalibrationRunRepository
+
+        if not hasattr(self, "_calibration_repo"):
+            self._calibration_repo = CalibrationRunRepository(self._db_session)
+        return self._calibration_repo
 
     # ------------------------------------------------------------------
     def start_streaming(self) -> None:
@@ -251,16 +358,49 @@ class EegSession(QObject):
         `self.evaluator.add_classification(...)` (usado durante Validacion)."""
         self.add_test_data = value
 
+    def set_refractory_period(self, seconds: float) -> None:
+        self.refractory_period_s = max(0.0, seconds)
+
+    def announce_text(self, text: str) -> None:
+        """Dice `text` por voz (SAPI), sin bloquear -- para anunciar el
+        estimulo que hay que MIRAR durante la prueba de validacion (no el ya
+        detectado, eso lo hace `voice`/VoiceFeedback via
+        `audio_feedback_enabled`)."""
+        if self._validation_voice is None:
+            import win32com.client
+
+            self._validation_voice = win32com.client.Dispatch("SAPI.SpVoice")
+        self._validation_voice.Speak(text, 1)  # SVSFlagsAsync
+
     def _on_classification_result(self, result: int) -> None:
         self.classification_result.emit(result)
         if result < -1:
             return
-        if self.audio_feedback_enabled:
+        # La voz y el envío de teclas solo tienen sentido con el estimulador
+        # abierto (si no hay nada parpadeando, lo que clasifique es ruido):
+        # con la ventana cerrada se ignoran aunque estén activados. Tampoco
+        # se toca el período refractario en ese caso.
+        estimulador_abierto = self.stimulus_viewer.is_running()
+        if self.audio_feedback_enabled and estimulador_abierto:
             self.voice.announce(result)
         if self.add_test_data:
             self.evaluator.add_classification(result)
-        if self.enable_control:
-            self.keyboard.stim_received(result)
+        # El refractario solo debe importar (y solo se reinicia) con una
+        # clasificacion VALIDA (0-5) -- antes se chequeaba/reiniciaba en
+        # CADA llamada, incluyendo los "-1" (sin deteccion) que llegan mucho
+        # mas seguido que una deteccion real. Eso hacia que la ventana de 5s
+        # casi siempre la "consumiera" un -1 justo al vencer, sin que
+        # ninguna tecla real llegara a mandarse nunca.
+        if self.enable_control and estimulador_abierto and result >= 0:
+            import time
+
+            now = time.monotonic()
+            if now - self._last_action_time >= self.refractory_period_s:
+                # El estímulo nulo no manda ninguna tecla: solo hace entrar
+                # en período refractario.
+                if result != NULL_STIMULUS_INDEX:
+                    self.keyboard.stim_received(result)
+                self._last_action_time = now
 
     # ------------------------------------------------------------------
     def shutdown(self) -> None:

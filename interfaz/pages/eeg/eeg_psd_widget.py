@@ -119,7 +119,12 @@ class EegPsdWidget(QWidget):
             self._plot_widget.setXRange(*self._x_range)
             return
 
-        self._x_range = (min(self._target_freqs) - 3, max(self._target_freqs) + 3)
+        # El extremo superior siempre llega como minimo a 17Hz (frecuencia
+        # ancla de la calibracion, ver frequency_calibrator.py) aunque las
+        # frecuencias asignadas actuales sean todas mas bajas -- asi se
+        # puede comparar contra el ancla o candidatas no asignadas sin
+        # perder el rango normal alrededor de las frecuencias en uso.
+        self._x_range = (min(self._target_freqs) - 3, max(max(self._target_freqs) + 3, 17.0))
         self._plot_widget.setXRange(*self._x_range)
 
         # Las frecuencias objetivo estan a 0,5Hz una de otra: con "8,5 Hz" en

@@ -11,7 +11,7 @@ import sys
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QPixmap
 
-from PySide6.QtWidgets import QApplication, QGraphicsOpacityEffect, QLabel, QWidget
+from PySide6.QtWidgets import QApplication, QGraphicsOpacityEffect, QLabel, QSizePolicy, QWidget
 from ssvep.ui.bci_evaluator_operator import Ui_BCIEvaluatorOperator
 from ssvep.ui.bci_evaluator_user import Ui_BCIEvaluatorUser
 from ssvep.ui.sequence_widget import Ui_sequenceWidget
@@ -209,8 +209,14 @@ class SequenceWidget(QWidget):
 
         self.__ui = Ui_sequenceWidget()
         self.__ui.setupUi(self)
-        
 
+        # El .ui define expecteSequenceWidget con sizePolicy Maximum/Maximum
+        # (no crece mas alla de su sizeHint) -- se cambia a Expanding para
+        # que la cuadricula de iconos (y su relacion de aspecto) responda al
+        # tamaño real de la ventana en vez de quedar fija.
+        self.__ui.expecteSequenceWidget.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
 
         # Configurar estiramiento de columnas para distribución uniforme
         for layout_name in ("expectedSequenceLayout", "detectedSequenceLayout"):
@@ -360,7 +366,13 @@ class ScalableLabel(QLabel):
         self.__original_pixmap = pixmap
         self.setAlignment(Qt.AlignCenter)
         self.setMinimumSize(self.MIN_SIZE, self.MIN_SIZE)
-        self.setFixedSize(self.PREFERRED_SIZE, self.PREFERRED_SIZE)
+        # Antes era setFixedSize(PREFERRED_SIZE, PREFERRED_SIZE): el icono
+        # quedaba clavado en 90x90 sin importar el tamaño de la ventana. Con
+        # Expanding en las dos direcciones, la cuadricula (ver
+        # SequenceWidget, columnas con stretch uniforme) reparte el espacio
+        # disponible entre los iconos -- _update_pixmap() ya escala el
+        # pixmap manteniendo su relación de aspecto en cada resizeEvent.
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.__opacity_effect = QGraphicsOpacityEffect(self)
         self.__opacity_effect.setOpacity(1.0)
         self.setGraphicsEffect(self.__opacity_effect)

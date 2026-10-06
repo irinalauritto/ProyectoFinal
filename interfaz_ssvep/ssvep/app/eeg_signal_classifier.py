@@ -330,7 +330,13 @@ class EEGSignalCCAClassifier(BaseEEGClassifier):
         self.load_buffer_size(data.time_window, n_channels)
         
         t = np.linspace(0, self._time_window, int(self._fs * self._time_window), endpoint=False)
-        
+
+        # Se arma un diccionario nuevo en cada carga: antes se iba agregando
+        # sobre el anterior sin borrar nada, así que al cambiar los
+        # estímulos activos (ej. de Direccional a Barrido) los que quedaban
+        # inactivos seguían en `_reference_signals` y el clasificador podía
+        # seguir devolviéndolos (con su frecuencia vieja).
+        reference_signals: dict[int, np.ndarray] = {}
         for stim_index, stim in enumerate(data.stimulus):
             if data.stimulus_on[stim_index]:
                 references = []
@@ -338,10 +344,11 @@ class EEGSignalCCAClassifier(BaseEEGClassifier):
                     n_harmonic = stim.freq * harmonic
                     references.append(np.sin(2 * np.pi * n_harmonic * t))
                     references.append(np.cos(2 * np.pi * n_harmonic * t))
-                
-                self._reference_signals[stim_index] = np.array(references).T
 
-        self.set_target_labels(list(self._reference_signals.keys()))
+                reference_signals[stim_index] = np.array(references).T
+
+        self._reference_signals = reference_signals
+        self.set_target_labels(list(reference_signals.keys()))
 
     def classify_signal(self, signal_windows: np.ndarray) -> int:
         """Clasifica la ventana de señal utilizando el algoritmo CCA.
