@@ -1,4 +1,11 @@
-"""Punto de entrada de la interfaz unificada. Cuenta con página de Inicio, de control por  EMG  y de control por EEG."""
+"""
+
+Main de la interfaz del sistema de control para Asterics AAC que permite el accionamiento de dicho sistema mediante
+electromiografía o electroencefalografía bajo el paradigma de los potenciales evocados visuales de estado estacionario (SSVEP).
+
+
+Autora: Irina Lauritto
+"""
 
 import sys
 from pathlib import Path
@@ -8,22 +15,19 @@ _REPO_ROOT = _THIS_DIR.parent
 _EMG_DIR = _REPO_ROOT / "interfaz_emg"
 _SSVEP_DIR = _REPO_ROOT / "interfaz_ssvep"
 
-# interfaz_emg/ e interfaz_ssvep/ no se mueven de lugar (siguen siendo
-# ejecutables sueltas para depurar cada modulo de forma aislada) -- solo se
-# agregan al sys.path para poder importar `emg.interfazEmg` y
-# `ssvep.app...` tal cual desde aca.
+
 for _path in (_REPO_ROOT, _EMG_DIR, _SSVEP_DIR):
     _path_str = str(_path)
     if _path_str not in sys.path:
         sys.path.insert(0, _path_str)
 
-import pyqtgraph as pg  # noqa: E402
-from PySide6.QtCore import Qt, QTimer  # noqa: E402
-from PySide6.QtGui import QColor, QPalette  # noqa: E402
-from PySide6.QtWidgets import QApplication  # noqa: E402
+import pyqtgraph as pg 
+from PySide6.QtCore import Qt, QTimer  
+from PySide6.QtGui import QColor, QPalette  
+from PySide6.QtWidgets import QApplication 
 
-from interfaz.shell.main_window import MainShell  # noqa: E402
-from interfaz.shell.style import STYLESHEET  # noqa: E402
+from interfaz.shell.main_window import MainShell  
+from interfaz.shell.style import STYLESHEET 
 
 # Fondo/trazo por defecto de pyqtgraph, seteado antes de construir
 # cualquier PlotWidget en la app (propios o reusados de interfaz_ssvep,
@@ -37,11 +41,8 @@ pg.setConfigOption("foreground", "#69707b")
 
 
 def _paleta_clara() -> QPalette:
-    # Misma paleta que arma interfazEmg.py en su propio main() (probada:
-    # con Windows en modo oscuro, sin esto Fusion toma el tema oscuro del
-    # sistema para todo lo que el QSS no cubre explicitamente -- botones,
-    # groupbox, popups de combobox, etc). Se necesita aca tambien porque en
-    # emg_page.py se instancia VentanaEmg directo, sin pasar por ese main().
+    # Misma paleta que arma interfazEmg.py en su propio main() Se necesita aca tambien porque en
+    # emg_page.py se instancia VentanaEmg.
     paleta = QPalette()
     paleta.setColor(QPalette.ColorRole.Window, QColor("#ffffff"))
     paleta.setColor(QPalette.ColorRole.WindowText, QColor("#000000"))
@@ -59,21 +60,13 @@ def main() -> None:
     app = QApplication(sys.argv)
     # Sin esto, Windows usa su estilo nativo, que ignora buena parte del
     # QSS (bordes, fondos, padding de botones con contenido propio como las
-    # tarjetas de modalidad) y puede terminar solapando texto. Fusion es el
-    # estilo que ya usan interfazEmg.py y vision.py por la misma razon.
+    # tarjetas de modalidad) y puede terminar solapando texto. 
     app.setStyle("Fusion")
     app.styleHints().setColorScheme(Qt.ColorScheme.Light)
     app.setPalette(_paleta_clara())
     app.setStyleSheet(STYLESHEET)
 
-    window = MainShell()
-    # show() antes de showMaximized(): pedir el maximizado antes de que la
-    # ventana tenga su handle nativo (con DPI/geometria de pantalla ya
-    # resueltos por Windows) hacia que arrancara "maximizada" contra un
-    # tamaño chico/equivocado -- se notaba como que TODO en Inicio se veia
-    # de otro tamaño hasta el primer click (cualquiera), que forzaba a Qt a
-    # repreguntar el tamaño real y reacomodar. show() primero, y recien en
-    # el proximo ciclo de eventos (QTimer 0ms) el maximizado, evita eso.
+    window = MainShell() #en esta linea se crean las ventanas de la interfaz
     window.show()
     QTimer.singleShot(0, window.showMaximized)
 

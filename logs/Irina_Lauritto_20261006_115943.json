@@ -1,0 +1,15 @@
+{
+  "paciente": "Irina Lauritto",
+  "inicio_sesion": "2026-10-06T11:59:43",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-10-06T12:00:16",
+      "media_reposo": 4.08,
+      "sd_reposo": 2.04,
+      "k": 3.0,
+      "umbral": 10.18,
+      "n_muestras": 15007
+    }
+  ]
+}

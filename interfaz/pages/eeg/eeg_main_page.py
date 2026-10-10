@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 from interfaz.eeg.session import NULL_STIMULUS_INDEX
 from interfaz.pages.eeg.eeg_live_widget import EegLiveWidget
 from interfaz.pages.eeg.eeg_psd_widget import EegPsdWidget
+from interfaz.shell.asterics_launcher import AstericsLauncher, set_topmost
 
 # Orden fijo de estimulos -> (nombre, tecla). Coincide con
 # Settings.__stimuli_config y KeyboardController.__actions en interfaz_ssvep
@@ -144,6 +145,8 @@ class EegMainPage(QWidget):
         self._enable_control_before_test = False
         self._calibrator = None  # se crea al abrir "Iniciar calibración"
         self._calibration_viewer = None
+        self._asterics = AstericsLauncher(parent=self)
+        self._estimulador_estaba_abierto = False  # para detectar el cierre del estimulador
         self._enable_control_before_calibracion = False
         self._calib_current_freq = 0.0
         self._calib_candidate_num = 0
@@ -397,12 +400,22 @@ class EegMainPage(QWidget):
         self._btn_estimulador.clicked.connect(self._on_abrir_estimulador)
         layout.addWidget(self._btn_estimulador)
 
+        self._btn_iniciar_estim = QPushButton("Iniciar estimulación")
+        self._btn_iniciar_estim.setObjectName("SecondaryButton")
+        self._btn_iniciar_estim.setToolTip(
+            "\"Abrir estimulador\" muestra los estímulos quietos y abre AsTeRICS en el espacio "
+            "libre. Este botón hace que empiecen a parpadear."
+        )
+        self._btn_iniciar_estim.setEnabled(False)
+        self._btn_iniciar_estim.clicked.connect(self._on_iniciar_estimulacion)
+        layout.addWidget(self._btn_iniciar_estim)
+
         self._chk_enviar_teclas = QCheckBox("Enviar teclas")
         self._chk_enviar_teclas.setToolTip(
             "Al detectarse un estímulo, envía la tecla asignada (ver ayuda de Calibración) "
-            "a la aplicación activa. Solo actúa con el estimulador abierto. \"Nulo\" no envía "
-            "ninguna tecla: solo inicia el tiempo refractario. Apagado por defecto para no "
-            "interferir mientras se prueba."
+            "a la aplicación activa. Se activa al iniciar la estimulación (y se apaga al cerrar "
+            "el estimulador); solo actúa con la estimulación en curso. \"Nulo\" no envía "
+            "ninguna tecla: solo inicia el tiempo refractario."
         )
         self._chk_enviar_teclas.toggled.connect(self._session.set_enable_control)
         layout.addWidget(self._chk_enviar_teclas)
@@ -513,7 +526,7 @@ class EegMainPage(QWidget):
         layout.addWidget(self._psd_widget)
 
         self._chk_audio = QCheckBox("Retroalimentación auditiva")
-        self._chk_audio.setToolTip("Anuncia por voz el estímulo detectado. Solo actúa con el estimulador abierto.")
+        self._chk_audio.setToolTip("Anuncia por voz el estímulo detectado. Se activa al iniciar la estimulación (y se apaga al cerrar el estimulador).")
         self._chk_audio.toggled.connect(self._session.set_audio_feedback)
         layout.addWidget(self._chk_audio)
         layout.addStretch(1)
@@ -574,6 +587,10 @@ class EegMainPage(QWidget):
         self._slider_umbral.setValue(10)
         self._slider_umbral.blockSignals(False)
         self._on_umbral_changed(10)
+
+        # stop_streaming() (cambio de metodo, frecuencia o canales) tambien
+        # cierra el estimulador: se resincroniza el boton y, con el, AsTeRICS.
+        self._actualizar_boton_estimulador()
 
     # ------------------------------------------------------------------
     # Seleccion de canales (chips + cabeza de electrodos, como en vision)
@@ -888,6 +905,7 @@ class EegMainPage(QWidget):
         sentido."""
         self._btn_prueba.setEnabled(habilitado)
         self._btn_estimulador.setEnabled(habilitado)
+        self._actualizar_boton_estimulador()
         self._chk_enviar_teclas.setEnabled(habilitado)
         self._combo_modo_entrada.setEnabled(habilitado)
         self._sync_freq_tiles(extra_lock=not habilitado)
@@ -1019,14 +1037,57 @@ class EegMainPage(QWidget):
         )
 
     def _on_stimuli_ready(self, hwnd: int) -> None:
-        # La ventana del estimulador termino de abrirse: si hay una prueba
-        # esperando, arranca la prueba; si no, solo parpadea (boton
-        # "Abrir estimulador"). Mismo criterio que AppController.__on_stimuli_ready.
+        # La ventana del estimulador termino de abrirse. Si hay una prueba
+        # esperando, arranca la prueba (su propio flujo: parpadea y se ubica
+        # la ventana de la secuencia). Si no (boton "Abrir estimulador"), los
+        # estimulos quedan QUIETOS y se abre AsTeRICS en el espacio libre; el
+        # parpadeo empieza recien con "Iniciar estimulacion".
         if self._test_waiting_for_stimulator:
             self._test_waiting_for_stimulator = False
             self._begin_test()
         else:
-            self._session.stimulus_viewer.start_flicker()
+            if not self._asterics.open(place=self._ubicar_en_espacio_libre):
+                QMessageBox.warning(
+                    self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado."
+                )
+            self._actualizar_boton_estimulador()
+
+    def _ubicar_en_espacio_libre(self, hwnd: int) -> None:
+        """Ubica una ventana en el espacio libre del monitor del estimulador,
+        con el calculo que ya hace GameManager (escala del monitor y margenes
+        del estimulador). Se usa `_position_window` y no `place_window` a
+        proposito: `place_window` registra la ventana como "juego" y
+        GameManager.close_game() (que se llama en cada stop_streaming) le
+        mandaria un cierre -- AsTeRICS lo maneja AstericsLauncher (que solo
+        cierra ventanas propias) y la ventana de la prueba, su propio cierre.
+
+        Los estimulos no direccionales (Nulo, Espacio) ocupan la columna
+        izquierda y las flechas, la fila inferior (ver StimulusViewer). Si no
+        hay flechas activas (Barrido) esa fila queda vacia, y la ventana
+        aprovecha tambien ese alto."""
+        game_manager = self._session.game_manager
+        info = dict(self._session.stimulus_viewer.get_screen_info())
+        if not self._usa_fila_inferior():
+            info["margins"] = (0, info["margins"][1])
+        game_manager.load_screen_info(info)
+        game_manager._position_window(hwnd)
+
+    def _usa_fila_inferior(self) -> bool:
+        """True si hay algun estimulo activo de tipo flecha (van en la fila
+        inferior del estimulador)."""
+        prefs = self._session.current_preferences
+        return any(on and stim.shape_type == "arrow" for stim, on in zip(prefs.stimulus, prefs.stimulus_on))
+
+    def _on_iniciar_estimulacion(self) -> None:
+        if not self._session.stimulus_viewer.is_running():
+            return
+        self._session.begin_stimulation()
+        # Al iniciar la estimulacion se activan el envio de teclas y la
+        # retroalimentacion auditiva (el profesional puede apagar alguna a
+        # mano despues; se destildan solas al cerrar el estimulador).
+        self._chk_enviar_teclas.setChecked(True)
+        self._chk_audio.setChecked(True)
+        self._actualizar_boton_estimulador()
 
     def _on_abrir_estimulador(self) -> None:
         viewer = self._session.stimulus_viewer
@@ -1039,13 +1100,36 @@ class EegMainPage(QWidget):
     def _actualizar_boton_estimulador(self) -> None:
         corriendo = self._session.stimulus_viewer.is_running()
         self._btn_estimulador.setText("Cerrar estimulador" if corriendo else "Abrir estimulador")
+        # "Iniciar estimulacion" solo tiene sentido con el estimulador abierto
+        # y todavia sin parpadear; sigue a "Abrir estimulador", que se
+        # deshabilita durante la prueba y la calibracion.
+        self._btn_iniciar_estim.setEnabled(
+            corriendo and not self._session.stimulation_active and self._btn_estimulador.isEnabled()
+        )
+        # AsTeRICS acompaña al estimulador: cuando este se cierra (por el
+        # boton, al terminar una prueba, al empezar una calibracion o porque
+        # stop_streaming lo detuvo al cambiar de metodo/frecuencias), se
+        # cierra su ventana propia o se devuelve la pestana a su lugar. No
+        # hace nada si no habia nada abierto.
+        if not corriendo:
+            self._asterics.close()
+            # Solo en el cierre (no en cada refresco): se apagan el envio de
+            # teclas y la voz, que se activaron al iniciar la estimulacion.
+            if self._estimulador_estaba_abierto:
+                self._chk_enviar_teclas.setChecked(False)
+                self._chk_audio.setChecked(False)
+        self._estimulador_estaba_abierto = corriendo
 
     def _begin_test(self) -> None:
         if self._eval_widgets is None:
             return
-        eval_op = self._eval_widgets[0]
+        eval_op, eval_user = self._eval_widgets[0], self._eval_widgets[1]
         eval_op.enable_buttons()
-        self._session.stimulus_viewer.start_flicker()
+        self._session.begin_stimulation()
+        # La ventana con el orden de estimulos va en el espacio libre del
+        # estimulador (igual que AsTeRICS), siempre visible.
+        self._ubicar_en_espacio_libre(int(eval_user.winId()))
+        set_topmost(int(eval_user.winId()), True)
 
     # ------------------------------------------------------------------
     # Validacion (prueba de desempeño) -- reusa BCIEvaluator + sus widgets
@@ -1185,3 +1269,4 @@ class EegMainPage(QWidget):
         self._cerrar_ventanas_prueba()
         if self._calibrator is not None and self._calibrator.is_running():
             self._cancelar_calibracion()
+        self._asterics.close()

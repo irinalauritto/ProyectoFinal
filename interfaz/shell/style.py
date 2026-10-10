@@ -1,9 +1,8 @@
-"""Hoja de estilos (QSS) con la paleta del artefacto "Comando AAC".
+"""
+Hoja de estilos (QSS) para la aplicación del control de Asterics AAC.
 
-Colores tomados de los mockups Main/Pantalla2_EMG/Pantalla3_EEG (paleta
-azul sobre grises, ya confirmada). Se aplica a nivel de QApplication para
-que tambien alcance a los QMessageBox que abre interfazEmg.py sin tener que
-tocar ese archivo.
+Se aplica a nivel de QApplication para que tambien alcance a los QMessageBox que abre interfazEmg.py 
+sin tener que tocar ese archivo.
 """
 
 BLUE = "#2f6690"
@@ -29,9 +28,7 @@ QWidget {{
     font-size: 13px;
 }}
 
-/* Transparencia de QScrollArea resuelta aca (no con setStyleSheet directo
-   sobre el widget -- eso corta la cascada para sus hijos). El viewport de
-   un QScrollArea son dos QWidget anidados entre el area y el contenido. */
+
 QScrollArea {{
     background: transparent;
     border: none;

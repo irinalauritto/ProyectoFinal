@@ -1,13 +1,8 @@
-"""EegSession: orquesta el pipeline de SSVEP (adquisicion, filtros, PSD,
-clasificador CCA, evaluador, control por teclado, voz, estimulo visual)
-sin depender en nada de la UI de interfaz_ssvep (UserUI/AppController).
+"""EegSession: orquesta el pipeline de electroencefalografía (adquisicion, filtros, PSD,
+clasificador CCA, evaluador, control por teclado, voz, estimulo visual). Reemplaza el rol 
+de AppController (presente en vision).
 
-Reemplaza el rol de AppController para la interfaz nueva: mismas clases de
-"logica" de ssvep/app/, importadas e instanciadas tal cual (nunca se edita
-ningun archivo de interfaz_ssvep/), orquestadas por esta clase propia.
-
-CCA es el unico clasificador contemplado -- no se orquesta el camino de
-entrenamiento eTRCA (TrainingManager) porque esta interfaz no lo necesita.
+Autora: Irina Lauritto
 """
 
 from __future__ import annotations
@@ -110,6 +105,11 @@ class EegSession(QObject):
         # registro de datos de la prueba de validacion.
         self.refractory_period_s: float = 5.0
         self._last_action_time: float = 0.0
+        # True desde que se inicia el parpadeo (begin_stimulation) hasta que
+        # se cierra el estimulador. Con los estimulos quietos (ventana abierta
+        # pero sin parpadear) no hay nada que detectar, asi que ni se envian
+        # teclas ni se anuncia por voz.
+        self._stimulating = False
 
         # Voz propia para anunciar el estimulo que hay que MIRAR durante la
         # prueba de validacion (distinta de `voice`/VoiceFeedback, que
@@ -125,7 +125,7 @@ class EegSession(QObject):
         self._processing_worker.classificationResult.connect(self._on_classification_result)
         self._processing_worker.errorOccurred.connect(self.error_occurred)
 
-        self.stimulus_viewer.stimuli_ready.connect(self.stimuli_ready)
+        self.stimulus_viewer.stimuli_ready.connect(self._on_stimuli_ready)
 
     # ------------------------------------------------------------------
     def _wire_eeg_iface(self, iface) -> None:
@@ -325,6 +325,22 @@ class EegSession(QObject):
         return self._calibration_repo
 
     # ------------------------------------------------------------------
+    def _on_stimuli_ready(self, hwnd: int) -> None:
+        # La ventana se acaba de abrir: los estimulos estan quietos hasta que
+        # se llame a begin_stimulation().
+        self._stimulating = False
+        self.stimuli_ready.emit(hwnd)
+
+    def begin_stimulation(self) -> None:
+        """Inicia el parpadeo de los estimulos (la ventana debe estar abierta)."""
+        self.stimulus_viewer.start_flicker()
+        self._stimulating = True
+
+    @property
+    def stimulation_active(self) -> bool:
+        """True si el estimulador esta abierto Y parpadeando."""
+        return self._stimulating and self.stimulus_viewer.is_running()
+
     def start_streaming(self) -> None:
         self._processing_worker.start()
         self._eeg_iface.begin_connection(self.current_preferences.channels)
@@ -377,10 +393,11 @@ class EegSession(QObject):
         if result < -1:
             return
         # La voz y el envío de teclas solo tienen sentido con el estimulador
-        # abierto (si no hay nada parpadeando, lo que clasifique es ruido):
-        # con la ventana cerrada se ignoran aunque estén activados. Tampoco
+        # abierto Y parpadeando (si no, lo que clasifique es ruido): con la
+        # ventana cerrada o con los estímulos quietos se ignoran aunque estén
+        # activados. Tampoco
         # se toca el período refractario en ese caso.
-        estimulador_abierto = self.stimulus_viewer.is_running()
+        estimulador_abierto = self.stimulation_active
         if self.audio_feedback_enabled and estimulador_abierto:
             self.voice.announce(result)
         if self.add_test_data:

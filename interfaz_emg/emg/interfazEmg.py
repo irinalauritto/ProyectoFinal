@@ -1,18 +1,22 @@
 """
 interfazEmg.py
 
+Esta clase implementa la interfaz gráfica de usuario (GUI) para el control por electromiografía (EMG)
+utilizando PyQtGraph y PySide6.
+
 Visualización en tiempo real de la señal EMG (ENV) recibida desde la ESP32
 por puerto serie, con funcionamiento como switch de accionamiento por EMG
 para controlar Asterics Grid.
 
-Incluye: calibración de umbral en reposo, prueba de validación guiada de
+Incluye además la calibración de umbral en reposo, prueba de validación guiada de
 3 contracciones, detección de eventos por flanco ascendente con tiempo
-refractario, envío de tecla + sonido de retroalimentación por evento, y
+refractario, envío de tecla y sonido de retroalimentación por evento. También genera el
 registro de sesión en un archivo JSON.
 
 La lógica (lectura serie, filtrado, calibración, detección de eventos,
-envío de tecla) vive en `EmgEngine`, separada de la UI (`VentanaEmg`), para
-poder reusarla desde otra interfaz sin duplicarla -- ver `interfaz/pages/emg/`.
+envío de tecla) se encuentra en la clase `EmgEngine` mientras que la UI  se halla en `VentanaEmg`.
+
+Autora: Irina Lauritto
 """
 
 # Librerías
@@ -63,16 +67,14 @@ except ImportError:  # en plataformas no Windows simplemente se omite el sonido
 
 # Definición de constantes globales
 # El puerto serie se detecta automáticamente al iniciar la aplicación
-# (ver _detectar_puerto_esp32), para que quien use la interfaz no tenga que
-# editar el código ni saber en qué COM quedó la ESP32.
 SERIAL_PORT = None
 BAUD_RATE = 115200
 BUFFER_SIZE = 2000    # Cantidad de muestras visibles en el gráfico
 UPDATE_MS = 20        # Intervalo de refresco del gráfico (ms)
 
 # Modo de la señal recibida por puerto serie:
-#   "ENVOLVENTE": se usa tal cual el valor que manda el sensor (salida ENV
-#                 del MyoWare 2.0, ya rectificada y filtrada en hardware).
+#   "ENVOLVENTE": se usa tal cual el valor que manda el sensor (salida SIG
+#                 del MyoWare, ya rectificada y filtrada en hardware).
 #
 #   "RAW": el valor recibido es la señal EMG cruda (sin rectificar). La
 #          envolvente se calcula por software en esta interfaz: pasaaltos
@@ -351,10 +353,10 @@ class EmgEngine(QObject):
     def _aceptar_evento(self, marca_tiempo, valor) -> None:
         self.ultimo_evento_tiempo = marca_tiempo
 
-        # a) pulsación de tecla simulada (captada por Asterics Grid como switch)
+        # Pulsación de tecla simulada 
         self._enviar_tecla(self._tecla_actual)
 
-        # b) retroalimentación sonora
+        # Retroalimentación sonora
         if _SONIDO_DISPONIBLE:
             winsound.MessageBeep(winsound.MB_OK)
 
@@ -564,10 +566,7 @@ class DialogoDatosPaciente(QDialog):
 
 
 class VentanaEmg(QWidget):
-    """Ventana principal: gráfico en tiempo real de la señal y panel de control del switch EMG.
-
-    Toda la lógica (lectura serie, filtrado, calibración, detección de
-    eventos, tecla) vive en `EmgEngine` (`self.engine`) -- esta clase solo
+    """Ventana principal: gráfico en tiempo real de la señal y panel de control del switch EMG. Esta clase solo
     arma la UI y reacciona a sus señales."""
 
     def __init__(self, ser):
@@ -879,7 +878,7 @@ class VentanaEmg(QWidget):
         self.lbl_aviso.setVisible(False)
 
     # ------------------------------------------------------------------
-    # Prueba de validación (3 contracciones)
+    # Prueba de validación 
     # ------------------------------------------------------------------
     def _iniciar_prueba_validacion(self):
         if not self.engine.esta_calibrado():
@@ -930,9 +929,7 @@ class VentanaEmg(QWidget):
 
 
 def _detectar_puerto_esp32(muestras_necesarias=2, timeout_lectura=0.3, intentos_maximos=8):
-    # Recorre los puertos serie disponibles y prueba cada uno brevemente
-    # De esta forma no hace falta que quien use la interfaz
-    # sepa en qué COM quedó la placa.
+    # Recorre los puertos serie disponibles y prueba cada uno brevemente para ver si la ESP32 está conectada y enviando datos. 
     for puerto in serial.tools.list_ports.comports():
         try:
             with serial.Serial(puerto.device, BAUD_RATE, timeout=timeout_lectura) as prueba:
@@ -951,8 +948,7 @@ def _detectar_puerto_esp32(muestras_necesarias=2, timeout_lectura=0.3, intentos_
 
 
 def _elegir_puerto_manualmente():
-    # Cuando la detección automática no encuentra nada (o hay más
-    # de un dispositivo serie y no se puede distinguir con certeza): se le
+    # Cuando la detección automática no encuentra nada: se le
     # solicita a quien esté usando la interfaz que elija de una lista, sin
     # necesidad de tocar el código.
     puertos = list(serial.tools.list_ports.comports())
@@ -1014,8 +1010,7 @@ def main():
         print(f"No se pudo abrir el puerto {puerto}: {e}")
         sys.exit(1)
 
-    # La ventana principal se abre primero (ya empieza a graficar la señal),
-    # y recién arriba de ella aparece la ventana emergente pidiendo los
+    # La ventana principal se abre primero y recién arriba de ella aparece la ventana emergente pidiendo los
     # datos del paciente.
     ventana = VentanaEmg(ser)
     ventana.showMaximized()

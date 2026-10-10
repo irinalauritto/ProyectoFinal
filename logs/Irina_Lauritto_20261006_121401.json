@@ -1,0 +1,81 @@
+{
+  "paciente": "Irina Lauritto",
+  "inicio_sesion": "2026-10-06T12:14:01",
+  "eventos": [
+    {
+      "tipo": "calibracion",
+      "timestamp": "2026-10-06T12:14:37",
+      "media_reposo": 1.19,
+      "sd_reposo": 1.39,
+      "k": 3.0,
+      "umbral": 5.36,
+      "n_muestras": 15011
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:14:47",
+      "valor": 5.395213019139654,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:14:48",
+      "valor": 5.430617034951771,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:15",
+      "valor": 5.390578688683618,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:18",
+      "valor": 5.492285666579386,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:19",
+      "valor": 5.3956788631440915,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:26",
+      "valor": 5.36446080340756,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:28",
+      "valor": 5.370503000465221,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:42",
+      "valor": 5.403864300922967,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:53",
+      "valor": 5.406892792604784,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:15:56",
+      "valor": 5.4933884431241555,
+      "umbral": 5.36
+    },
+    {
+      "tipo": "activacion",
+      "timestamp": "2026-10-06T12:16:16",
+      "valor": 5.378058822443262,
+      "umbral": 5.36
+    }
+  ]
+}

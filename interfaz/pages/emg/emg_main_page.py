@@ -1,10 +1,11 @@
-"""Pantalla principal de EMG (mockup: Pantalla2_EMG.dc.html).
+"""
+Pantalla principal de EMG (mockup: Pantalla2_EMG.dc.html).
 
-Arma la UI de cero con la estetica "Comando AAC" y la conecta a un
-EmgEngine (ver interfaz_emg/emg/interfazEmg.py -- la logica de lectura
-serie/filtrado/calibracion/deteccion se separo de VentanaEmg en un
-refactor propio; esta pantalla no reusa VentanaEmg ni su UI, solo
-`EmgEngine` y las funciones/constantes sueltas de ese modulo).
+Arma la UI de cero con la estética de la aplicación de control de Asterics AAC y la conecta a un
+EmgEngine.
+
+Autora: Irina Lauritto
+
 """
 
 from __future__ import annotations
@@ -25,15 +26,17 @@ from PySide6.QtWidgets import (
 )
 
 from interfaz.pages.emg.emg_live_widget import EmgLiveWidget
+from interfaz.shell.asterics_launcher import AstericsLauncher
 
 
 class EmgMainPage(QWidget):
     """Pantalla principal: señal en vivo, calibración, prueba de validación
-    guiada y parámetros. Recibe un `EmgEngine` ya arrancado."""
+    guiada y parámetros. Recibe un `EmgEngine` ya arrancado que viene de emg_page."""
 
     def __init__(self, engine, parent=None):
         super().__init__(parent)
         self._engine = engine
+        self._asterics = AstericsLauncher(parent=self)
 
         import emg.interfazEmg as emgmod
 
@@ -65,9 +68,6 @@ class EmgMainPage(QWidget):
         title = QLabel("Control por EMG")
         title.setObjectName("PageTitle")
         layout.addWidget(title)
-        #subtitle = QLabel("Switch de accionamiento por contracción muscular")
-        #subtitle.setObjectName("MutedLabel")
-        #layout.addWidget(subtitle)
         return layout
 
     def _build_signal_panel(self) -> QFrame:
@@ -245,6 +245,15 @@ class EmgMainPage(QWidget):
         self._spin_duracion.valueChanged.connect(self._on_duracion_changed)
         layout.addWidget(self._spin_duracion)
 
+        self._btn_asterics = QPushButton("Abrir AsTeRICS")
+        self._btn_asterics.setObjectName("SecondaryButton")
+        self._btn_asterics.setToolTip(
+            "Abre AsTeRICS en el navegador predeterminado. La tecla enviada llega a la "
+            "ventana que tenga el foco: haga clic en AsTeRICS antes de usar el switch."
+        )
+        self._btn_asterics.clicked.connect(self._on_abrir_asterics)
+        layout.addWidget(self._btn_asterics)
+
         layout.addStretch(1)
         self._lbl_aviso = QLabel("")
         self._lbl_aviso.setObjectName("WarningLabel")
@@ -384,6 +393,12 @@ class EmgMainPage(QWidget):
     def _on_duracion_changed(self, valor: int) -> None:
         self._engine.set_duracion_tecla_ms(valor)
         self._avisar_si_no_calibrado()
+
+    def _on_abrir_asterics(self) -> None:
+        # Sin estimulador de por medio: solo se abre (si ya estaba abierta
+        # por este boton, se la trae al frente), sin ubicarla.
+        if not self._asterics.open():
+            QMessageBox.warning(self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado.")
 
     # ------------------------------------------------------------------
     # Prueba de validacion

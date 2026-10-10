@@ -1,6 +1,10 @@
-"""Pantalla de Inicio
+"""
+Pantalla de Inicio
 Aquí se guardan los datos del pacientes y se selecciona la modalidad de control (EMG o EEG). 
-Se reutiliza el mismo formulario para crear un paciente nuevo o elegir uno guardado, y se valida que haya datos completos antes de habilitar el boton "Comenzar sesion".
+Se reutiliza el mismo formulario para crear un paciente nuevo o elegir uno guardado, 
+y se valida que haya datos completos antes de habilitar el boton "Comenzar sesión".
+
+Autora: Irina Lauritto
 
 """
 
@@ -42,13 +46,16 @@ def _logo_label(filename: str, height: int) -> QLabel:
 
 
 class FixedHeightStack(QStackedWidget):
+    """ Widget que mantiene una altura fija basada en el contenido más alto de sus hijos. """
 
     def sizeHint(self):
+        """ Devuelve un tamaño sugerido que tiene la misma anchura que el tamaño sugerido normal, pero con la altura del hijo más alto. """
         hint = super().sizeHint()
         max_h = max((self.widget(i).sizeHint().height() for i in range(self.count())), default=hint.height())
         return hint.expandedTo(hint.__class__(hint.width(), max_h))
 
     def minimumSizeHint(self):
+        """ Devuelve un tamaño mínimo sugerido que tiene la misma anchura que el tamaño mínimo sugerido normal, pero con la altura del hijo más alto. """
         hint = super().minimumSizeHint()
         max_h = max(
             (self.widget(i).minimumSizeHint().height() for i in range(self.count())), default=hint.height()
@@ -57,7 +64,7 @@ class FixedHeightStack(QStackedWidget):
 
 
 class ModalityCard(QPushButton):
-    """Tarjeta seleccionable EMG o EEG con titulo y descripcion."""
+    """Tarjeta seleccionable EMG o EEG con título y descripción."""
 
     def __init__(self, titulo: str, descripcion: str, parent=None):
         super().__init__(parent)
@@ -81,7 +88,7 @@ class ModalityCard(QPushButton):
 
 
 class InicioPage(QWidget):
-    """Pagina inicial: elegir o crear paciente, seleccionar modalidad de control."""
+    """Página inicial: elegir o crear paciente, seleccionar modalidad de control."""
 
     session_started = Signal(str)  # "emg" | "eeg"
 
@@ -125,7 +132,7 @@ class InicioPage(QWidget):
         logos_row.addStretch(1)
         content.addLayout(logos_row)
 
-        subtitle = QLabel("Grupo de Investigación en Rehabilitación · Facultad de Ingeniería, UNER")
+        subtitle = QLabel("Grupo de Ingeniería en Rehabilitación · Facultad de Ingeniería, UNER")
         subtitle.setObjectName("MutedCenteredLabel")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         content.addWidget(subtitle)
@@ -212,15 +219,15 @@ class InicioPage(QWidget):
 
         # --- Confirmar ---
         bottom_row = QHBoxLayout()
-        self.lbl_hint = QLabel("Seleccioná una modalidad para continuar.")
+        self.lbl_hint = QLabel("Seleccione una modalidad para continuar.")
         self.lbl_hint.setObjectName("MutedLabel")
     
         _hint_font_metrics = self.lbl_hint.fontMetrics()
         _hint_min_width = max(
             _hint_font_metrics.horizontalAdvance(texto)
             for texto in (
-                "Seleccioná una modalidad para continuar.",
-                "Completá los datos del paciente para continuar.",
+                "Seleccione una modalidad para continuar.",
+                "Complete los datos del paciente para continuar.",
                 "Todo listo.",
             )
         )
@@ -240,25 +247,20 @@ class InicioPage(QWidget):
         self._on_tab_changed(1)
 
     # ------------------------------------------------------------------
+    # Desde acá lo que está escrito es la lógica de negocio de la página. Lo previo es solo la construcción de la UI.
     def _on_tab_changed(self, tab_id: int) -> None:
+        """ Cambia entre la pestaña de paciente guardado y la de paciente nuevo. """
         self.tab_stack.setCurrentIndex(tab_id)
         self._refresh_start_button()
 
     def _on_modalidad_changed(self, modality_id: int) -> None:
+        """ Cambia entre la modalidad EMG y la modalidad EEG. """
         self._modalidad = "emg" if modality_id == 0 else "eeg"
-        # El checkbox queda siempre visible: ocultarlo por modalidad hacia
-        # que el formulario cambiara de alto ("relacion de aspecto") al
-        # tocar EMG/EEG. En EEG por ahora es solo informativo -- un usuario
-        # de SSVEP nuevo siempre se persiste en su base (lo exige su modelo
-        # de datos para poder correr la sesion), a diferencia de EMG donde
-        # controla si se guarda en patients.json.
         self._reload_pacientes_guardados()
         self._refresh_start_button()
 
     def _ensure_ssvep_connection(self) -> None:
-        """Conecta (una sola vez, recien cuando hace falta) a la base de
-        SSVEP para poder listar/crear sus usuarios. No importa nada de
-        ssvep.app hasta que se elige modalidad EEG por primera vez."""
+        """Conecta a la base de SSVEP para poder listar/crear sus usuarios."""
         if self._ssvep_user_manager is not None:
             return
         import sys
@@ -276,7 +278,7 @@ class InicioPage(QWidget):
         init_database(str(data_dir))
         engine_factory = crear_engine()
         db_session = engine_factory()
-        self._ssvep_user_manager = UserManager(UserRepositorySQLAlchemy(db_session))
+        self._ssvep_user_manager = UserManager(UserRepositorySQLAlchemy(db_session)) #en esta línea y en la siguiente se crean los managers de SSVEP para poder acceder a la base de datos de usuarios y preferencias
         self._ssvep_prefs_manager = PreferencesManager(PreferencesRepositorySQLAlchemy(db_session))
 
     def _reload_pacientes_guardados(self) -> None:

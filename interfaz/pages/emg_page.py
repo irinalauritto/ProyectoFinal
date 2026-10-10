@@ -1,18 +1,18 @@
-"""Pagina EMG del shell: EmgEngine (logica de interfazEmg.py, sin UI) mas
-EmgMainPage (UI propia, estetica Comando AAC).
+"""
+Pagina del control por Electromiografía:
+    EmgEngine es la logica de interfazEmg.py
+    EmgMainPage es la UI que posee la misma estetica que el resto de la app de comando de Asterics AAC).
 
-`interfaz_emg/emg/interfazEmg.py` se refactorizo para separar la logica
-(EmgEngine: lectura serie, filtrado, calibracion, deteccion de eventos,
-tecla) de su UI original (VentanaEmg, que sigue funcionando igual en modo
-standalone) -- esta pagina no embebe VentanaEmg, arma su propia UI sobre
-EmgEngine, igual criterio que interfaz/pages/eeg_page.py con ssvep.
+Esta página es la ventana "vacía". El contenido que se dibuja en la misma es el que se halla en emg_main_page.py.
+
+Autora: Irina Lauritto
 """
 
 import serial
 
 from PySide6.QtWidgets import QLabel, QMessageBox, QVBoxLayout, QWidget
 
-from emg.interfazEmg import BAUD_RATE, EmgEngine, _detectar_puerto_esp32, _elegir_puerto_manualmente
+from emg.interfazEmg import BAUD_RATE, EmgEngine, _detectar_puerto_esp32, _elegir_puerto_manualmente #se importa la logica de interfazEmg.py para poder usarla en la pagina de EMG 
 
 from interfaz.shell.app_state import SharedAppState
 
@@ -40,6 +40,8 @@ class EmgPage(QWidget):
 
         Devuelve False (y muestra un aviso) si no se pudo abrir el puerto,
         para que el shell no navegue a una pantalla EMG vacía.
+
+        Esta es la función que reemplaza a la main() de interfazEmg.py, que no se usa en la app de comando AAC.
         """
         if self._engine is not None:
             self._engine.establecer_paciente(nombre_paciente)
@@ -60,7 +62,7 @@ class EmgPage(QWidget):
 
         from interfaz.pages.emg.emg_main_page import EmgMainPage
 
-        self._engine = EmgEngine(self._serial_conn)
+        self._engine = EmgEngine(self._serial_conn) #EmgEngine es la logica de interfazEmg.py, que se importa para poder usarla en la pagina de EMG. Acá se llama a la l+ogica pero si ui. 
         self._main_page = EmgMainPage(self._engine)
 
         self._layout.removeWidget(self._placeholder)

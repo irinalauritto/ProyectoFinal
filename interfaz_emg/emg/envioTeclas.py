@@ -5,6 +5,9 @@ Interfaz simple para enviar manualmente un evento de tecla (Enter, Espacio o
 Flecha derecha) con una duración de pulsación configurable. Sirve para
 probar que Asterics Grid (u otro software) responde correctamente al switch
 antes de conectar la señal EMG real.
+No se utiliza en la aplicación final, solo como herramienta de prueba.
+
+Autora: Irina Lauritto
 
 """
 

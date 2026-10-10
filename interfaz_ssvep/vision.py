@@ -1,3 +1,7 @@
+"""
+Autor: Lautaro Francisconi
+
+"""
 import sys
 import os
 from PySide6.QtCore import Qt

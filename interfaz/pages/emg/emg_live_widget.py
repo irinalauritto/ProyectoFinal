@@ -1,9 +1,12 @@
-"""Grafico de señal EMG (envolvente) en vivo, estetica "Comando AAC".
+"""
+Script encargado del gráfico de señal EMG (envolvente) en vivo, con la estética de la aplicación de control de Asterics AAC.
 
 Reemplaza al grafico de `interfazEmg.py` (pyqtgraph con fondo blanco/negro,
 sin la estetica del artefacto) -- se alimenta de las mismas señales que
 emite `EmgEngine.samples_ready(valores, eventos)` (ver interfaz_emg/emg/
 interfazEmg.py, que no se toca en su UI, solo se le separo la logica).
+
+Autora: Irina Lauritto
 """
 
 from __future__ import annotations
@@ -119,9 +122,6 @@ class EmgLiveWidget(QWidget):
         self._curve.setData(self._buffer)
         self._scatter.setData(x=self._marker_x, y=self._marker_y)
 
-        # Min/max reales (no percentiles): a diferencia del ruido de fondo en
-        # la PSD, un pico de contraccion ES la señal de interes aca -- nunca
-        # se debe recortar, aunque sea un solo pico aislado en la ventana.
         lo, hi = float(np.min(self._buffer)), float(np.max(self._buffer))
         span = hi - lo
         if self._umbral is not None:

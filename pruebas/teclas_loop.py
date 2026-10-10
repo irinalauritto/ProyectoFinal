@@ -1,3 +1,11 @@
+"""
+Clase de prueba para enviar teclas (flecha arriba, flecha abajo, flecha izquierda, flecha derecha, select) en un loop con una duración de pulsación configurable. 
+Se utilizó para probar que Asterics Grid responde correctamente a la lógica que se implementará con el registro de los potenciales evocados visuales de estado estacionario(SSVEP).
+La ventana con estímulos generada es simplemente ilstrativa, no tiene ninguna relación con la interfaz final de SSVEP.
+
+
+Autora: Irina Lauritto
+"""
 import tkinter as tk
 import time
 import math

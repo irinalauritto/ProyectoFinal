@@ -703,12 +703,16 @@ class _StimuliGenerator:
         simple de 3 puntos, misma convención de rotación por dirección)."""
         img = Image.new('L', (size, size), 0)
         draw = ImageDraw.Draw(img)
-        w, h = size, size
+        # El triángulo se dibuja con 1 px de margen vacío en todo el borde de
+        # la máscara: si la base ocupaba la fila del borde, PsychoPy la
+        # mezclaba (interpolación) con la fila opuesta y aparecía una línea
+        # gris fina en la punta del triángulo "arriba".
+        lo, hi = 1, size - 2
 
         points = [
-            (round(w*0.5), round(h)),
-            (round(0), round(0)),
-            (round(w), round(0)),
+            (round((lo + hi) / 2), hi),
+            (lo, lo),
+            (hi, lo),
         ]
         draw.polygon(points, fill=255)
         # El polígono sin rotar apunta hacia abajo (punta en (w*0.5, h)) EN
