@@ -7,7 +7,7 @@ from multiprocessing.sharedctypes import Synchronized
 import time
 from collections import deque
 from ctypes import wintypes
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -90,7 +90,9 @@ class StimulusViewer(QWidget):
         width: Optional[int] = None, 
         height: Optional[int] = None, 
         size: int = 217, 
-        time_stamp: bool = True
+        time_stamp: bool = True,
+        monitor_index: Union[int, Callable[[], Optional[int]], None] = None,
+        cover_taskbar: Union[bool, Callable[[], bool]] = False,
     ) -> None:
         """
         Inicializa el widget de visualización de estímulos.
@@ -100,8 +102,19 @@ class StimulusViewer(QWidget):
             height: Alto de la pantalla objetivo.
             size: Tamaño base del estímulo en píxeles.
             time_stamp: Si se debe habilitar el seguimiento de timestamps.
+            monitor_index: Monitor (en el orden de Windows) donde abrir los
+                estímulos, o una función sin argumentos que lo devuelve (se
+                evalúa en cada apertura, por si cambian los monitores). Si es
+                None (o no existe) se usa el último, como siempre.
+            cover_taskbar: Si es True (o una función que lo devuelve) la
+                ventana ocupa el monitor ENTERO y queda por encima de la
+                barra de tareas, sin activarse al hacerle clic; los estímulos
+                conservan su lugar dentro del área de trabajo. Por defecto
+                False: la ventana mide el área de trabajo, como siempre.
         """
         super().__init__()
+        self.__requested_monitor_index = monitor_index
+        self.__cover_taskbar = cover_taskbar
 
         # --- Configuración de pantalla ---
         self.__screen_width: Optional[int] = width
@@ -392,21 +405,37 @@ class StimulusViewer(QWidget):
         if self.__margin is None:
             raise ValueError("Margin no calculado. Llama a __get_stimulus_regions primero.")
             
+        cover = self.__cover_taskbar() if callable(self.__cover_taskbar) else bool(self.__cover_taskbar)
+        geometry = _cover_taskbar_geometry(self.__monitor_index or 0, self.__monitor_scale or 1) if cover else None
+        window_width = window_height = dx = dy = 0
+        if geometry is not None:
+            window_width, window_height, dx, dy = geometry
+        positions = [(x + dx, y + dy) for x, y in self.__stimulus_positions]
+
         return StimulusConfig(
             screen_width=self.__screen_width or 0,
             screen_height=self.__screen_height or 0,
             stimulus_data=self.__stimulus_config or {},
-            stimulus_positions=self.__stimulus_positions,
+            stimulus_positions=positions,
             stimulus_size=self.__stimulus_size,
             height_margin=self.__margin[0],
             width_margin=self.__margin[1],
-            monitor_index=self.__monitor_index or 0
+            monitor_index=self.__monitor_index or 0,
+            window_width=window_width,
+            window_height=window_height,
+            cover_taskbar=geometry is not None,
         )
 
     def __get_stimulus_regions(self) -> Tuple[int, int]:
         """Obtiene y ajusta las regiones de la pantalla según la escala del monitor."""
         monitors = self.__monitor_scales()
-        self.__monitor_index, self.__monitor_scale = monitors[-1]
+        requested = self.__requested_monitor_index
+        if callable(requested):
+            requested = requested()
+        if requested is not None and 0 <= requested < len(monitors):
+            self.__monitor_index, self.__monitor_scale = monitors[requested]
+        else:
+            self.__monitor_index, self.__monitor_scale = monitors[-1]
 
         self.__screen_width, self.__screen_height = self.__work_area(self.__monitor_index)
 
@@ -522,6 +551,65 @@ class StimulusViewer(QWidget):
 
         # Fallback seguro si el índice está fuera de rango
         return monitors[index] if index < len(monitors) else monitors[-1]
+
+
+# =========================================================================
+# Ventana que cubre la barra de tareas
+# =========================================================================
+
+class _Rect(ctypes.Structure):
+    _fields_ = [("left", wintypes.LONG), ("top", wintypes.LONG), ("right", wintypes.LONG), ("bottom", wintypes.LONG)]
+
+
+class _MonitorInfo(ctypes.Structure):
+    _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", _Rect), ("rcWork", _Rect), ("dwFlags", wintypes.DWORD)]
+
+
+def _monitor_and_work_rects(index: int) -> Optional[Tuple[Tuple[int, int, int, int], Tuple[int, int, int, int]]]:
+    """(monitor completo, área de trabajo) del monitor `index`, en el orden
+    de Windows. Usa su propia instancia de user32 para no pisar los
+    prototipos que fijan otras funciones de este módulo."""
+    user32 = ctypes.WinDLL("user32")
+    user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(_MonitorInfo)]
+    user32.GetMonitorInfoW.restype = wintypes.BOOL
+    user32.EnumDisplayMonitors.argtypes = [wintypes.HDC, ctypes.POINTER(_Rect), ctypes.c_void_p, wintypes.LPARAM]
+    user32.EnumDisplayMonitors.restype = wintypes.BOOL
+    found: List[Tuple[Tuple[int, int, int, int], Tuple[int, int, int, int]]] = []
+
+    def callback(hmonitor, _hdc, _rect, _lparam):
+        info = _MonitorInfo()
+        info.cbSize = ctypes.sizeof(_MonitorInfo)
+        if user32.GetMonitorInfoW(hmonitor, ctypes.byref(info)):
+            m, w = info.rcMonitor, info.rcWork
+            found.append(((m.left, m.top, m.right, m.bottom), (w.left, w.top, w.right, w.bottom)))
+        return True
+
+    callback_type = ctypes.WINFUNCTYPE(
+        wintypes.BOOL, wintypes.HANDLE, wintypes.HDC, ctypes.POINTER(_Rect), wintypes.LPARAM
+    )
+    callback_ref = callback_type(callback)  # referencia viva mientras dura la enumeración
+    user32.EnumDisplayMonitors(None, None, ctypes.cast(callback_ref, ctypes.c_void_p), 0)
+    return found[index] if 0 <= index < len(found) else None
+
+
+def _cover_taskbar_geometry(monitor_index: int, scale: float) -> Optional[Tuple[int, int, int, int]]:
+    """Ventana que ocupa el monitor ENTERO (y así tapa la barra de tareas) y
+    cuánto hay que correr los estímulos para que sigan en el centro del área
+    de trabajo, que es donde se calcularon.
+
+    Devuelve (ancho, alto, dx, dy) en las unidades de PsychoPy (mismas que el
+    resto del módulo: ya divididas por la escala del monitor; origen en el
+    centro de la ventana, Y hacia arriba), o None si no se encuentra el monitor."""
+    rects = _monitor_and_work_rects(monitor_index)
+    if rects is None:
+        return None
+    (ml, mt, mr, mb), (wl, wt, wr, wb) = rects
+    s = scale if scale and scale > 1 else 1.0
+    mon_w, mon_h = (mr - ml) / s, (mb - mt) / s
+    work_w, work_h = (wr - wl) / s, (wb - wt) / s
+    work_cx = (wl - ml) / s + work_w / 2  # centro del área de trabajo, desde la esquina sup. izq. del monitor
+    work_cy = (wt - mt) / s + work_h / 2
+    return int(mon_w), int(mon_h), int(round(work_cx - mon_w / 2)), int(round(mon_h / 2 - work_cy))
 
 
 # =========================================================================
@@ -794,8 +882,8 @@ def _stimulus_process(
 
 def _create_window(config: StimulusConfig) -> visual.Window:
     """Crea y configura la ventana de PsychoPy."""
-    return visual.Window(
-        size=(config.screen_width, config.screen_height),
+    win = visual.Window(
+        size=(config.window_width or config.screen_width, config.window_height or config.screen_height),
         screen=config.monitor_index,
         pos=(0, 0),
         fullscr=False,
@@ -804,6 +892,33 @@ def _create_window(config: StimulusConfig) -> visual.Window:
         allowGUI=False,
         winType='pyglet',
     )
+    if config.cover_taskbar:
+        _keep_above_taskbar(win)
+    return win
+
+
+def _keep_above_taskbar(win: visual.Window) -> None:
+    """Deja la ventana por encima de la barra de tareas (que es "siempre
+    arriba") y hace que no se active al hacerle clic: así no se levanta sobre
+    AsTeRICS ni sobre la ventana de la validación, que van por delante."""
+    try:
+        user32 = ctypes.WinDLL("user32")
+        user32.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
+        user32.GetWindowLongW.restype = ctypes.c_long
+        user32.SetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_long]
+        user32.SetWindowLongW.restype = ctypes.c_long
+        user32.SetWindowPos.argtypes = [
+            wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT,
+        ]
+        user32.SetWindowPos.restype = wintypes.BOOL
+
+        hwnd = win.winHandle._hwnd
+        gwl_exstyle, ws_ex_noactivate = -20, 0x08000000
+        user32.SetWindowLongW(hwnd, gwl_exstyle, user32.GetWindowLongW(hwnd, gwl_exstyle) | ws_ex_noactivate)
+        swp_nosize, swp_nomove, swp_noactivate = 0x0001, 0x0002, 0x0010
+        user32.SetWindowPos(hwnd, wintypes.HWND(-1), 0, 0, 0, 0, swp_nomove | swp_nosize | swp_noactivate)
+    except Exception:
+        pass  # sin esto la ventana igual funciona: solo queda detrás de la barra de tareas
 
 
 def _create_flickers(win: visual.Window, config: StimulusConfig) -> List[_StimulusFlicker]:

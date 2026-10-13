@@ -1,8 +1,8 @@
-"""Pagina EEG/SSVEP del shell: EegSession (logica de ssvep/app/, sin UI)
-mas EegMainPage (UI propia, estetica Comando AAC).
+"""
+Página EEG:
+    EegSession es la lógica de ssvep/app/, sin UI. Mientras que EegMainPage se encarga de la UI de la página EEG, con la estética de la aplicación de control de Asterics AAC.
 
-No embebe nada de la UI de interfaz_ssvep (UserUI/AppController) y no
-modifica ningun archivo de interfaz_ssvep/ -- ver interfaz/eeg/session.py.
+Autora: Irina Lauritto
 """
 
 from pathlib import Path
@@ -67,6 +67,11 @@ class EegPage(QWidget):
         """Asocia la pantalla a la ficha del paciente (ver patient_store)."""
         if self._main_page is not None:
             self._main_page.attach_ficha(patient_id)
+
+    def cerrar_asterics(self) -> None:
+        """Cierra la ventana de AsTeRICS abierta desde esta pantalla (si hay)."""
+        if self._main_page is not None:
+            self._main_page.cerrar_asterics()
 
     def liberar_recursos(self) -> None:
         if self._main_page is not None:

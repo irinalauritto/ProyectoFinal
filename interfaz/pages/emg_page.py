@@ -79,6 +79,11 @@ class EmgPage(QWidget):
         if self._main_page is not None:
             self._main_page.attach_ficha(patient_id)
 
+    def cerrar_asterics(self) -> None:
+        """Cierra la ventana de AsTeRICS abierta desde esta pantalla (si hay)."""
+        if self._main_page is not None:
+            self._main_page.cerrar_asterics()
+
     def liberar_recursos(self) -> None:
         if self._main_page is not None:
             self._main_page.liberar_recursos()

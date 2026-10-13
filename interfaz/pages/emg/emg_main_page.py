@@ -29,7 +29,30 @@ from PySide6.QtWidgets import (
 from interfaz.pages.emg.emg_live_widget import EmgLiveWidget
 from interfaz.shell import patient_store
 from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
-from interfaz.shell.asterics_launcher import AstericsLauncher
+from interfaz.shell.asterics_launcher import AstericsLauncher, patient_monitor_area, place_maximized
+
+
+class _TeclaHaciaAsterics:
+    """Envuelve el teclado del motor EMG: antes de cada pulsación deja a
+    AsTeRICS como ventana activa, porque las teclas van a la ventana activa
+    (si fuera la de esta aplicación, AsTeRICS no las recibiría)."""
+
+    def __init__(self, teclado, activar):
+        self._teclado = teclado
+        self._activar = activar
+
+    def press(self, tecla):
+        try:
+            self._activar()
+        except Exception:
+            pass  # que no se pueda activar nunca debe impedir la tecla
+        self._teclado.press(tecla)
+
+    def release(self, tecla):
+        self._teclado.release(tecla)
+
+    def __getattr__(self, nombre):
+        return getattr(self._teclado, nombre)
 
 
 class EmgMainPage(QWidget):
@@ -41,6 +64,7 @@ class EmgMainPage(QWidget):
         self._engine = engine
         self._asterics = AstericsLauncher(parent=self)
         self._asterics.configured.connect(self._on_asterics_configured)
+        engine.teclado = _TeclaHaciaAsterics(engine.teclado, lambda: self._asterics.activate())
 
         import emg.interfazEmg as emgmod
 
@@ -437,9 +461,15 @@ class EmgMainPage(QWidget):
             )
 
     def _on_abrir_asterics(self) -> None:
-        # Sin estimulador de por medio: solo se abre (si ya estaba abierta
-        # por este boton, se la trae al frente), sin ubicarla.
-        if not self._asterics.open(settings=self._asterics_settings()):
+        # EMG no tiene estimulador: AsTeRICS es la pantalla del paciente. Se la
+        # maximiza en su monitor (el mismo del estimulador y la validación de
+        # EEG), sin dejarla "siempre arriba" para no tapar la aplicación si hay
+        # un solo monitor. Si ya estaba abierta, se la trae al frente.
+        if not self._asterics.open(
+            place=lambda hwnd: place_maximized(hwnd, patient_monitor_area()),
+            settings=self._asterics_settings(),
+            topmost=False,
+        ):
             QMessageBox.warning(self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado.")
 
     # ------------------------------------------------------------------
@@ -572,6 +602,9 @@ class EmgMainPage(QWidget):
                 "correcta": all(n == 1 for n in eventos_por_intento),
                 "refractario_ms": self._engine.refractario_ms,
             })
+
+    def cerrar_asterics(self) -> None:
+        self._asterics.close()
 
     def liberar_recursos(self) -> None:
         pass

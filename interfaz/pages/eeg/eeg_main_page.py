@@ -1,11 +1,13 @@
-"""Pantalla principal de EEG/SSVEP (mockup: Pantalla3_EEG.dc.html).
+"""
+Pantalla principal de EEG.
 
-Arma la UI de cero con la estetica "Comando AAC" y la conecta a un
+Arma la UI de cero con la estética de la aplicación de control de Asterics AAC y la conecta a un
 EegSession ya con un usuario cargado (ver interfaz/eeg/session.py). No usa
 nada de la UI de interfaz_ssvep (UserUI/AppController) -- los unicos
-widgets que se reusan de ssvep son PSDWidget (pyqtgraph puro) y los
-popups del evaluador (BCIEvaluatorOperator/User/SequenceWidget), que ya
+widgets que se reusan de ssvep (provenientes de vision) son  los popups del evaluador (BCIEvaluatorOperator/User/SequenceWidget), que ya
 son ventanas flotantes propias y no rompen la estetica de esta pantalla.
+
+Autora: Irina Lauritto
 """
 
 from __future__ import annotations
@@ -37,7 +39,12 @@ from interfaz.pages.eeg.eeg_live_widget import EegLiveWidget
 from interfaz.pages.eeg.eeg_psd_widget import EegPsdWidget
 from interfaz.shell import patient_store
 from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
-from interfaz.shell.asterics_launcher import AstericsLauncher, set_topmost
+from interfaz.shell.asterics_launcher import (
+    AstericsLauncher,
+    patient_monitor_index,
+    patient_monitor_is_secondary,
+    set_topmost,
+)
 
 # Orden fijo de estimulos -> (nombre, tecla). Coincide con
 # Settings.__stimuli_config y KeyboardController.__actions en interfaz_ssvep
@@ -154,6 +161,8 @@ class EegMainPage(QWidget):
         self._calibration_viewer = None
         self._asterics = AstericsLauncher(parent=self)
         self._asterics.configured.connect(self._on_asterics_configured)
+        # Las teclas van a la ventana activa: antes de cada una, AsTeRICS.
+        self._session.before_key = self._activar_asterics
         self._estimulador_estaba_abierto = False  # para detectar el cierre del estimulador
         self._enable_control_before_calibracion = False
         self._calib_current_freq = 0.0
@@ -208,9 +217,6 @@ class EegMainPage(QWidget):
         title = QLabel("Control por EEG")
         title.setObjectName("PageTitle")
         layout.addWidget(title)
-        #subtitle = QLabel("Potenciales evocados de estado estacionario")
-        #subtitle.setObjectName("MutedLabel")
-        #layout.addWidget(subtitle)
         return layout
 
     def _build_signal_panel(self) -> QFrame:
@@ -841,7 +847,9 @@ class EegMainPage(QWidget):
         self._actualizar_boton_estimulador()
 
         prefs = self._session.current_preferences
-        self._calibration_viewer = StimulusViewerCalibration()
+        self._calibration_viewer = StimulusViewerCalibration(
+            monitor_index=patient_monitor_index, cover_taskbar=patient_monitor_is_secondary
+        )
         self._calibrator = FrequencyCalibrator(
             stimulus_viewer=self._calibration_viewer,
             channels=prefs.channels,
@@ -1147,6 +1155,11 @@ class EegMainPage(QWidget):
         game_manager.load_screen_info(info)
         game_manager._position_window(hwnd)
 
+    def _activar_asterics(self) -> None:
+        activar = getattr(self._asterics, "activate", None)
+        if activar is not None:
+            activar()
+
     def _usa_fila_inferior(self) -> bool:
         """True si hay algun estimulo activo de tipo flecha (van en la fila
         inferior del estimulador)."""
@@ -1157,6 +1170,10 @@ class EegMainPage(QWidget):
         if not self._session.stimulus_viewer.is_running():
             return
         self._session.begin_stimulation()
+        # La comunicacion empieza: AsTeRICS pasa a ser la ventana activa (el
+        # clic en este boton dejo activa a la aplicacion y las teclas que se
+        # manden irian a ella).
+        self._activar_asterics()
         # Al iniciar la estimulacion se activan el envio de teclas y la
         # retroalimentacion auditiva (el profesional puede apagar alguna a
         # mano despues; se destildan solas al cerrar el estimulador).
@@ -1218,7 +1235,9 @@ class EegMainPage(QWidget):
         self._session.stimulus_viewer.stop_stim()
 
         prefs = self._session.current_preferences
-        self._validation_viewer = StimulusViewer()
+        self._validation_viewer = StimulusViewer(
+            monitor_index=patient_monitor_index, cover_taskbar=patient_monitor_is_secondary
+        )
         self._validator = ThresholdCalibrator(
             stimulus_viewer=self._validation_viewer,
             final_freqs=[stim.freq for stim in prefs.stimulus],
@@ -1531,6 +1550,9 @@ class EegMainPage(QWidget):
             patient_store.set_result(self._ficha_id, "eeg", tipo, datos)
 
     # ------------------------------------------------------------------
+    def cerrar_asterics(self) -> None:
+        self._asterics.close()
+
     def liberar_recursos(self) -> None:
         if self._umbral_timer.isActive():
             self._guardar_umbral()  # no perder un cambio hecho justo antes de salir

@@ -1,17 +1,22 @@
 """Ventana principal del shell: sidebar + pantallas (Inicio/EMG/EEG)."""
 
+import threading
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QPushButton, QStackedWidget, QVBoxLayout, QWidget
 
 from interfaz.pages.eeg_page import EegPage
 from interfaz.pages.emg_page import EmgPage
 from interfaz.pages.inicio_page import InicioPage
-from interfaz.shell import patient_store
+from interfaz.shell import asterics_config, patient_store
 from interfaz.shell.app_state import SharedAppState
 from interfaz.shell.sidebar import Sidebar
 
 
 class MainShell(QMainWindow):
+    # Perfil de AsTeRICS con el que se abrió la última sesión (None: ninguno todavía).
+    _asterics_profile: str | None = None
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Control AAC")
@@ -72,6 +77,9 @@ class MainShell(QMainWindow):
         # Arranca en Inicio, centrada y sin barra lateral.
         self._show(self.inicio_page, "inicio")
 
+        # Mantenimiento de los perfiles de AsTeRICS (temporales y caché).
+        threading.Thread(target=self._mantener_perfiles_asterics, name="asterics-perfiles", daemon=True).start()
+
     # ------------------------------------------------------------------
     def _on_nav_requested(self, key: str) -> None:
         if key == "inicio":
@@ -110,6 +118,15 @@ class MainShell(QMainWindow):
         guarda lo que cambie) y registra el inicio de la sesión en su historial."""
         patient = self.state.patient
         patient_id = patient.id if patient else None
+
+        # AsTeRICS es de un paciente: si cambió el perfil, se cierra la ventana
+        # que haya quedado abierta del paciente anterior.
+        perfil = asterics_config.active_profile()
+        if self._asterics_profile is not None and perfil != self._asterics_profile:
+            self.emg_page.cerrar_asterics()
+            self.eeg_page.cerrar_asterics()
+        self._asterics_profile = perfil
+
         page.vincular_ficha(patient_id)
         patient_store.start_session(patient_id, modalidad)
 
@@ -131,9 +148,27 @@ class MainShell(QMainWindow):
         self.btn_expand.setVisible(not visible)
 
     # ------------------------------------------------------------------
+    @staticmethod
+    def _mantener_perfiles_asterics() -> None:
+        """Borra perfiles temporales que hayan quedado y la caché regenerable
+        de los perfiles (cada paciente ocupa unas pocas decenas de MB)."""
+        try:
+            asterics_config.purge_temporary_profiles()
+            asterics_config.clean_all_caches()
+        except Exception:
+            pass  # es solo limpieza: nunca debe molestar al arrancar
+
     def closeEvent(self, event) -> None:
         patient = self.state.patient
         patient_store.end_session(patient.id if patient else None)
+        self.inicio_page.cancelar_asterics()
         self.emg_page.liberar_recursos()
         self.eeg_page.liberar_recursos()
+        # Si AsTeRICS sigue abierta el perfil está en uso y no se toca: la
+        # próxima vez que arranque la aplicación se limpia.
+        try:
+            asterics_config.purge_temporary_profiles()
+            asterics_config.clean_cache()
+        except Exception:
+            pass
         super().closeEvent(event)

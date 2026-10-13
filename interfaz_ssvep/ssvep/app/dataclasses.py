@@ -114,6 +114,10 @@ class StimulusConfig:
         height_margin: Margen vertical para el cálculo de posiciones.
         width_margin: Margen horizontal para el cálculo de posiciones.
         monitor_index: Índice del monitor donde se mostrarán los estímulos.
+        window_width: Ancho de la ventana (0: el de `screen_width`).
+        window_height: Alto de la ventana (0: el de `screen_height`).
+        cover_taskbar: Si es True la ventana queda por encima de la barra de
+            tareas y sin activarse al hacerle clic (ver `_create_window`).
     """
     screen_height: int
     screen_width: int
@@ -123,3 +127,6 @@ class StimulusConfig:
     height_margin: int
     width_margin: int
     monitor_index: int
+    window_width: int = 0
+    window_height: int = 0
+    cover_taskbar: bool = False

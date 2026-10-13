@@ -30,7 +30,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from interfaz.shell import asterics_config as asterics_cfg
 from interfaz.shell.app_state import PatientInfo, SharedAppState
+from interfaz.shell.asterics_setup import AstericsSetup, is_supported
 from interfaz.shell.patient_store import (
     find_by_name,
     full_name,
@@ -38,6 +40,7 @@ from interfaz.shell.patient_store import (
     link_ssvep_user,
     load_patients,
     save_patient,
+    set_asterics_configured,
     sync_ssvep_users,
 )
 
@@ -108,6 +111,18 @@ class InicioPage(QWidget):
         self._ssvep_users: list[tuple[int, str]] = []
         self._ssvep_user_manager = None
         self._ssvep_prefs_manager = None
+
+        # Preparación de AsTeRICS (usuario y tablero del paciente). Cada
+        # paciente tiene su perfil de navegador; el de un paciente sin ficha
+        # es temporal (ver asterics_config.py).
+        self._setup = AstericsSetup(self)
+        self._setup.finished.connect(self._on_setup_finished)
+        self._setup_token: str | None = None  # paciente cuya preparación terminó en esta ejecución
+        self._setup_pending_token: str | None = None  # paciente cuya preparación está en curso
+        self._setup_key: str | None = None  # clave del perfil usado en la preparación
+        self._setup_patient_id: str | None = None
+        self._temp_key: str | None = None  # perfil temporal del paciente nuevo
+        self._temp_token: str | None = None
 
         self_layout = QVBoxLayout(self)
         self_layout.setContentsMargins(0, 0, 0, 0)
@@ -197,6 +212,7 @@ class InicioPage(QWidget):
         form.addRow("Nombre", self.txt_nombre)
         self.txt_apellido = QLineEdit()
         self.txt_apellido.setPlaceholderText("Ej. Fernández")
+        self.txt_apellido.textChanged.connect(self._refresh_start_button)
         form.addRow("Apellido", self.txt_apellido)
         self.txt_observaciones = QPlainTextEdit()
         self.txt_observaciones.setFixedHeight(58)
@@ -206,6 +222,23 @@ class InicioPage(QWidget):
         self.chk_guardar.setChecked(True)
         form.addRow(self.chk_guardar)
         self.tab_stack.addWidget(nuevo_widget)
+
+        # --- AsTeRICS (primero, antes de elegir la modalidad) ---
+        asterics_row = QHBoxLayout()
+        asterics_row.setSpacing(14)
+        self.btn_asterics = QPushButton("Configurar AsTeRICS AAC")
+        self.btn_asterics.setObjectName("SecondaryButton")
+        self.btn_asterics.setToolTip(
+            "Abre AsTeRICS para iniciar sesión, cargar el usuario del paciente y seleccionar su "
+            "tablero. Al terminar, presione «Continuar con la interfaz» (botón rojo dentro de AsTeRICS)."
+        )
+        self.btn_asterics.clicked.connect(self._on_configurar_asterics)
+        asterics_row.addWidget(self.btn_asterics)
+        self.lbl_asterics = QLabel("")
+        self.lbl_asterics.setObjectName("MutedLabel")
+        self.lbl_asterics.setWordWrap(True)
+        asterics_row.addWidget(self.lbl_asterics, 1)
+        content.addLayout(asterics_row)
 
         # --- Modalidad ---
         modalidad_label = QLabel("MODALIDAD DE CONTROL")
@@ -236,6 +269,7 @@ class InicioPage(QWidget):
             for texto in (
                 "Seleccione una modalidad para continuar.",
                 "Complete los datos del paciente para continuar.",
+                "Configure AsTeRICS para continuar.",
                 "Todo listo.",
             )
         )
@@ -373,20 +407,134 @@ class InicioPage(QWidget):
         link_ssvep_user(patient.id, new_user.id)
         return new_user.id
 
+    # ------------------------------------------------------------------
+    # Preparación de AsTeRICS (obligatoria antes de elegir la modalidad)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _token(patient: PatientInfo) -> str:
+        """Identidad del paciente para saber si ya se preparó AsTeRICS: su
+        ficha, o su nombre si todavía no tiene."""
+        return patient.id or "nombre:" + " ".join(patient.nombre_completo.lower().split())
+
+    def _asterics_listo(self) -> bool:
+        patient = self._patient_seleccionado()
+        if patient is None:
+            return False
+        if self._setup_token == self._token(patient):
+            return True
+        if patient.id:
+            entry = get_patient(patient.id)
+            if entry and entry.get("asterics_configurado") and asterics_cfg.profile_exists(patient.id):
+                return True
+        return False
+
+    def _profile_key_for(self, patient: PatientInfo) -> str:
+        """Perfil de navegador del paciente: su ficha o, si todavía no tiene,
+        uno temporal (estable mientras no cambie el nombre)."""
+        if patient.id:
+            return patient.id
+        token = self._token(patient)
+        if self._temp_key is None or self._temp_token != token:
+            self._temp_key, self._temp_token = asterics_cfg.new_temp_key(), token
+        return self._temp_key
+
+    def _clear_modalidad(self) -> None:
+        grupo = self._modalidad_group
+        grupo.setExclusive(False)
+        for boton in grupo.buttons():
+            boton.setChecked(False)
+        grupo.setExclusive(True)
+        self._modalidad = None
+
+    def _on_configurar_asterics(self) -> None:
+        patient = self._patient_seleccionado()
+        if patient is None or self._setup.is_running():
+            return
+        key = self._profile_key_for(patient)
+        asterics_cfg.set_active_profile(key)
+        token = self._token(patient)
+
+        if not is_supported():
+            # Sin Chromium no hay forma de acompañar la preparación: se la
+            # deja a mano en el navegador y se habilita el resto del flujo.
+            QMessageBox.information(
+                self,
+                "AsTeRICS",
+                "La preparación guiada de AsTeRICS requiere Chrome, Edge, Brave o Vivaldi como navegador "
+                "predeterminado.\n\nPuede continuar: prepare AsTeRICS a mano desde su navegador.",
+            )
+            self._setup_key = key
+            self._setup_token = token
+            self._refresh_start_button()
+            return
+
+        self._setup_pending_token, self._setup_key, self._setup_patient_id = token, key, patient.id
+        # AsTeRICS se abre en el monitor del terapeuta: el de esta aplicación.
+        if not self._setup.start(anchor_hwnd=int(self.window().winId())):
+            QMessageBox.warning(self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado.")
+            return
+        self._refresh_start_button()
+
+    def _on_setup_finished(self, ok: bool, message: str) -> None:
+        if ok:
+            self._setup_token = self._setup_pending_token
+            if self._setup_patient_id:
+                set_asterics_configured(self._setup_patient_id, True)
+        else:
+            QMessageBox.warning(self, "AsTeRICS", message)
+        self._refresh_start_button()
+        ventana = self.window()
+        ventana.raise_()
+        ventana.activateWindow()
+
     def _refresh_start_button(self) -> None:
-        habilitado = self._patient_seleccionado() is not None and self._modalidad is not None
+        patient = self._patient_seleccionado()
+        listo = self._asterics_listo()
+        en_curso = self._setup.is_running()
+
+        self.btn_asterics.setEnabled(patient is not None and not en_curso)
+        self.btn_asterics.setText("Reconfigurar AsTeRICS AAC" if listo else "Configurar AsTeRICS AAC")
+        if patient is None:
+            self.lbl_asterics.setText("Complete los datos del paciente para configurar AsTeRICS.")
+        elif en_curso:
+            self.lbl_asterics.setText(
+                "AsTeRICS está abierta: inicie sesión (o use «sin registrarse»), cargue y seleccione el "
+                "tablero del paciente y presione «Continuar con la interfaz» (botón rojo, abajo a la derecha)."
+            )
+        elif listo:
+            self.lbl_asterics.setText("✔ AsTeRICS configurada para este paciente.")
+        else:
+            self.lbl_asterics.setText(
+                "Primero configure AsTeRICS: cargue el usuario y el tablero del paciente."
+            )
+
+        # El orden es obligatorio: sin AsTeRICS preparada no se elige modalidad.
+        for card in (self.card_emg, self.card_eeg):
+            card.setEnabled(listo)
+        if not listo and self._modalidad is not None:
+            self._clear_modalidad()
+
+        habilitado = patient is not None and listo and self._modalidad is not None
         self.btn_comenzar.setEnabled(habilitado)
-        if self._modalidad is None:
-            self.lbl_hint.setText("Seleccioná una modalidad para continuar.")
-        elif self._patient_seleccionado() is None:
-            self.lbl_hint.setText("Completá los datos del paciente para continuar.")
+        if patient is None:
+            self.lbl_hint.setText("Complete los datos del paciente para continuar.")
+        elif not listo:
+            self.lbl_hint.setText("Configure AsTeRICS para continuar.")
+        elif self._modalidad is None:
+            self.lbl_hint.setText("Seleccione una modalidad para continuar.")
         else:
             self.lbl_hint.setText("Todo listo.")
+
+    def cancelar_asterics(self) -> None:
+        """Al cerrar la aplicación: abandona una preparación en curso."""
+        self._setup.cancel()
 
     def _on_comenzar_clicked(self) -> None:
         patient = self._patient_seleccionado()
         if patient is None or self._modalidad is None:
             return
+
+        token_previo = self._token(patient)
 
         # Un paciente nuevo se guarda en la lista si se lo pidió. En EEG
         # siempre: su usuario de SSVEP se persiste en la base de todos modos
@@ -394,6 +542,20 @@ class InicioPage(QWidget):
         if self.btn_tab_nuevo.isChecked() and (self.chk_guardar.isChecked() or self._modalidad == "eeg"):
             entry = save_patient(patient.nombre, patient.apellido, patient.observaciones)
             patient.id = entry["id"]
+
+        # Perfil de AsTeRICS de la sesión. Si el paciente era nuevo y recién se
+        # guardó, el perfil temporal que preparó pasa a ser el de su ficha.
+        if self._setup_token == token_previo and self._setup_key:
+            clave = self._setup_key
+            if patient.id and asterics_cfg.is_temp(clave):
+                if asterics_cfg.promote_profile(clave, patient.id):
+                    set_asterics_configured(patient.id, True)
+                    clave = patient.id
+                self._setup_key = clave
+            self._setup_token = self._token(patient)
+        else:
+            clave = self._profile_key_for(patient)
+        asterics_cfg.set_active_profile(clave)
 
         if self._modalidad == "eeg":
             user_id = self._resolve_ssvep_user_id(patient)

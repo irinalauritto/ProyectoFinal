@@ -17,6 +17,7 @@ guarda de un paciente queda acá y no se genera además en otros documentos
           "id": "…", "nombre": "…", "apellido": "…", "observaciones": "…",
           "creado": "…", "ultima_sesion": "…", "ultima_modalidad": "emg"|"eeg"|null,
           "ssvep_user_id": 5 | null,          # vínculo con la base SQLite de SSVEP
+          "asterics_configurado": "…" | null, # cuándo se preparó su perfil de AsTeRICS
           "config": {"emg": {…}, "eeg": {…}},
           "historial": [
             {"fecha": "…", "tipo": "sesion", "modalidad": "eeg", "fin": "…", "duracion_s": 1800},
@@ -88,6 +89,7 @@ def _blank_entry(nombre: str, apellido: str = "", observaciones: str = "") -> di
         "ultima_sesion": None,
         "ultima_modalidad": None,
         "ssvep_user_id": None,
+        "asterics_configurado": None,
         "config": {m: {} for m in MODALIDADES},
         "historial": [],
     }
@@ -100,7 +102,7 @@ def _normalize(entry: dict) -> dict:
     fecha = entry.get("fecha") or base["fecha"]
     base["creado"] = entry.get("creado") or fecha
     base["fecha"] = fecha
-    for key in ("id", "ultima_sesion", "ultima_modalidad", "ssvep_user_id"):
+    for key in ("id", "ultima_sesion", "ultima_modalidad", "ssvep_user_id", "asterics_configurado"):
         if entry.get(key) is not None:
             base[key] = entry[key]
 
@@ -301,6 +303,15 @@ def sync_ssvep_users(users: Iterable[tuple[int, str]]) -> int:
         if changed:
             _write(data)
     return added
+
+
+# ----------------------------------------------------------------------
+# Perfil de AsTeRICS del paciente
+# ----------------------------------------------------------------------
+def set_asterics_configured(patient_id: Optional[str], configured: bool = True) -> bool:
+    """Marca (o desmarca) que el perfil de AsTeRICS del paciente ya tiene su
+    usuario y su tablero cargados (ver asterics_config.profile_dir)."""
+    return _mutate(patient_id, lambda e: e.__setitem__("asterics_configurado", _now() if configured else None))
 
 
 # ----------------------------------------------------------------------

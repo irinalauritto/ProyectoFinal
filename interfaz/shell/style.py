@@ -272,6 +272,18 @@ QTabBar::tab:selected {{
     background: {NAV_ACTIVE_BG};
 }}
 
+/* Bloqueadas hasta que se prepara AsTeRICS del paciente (pantalla de Inicio). */
+#ModalityCard:disabled {{
+    background: {DISABLED_BG};
+    border-color: {BORDER};
+}}
+
+/* El estado :disabled del propio texto (no una regla "descendiente" de la
+   tarjeta: Qt no la vuelve a evaluar al rehabilitar la tarjeta). */
+#ModalityCardTitle:disabled, #ModalityCardDesc:disabled {{
+    color: {DISABLED_TEXT};
+}}
+
 #ModalityCardTitle {{
     font-size: 14px;
     font-weight: 600;

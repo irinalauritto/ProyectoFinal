@@ -21,7 +21,7 @@ import multiprocessing as mp
 from multiprocessing import Process, Queue
 from multiprocessing.synchronize import Event
 import time
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple, Union
 
 from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import QWidget
@@ -32,6 +32,7 @@ from ssvep.app.stimulus_viewer import (
     StimulusViewer,
     _StimuliGenerator,
     _StimulusFlicker,
+    _cover_taskbar_geometry,
     _create_window,
     _get_refresh_rate,
     _hex_to_psychopy_rgb,
@@ -74,7 +75,14 @@ class StimulusViewerCalibration(QWidget):
     flicker_started = Signal(float)
     stimulus_failed = Signal(str)
 
-    def __init__(self, size: int = 217, separation_fraction: float = 0.5, parent=None) -> None:
+    def __init__(
+        self,
+        size: int = 217,
+        separation_fraction: float = 0.5,
+        parent=None,
+        monitor_index: Union[int, Callable[[], Optional[int]], None] = None,
+        cover_taskbar: Union[bool, Callable[[], bool]] = False,
+    ) -> None:
         """
         Args:
             size: Tamaño base de cada estímulo en píxeles (mismo default
@@ -83,8 +91,16 @@ class StimulusViewerCalibration(QWidget):
                 los dos estímulos, como fracción del ancho de pantalla
                 (0.5 = cada uno a un cuarto de pantalla del centro, un 50%
                 del ancho total entre ambos).
+            monitor_index: Monitor (en el orden de Windows) donde abrir los
+                estímulos, o una función sin argumentos que lo devuelve (se
+                evalúa en cada apertura). Si es None (o no existe) se usa el
+                último.
+            cover_taskbar: Igual que en `StimulusViewer`: la ventana ocupa
+                el monitor entero, por encima de la barra de tareas.
         """
         super().__init__(parent)
+        self.__requested_monitor_index = monitor_index
+        self.__cover_taskbar = cover_taskbar
         self.__stimulus_size = size
         # Valor original, sin escalar por DPI -- __get_stimulus_regions()
         # parte siempre de este valor (mismo bug/fix que StimulusViewer: sin
@@ -167,15 +183,25 @@ class StimulusViewerCalibration(QWidget):
         self.__stim_update_queue = mp.Queue()
 
         self.__get_stimulus_regions()
+        cover = self.__cover_taskbar() if callable(self.__cover_taskbar) else bool(self.__cover_taskbar)
+        geometry = (
+            _cover_taskbar_geometry(self.__monitor_index or 0, self.__monitor_scale or 1) if cover else None
+        )
+        window_width = window_height = dx = dy = 0
+        if geometry is not None:
+            window_width, window_height, dx, dy = geometry
         config = StimulusConfig(
             screen_width=self.__screen_width or 0,
             screen_height=self.__screen_height or 0,
             stimulus_data={0: self.__candidate, 1: self.__anchor},
-            stimulus_positions=self.__centered_positions(),
+            stimulus_positions=[(x + dx, y + dy) for x, y in self.__centered_positions()],
             stimulus_size=self.__stimulus_size,
             height_margin=0,
             width_margin=0,
             monitor_index=self.__monitor_index or 0,
+            window_width=window_width,
+            window_height=window_height,
+            cover_taskbar=geometry is not None,
         )
 
         self.__process = mp.Process(
@@ -255,7 +281,13 @@ class StimulusViewerCalibration(QWidget):
         # Reusa tal cual la deteccion de monitor/DPI de StimulusViewer (no
         # se duplica esa logica de ctypes -- ver docstring de modulo).
         monitor_scales = StimulusViewer._StimulusViewer__monitor_scales()
-        self.__monitor_index, self.__monitor_scale = monitor_scales[-1]
+        requested = self.__requested_monitor_index
+        if callable(requested):
+            requested = requested()
+        if requested is not None and 0 <= requested < len(monitor_scales):
+            self.__monitor_index, self.__monitor_scale = monitor_scales[requested]
+        else:
+            self.__monitor_index, self.__monitor_scale = monitor_scales[-1]
         self.__screen_width, self.__screen_height = StimulusViewer._StimulusViewer__work_area(self.__monitor_index)
 
         self.__stimulus_size = self.__base_stimulus_size

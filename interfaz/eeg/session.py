@@ -7,7 +7,7 @@ Autora: Irina Lauritto
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional
 
 from PySide6.QtCore import QObject, QThread, Signal
 
@@ -54,6 +54,8 @@ class EegSession(QObject):
         from ssvep.app.stimulus_viewer import StimulusViewer
         from ssvep.app.voice_feedback import VoiceFeedback
 
+        from interfaz.shell.asterics_launcher import patient_monitor_index, patient_monitor_is_secondary
+
         self._data_dir = str(data_dir)
         self._builtins = builtins
 
@@ -99,8 +101,14 @@ class EegSession(QObject):
             os.rmdir(self.reports_dir())
         except OSError:
             pass
-        self.stimulus_viewer = StimulusViewer()
+        self.stimulus_viewer = StimulusViewer(
+            monitor_index=patient_monitor_index, cover_taskbar=patient_monitor_is_secondary
+        )
         self.game_manager = GameManager()
+
+        # Se llama justo antes de mandar una tecla: la pantalla lo usa para
+        # dejar AsTeRICS como ventana activa (las teclas van a la ventana activa).
+        self.before_key: Optional[Callable[[], None]] = None
 
         self.current_user_id: Optional[int] = None
         self.current_preferences = None  # UserPreferences, seteado en load_user()
@@ -442,6 +450,8 @@ class EegSession(QObject):
                 # El estímulo nulo no manda ninguna tecla: solo hace entrar
                 # en período refractario.
                 if result != NULL_STIMULUS_INDEX:
+                    if self.before_key is not None:
+                        self.before_key()
                     self.keyboard.stim_received(result)
                 self._last_action_time = now
 

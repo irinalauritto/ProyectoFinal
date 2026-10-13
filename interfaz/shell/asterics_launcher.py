@@ -91,6 +91,130 @@ _user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
 _user32.ShowWindow.restype = wintypes.BOOL
 _user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
 _user32.PostMessageW.restype = wintypes.BOOL
+_user32.GetForegroundWindow.argtypes = []
+_user32.GetForegroundWindow.restype = wintypes.HWND
+_user32.IsIconic.argtypes = [wintypes.HWND]
+_user32.IsIconic.restype = wintypes.BOOL
+
+
+# ----------------------------------------------------------------------
+# Monitores: a cuál va cada apertura de AsTeRICS
+# ----------------------------------------------------------------------
+class _MONITORINFO(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", wintypes.DWORD),
+        ("rcMonitor", wintypes.RECT),
+        ("rcWork", wintypes.RECT),
+        ("dwFlags", wintypes.DWORD),
+    ]
+
+
+_MONITOR_DEFAULTTONEAREST = 2
+_MonitorEnumProc = ctypes.WINFUNCTYPE(
+    wintypes.BOOL, wintypes.HANDLE, wintypes.HDC, ctypes.POINTER(wintypes.RECT), wintypes.LPARAM
+)
+_user32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
+_user32.MonitorFromWindow.restype = wintypes.HANDLE
+_user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(_MONITORINFO)]
+_user32.GetMonitorInfoW.restype = wintypes.BOOL
+_user32.EnumDisplayMonitors.argtypes = [wintypes.HDC, ctypes.POINTER(wintypes.RECT), ctypes.c_void_p, wintypes.LPARAM]
+_user32.EnumDisplayMonitors.restype = wintypes.BOOL
+
+
+_MONITORINFOF_PRIMARY = 1
+
+
+def _monitor_details(hmonitor) -> Optional[tuple[tuple[int, int, int, int], bool]]:
+    """(área de trabajo, es el monitor principal) de un monitor."""
+    info = _MONITORINFO()
+    info.cbSize = ctypes.sizeof(_MONITORINFO)
+    if not _user32.GetMonitorInfoW(hmonitor, ctypes.byref(info)):
+        return None
+    work = info.rcWork
+    return (work.left, work.top, work.right, work.bottom), bool(info.dwFlags & _MONITORINFOF_PRIMARY)
+
+
+def _monitor_work_area(hmonitor) -> Optional[tuple[int, int, int, int]]:
+    details = _monitor_details(hmonitor)
+    return details[0] if details is not None else None
+
+
+def enumerate_monitors() -> list[tuple[tuple[int, int, int, int], bool]]:
+    """Monitores en el orden de Windows (el mismo con el que StimulusViewer
+    numera los suyos): [(área de trabajo, es_principal), ...]."""
+    found: list[tuple[tuple[int, int, int, int], bool]] = []
+
+    def callback(hmonitor, _hdc, _rect, _lparam):
+        details = _monitor_details(hmonitor)
+        if details is not None:
+            found.append(details)
+        return True
+
+    callback_ref = _MonitorEnumProc(callback)  # referencia viva mientras dura la enumeración
+    _user32.EnumDisplayMonitors(None, None, ctypes.cast(callback_ref, ctypes.c_void_p), 0)
+    return found
+
+
+def monitor_work_areas() -> list[tuple[int, int, int, int]]:
+    """Áreas de trabajo (izq, arriba, der, abajo) de los monitores, en el orden de Windows."""
+    return [area for area, _primary in enumerate_monitors()]
+
+
+def choose_patient_monitor(primary_flags) -> Optional[int]:
+    """Índice del monitor del paciente: el PRIMERO que no es el principal. Si
+    no hay otro (un solo monitor), el principal. `primary_flags[i]` dice si el
+    monitor `i` (orden de Windows) es el principal. None si no hay monitores.
+
+    Windows no garantiza que el principal sea el primero de la lista: "el
+    último" podía ser justamente el del terapeuta."""
+    flags = list(primary_flags)
+    if not flags:
+        return None
+    for index, primary in enumerate(flags):
+        if not primary:
+            return index
+    return 0
+
+
+def patient_monitor_index() -> Optional[int]:
+    """Monitor del paciente (ver choose_patient_monitor): el del estimulador,
+    la validación del usuario y AsTeRICS durante la sesión."""
+    return choose_patient_monitor(primary for _area, primary in enumerate_monitors())
+
+
+def patient_monitor_is_secondary() -> bool:
+    """True si el monitor del paciente NO es el principal (hay dos pantallas).
+    Solo entonces el estimulador tapa la barra de tareas: con un solo monitor
+    quedaría tapada la propia aplicación del terapeuta."""
+    monitors = enumerate_monitors()
+    index = choose_patient_monitor(primary for _area, primary in monitors)
+    return index is not None and not monitors[index][1]
+
+
+def patient_monitor_area() -> Optional[tuple[int, int, int, int]]:
+    monitors = enumerate_monitors()
+    index = choose_patient_monitor(primary for _area, primary in monitors)
+    return monitors[index][0] if index is not None else None
+
+
+def monitor_area_of_window(hwnd: int) -> Optional[tuple[int, int, int, int]]:
+    """Área de trabajo del monitor donde está una ventana (el del terapeuta,
+    si es la de esta aplicación)."""
+    if not hwnd or not _user32.IsWindow(hwnd):
+        return None
+    hmonitor = _user32.MonitorFromWindow(hwnd, _MONITOR_DEFAULTTONEAREST)
+    return _monitor_work_area(hmonitor) if hmonitor else None
+
+
+def place_maximized(hwnd: int, area: Optional[tuple[int, int, int, int]]) -> None:
+    """Lleva la ventana al monitor de `area` y la maximiza ahí. Si no se
+    conoce el monitor, solo la maximiza donde esté."""
+    if area is not None:
+        left, top, right, bottom = area
+        # Una ventana maximizada no cambia de monitor: primero se la restaura.
+        _user32.ShowWindow(hwnd, _SW_RESTORE)
+        _user32.SetWindowPos(hwnd, None, left, top, right - left, bottom - top, _SWP_NOZORDER | _SWP_NOACTIVATE)
+    _user32.ShowWindow(hwnd, _SW_MAXIMIZE)
 
 
 def _list_windows() -> list[tuple[int, str, str]]:
@@ -151,6 +275,22 @@ def _default_browser_exe() -> Optional[str]:
     return match.group(1) if match else None
 
 
+def activate_window(hwnd: int) -> bool:
+    """Deja `hwnd` como la ventana ACTIVA (la que recibe el teclado). Las
+    teclas que envía la interfaz van a la ventana activa: si fuera la de la
+    propia aplicación, AsTeRICS no las recibiría. Windows solo permite
+    cambiar la ventana activa al proceso que la tiene (o que recibió la
+    última entrada): se llama desde la interfaz, que es donde el terapeuta
+    acaba de hacer clic."""
+    if not hwnd or not _window_visible(hwnd):
+        return False
+    if _user32.GetForegroundWindow() == hwnd:
+        return True
+    if _user32.IsIconic(hwnd):
+        _user32.ShowWindow(hwnd, _SW_RESTORE)
+    return bool(_user32.SetForegroundWindow(hwnd))
+
+
 def set_topmost(hwnd: int, on: bool = True) -> None:
     """Mantiene una ventana por encima de las demás (en particular de la del
     estimulador, que ocupa todo el monitor y, al recibir un clic, quedaría
@@ -186,6 +326,7 @@ class AstericsLauncher(QObject):
         self._owned = False  # True: ventana propia (modo aplicación), se puede cerrar
         self._original: Optional[tuple[tuple[int, int, int, int], bool]] = None  # (rect, maximizada)
         self._place: Optional[Callable[[int], None]] = None
+        self._topmost = True  # la ventana ubicada queda siempre visible (ver open)
         self._before: set[int] = set()
         self._app_mode = False
         self._attempts = 0
@@ -203,9 +344,13 @@ class AstericsLauncher(QObject):
     def is_open(self) -> bool:
         return self._hwnd is not None and _window_visible(self._hwnd)
 
-    def open(self, place: Optional[Callable[[int], None]] = None, settings=None) -> bool:
+    def open(
+        self, place: Optional[Callable[[int], None]] = None, settings=None, topmost: bool = True
+    ) -> bool:
         """Abre AsTeRICS. `place(hwnd)`, si se pasa, se llama cuando se
-        detecta la ventana, para ubicarla. `settings`
+        detecta la ventana, para ubicarla; `topmost` la deja además siempre
+        por encima (hace falta junto al estimulador; no si ocupa un monitor
+        entero, porque taparía la aplicación). `settings`
         (asterics_config.AstericsInputSettings), si se pasa, configura
         AsTeRICS (método de entrada, tiempo de barrido, pulsación) en un
         hilo aparte y avisa con la señal `configured`; requiere un navegador
@@ -213,6 +358,7 @@ class AstericsLauncher(QObject):
         profesional). Devuelve False si no se pudo lanzar el navegador. Si ya
         está abierta por este objeto, solo la trae al frente (y la vuelve a
         ubicar y configurar)."""
+        self._topmost = topmost
         reuse_pending = self._close_when_found and self._poll_timer.isActive()
         self._close_when_found = False
         if self._closing is not None:
@@ -251,6 +397,11 @@ class AstericsLauncher(QObject):
         self._launching = self._app_mode
         self._poll_timer.start(_POLL_INTERVAL_MS)
         return True
+
+    def activate(self) -> bool:
+        """Deja AsTeRICS como ventana activa, para que reciba las teclas que
+        manda la interfaz. False si no hay una ventana detectada."""
+        return self._hwnd is not None and activate_window(self._hwnd)
 
     def close(self) -> None:
         """Cierra la ventana propia; si era una pestaña, solo devuelve su
@@ -416,9 +567,10 @@ class AstericsLauncher(QObject):
             self._replace_timer.start(_REPLACE_DELAY_MS)
 
     def _apply_place(self, hwnd: int) -> None:
-        """Ubica la ventana y la deja siempre visible (por encima del estimulador)."""
+        """Ubica la ventana y, junto al estimulador, la deja siempre visible
+        (por encima de él)."""
         self._place(hwnd)
-        set_topmost(hwnd, True)
+        set_topmost(hwnd, self._topmost)
 
     def _replace(self) -> None:
         if self._place is not None and self._hwnd is not None and _window_exists(self._hwnd):
