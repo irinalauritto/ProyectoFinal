@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from ssvep.app.domain import User, Preferences, TrainingWeights
@@ -134,6 +135,23 @@ class PreferencesRepositorySQLAlchemy(AbstractRepository):
         """
         self.__session = session
         PreferencesModel.metadata.create_all(self.__session.bind)
+        self.__add_missing_threshold_column()
+
+    def __add_missing_threshold_column(self) -> None:
+        """
+        Agrega la columna `threshold` a una tabla 'preferences' creada antes de
+        que existiera ese campo (`create_all` no modifica tablas ya creadas).
+        Las filas existentes quedan con el umbral por defecto.
+        """
+        table = PreferencesModel.__table__
+        columns = {col["name"] for col in inspect(self.__session.bind).get_columns(table.name)}
+        if "threshold" in columns:
+            return
+        default = table.c.threshold.server_default.arg
+        self.__session.execute(
+            text(f"ALTER TABLE {table.name} ADD COLUMN threshold FLOAT NOT NULL DEFAULT {default}")
+        )
+        self.__session.commit()
 
     def save(self, preferences: Preferences) -> None:
         """
@@ -188,6 +206,7 @@ class PreferencesRepositorySQLAlchemy(AbstractRepository):
             db_prefs.stim_theta = json.dumps(updated_prefs.stimulus_theta)
             db_prefs.stim_type = json.dumps(updated_prefs.stimulus_type)
             db_prefs.stim_direction = json.dumps(updated_prefs.stimulus_direction)
+            db_prefs.threshold = updated_prefs.threshold
             self.__session.commit()
 
     def get_by_filter(self, filter_key: str, value: Any) -> Optional[Preferences]:
@@ -228,7 +247,8 @@ class PreferencesRepositorySQLAlchemy(AbstractRepository):
             stim_on=json.dumps(entity.stimulus_on),
             stim_theta=json.dumps(entity.stimulus_theta),
             stim_type=json.dumps(entity.stimulus_type),
-            stim_direction=json.dumps(entity.stimulus_direction)
+            stim_direction=json.dumps(entity.stimulus_direction),
+            threshold=entity.threshold
         )
     
     def __map_model_to_entity(self, model: PreferencesModel) -> Preferences:
@@ -246,7 +266,8 @@ class PreferencesRepositorySQLAlchemy(AbstractRepository):
             stimulus_on=[bool(x) for x in json.loads(model.stim_on)],
             stimulus_type=json.loads(model.stim_type),
             stimulus_theta=[float(t) for t in json.loads(model.stim_theta)],
-            stimulus_direction=json.loads(model.stim_direction)
+            stimulus_direction=json.loads(model.stim_direction),
+            threshold=float(model.threshold)
         )
 
 

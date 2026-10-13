@@ -8,8 +8,8 @@ la visualización de secuencias de estímulos, utilizando PySide6.
 import sys
 
 
-from PySide6.QtCore import Qt, Signal, QSize, QTimer
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, Signal, QRectF, QSize, QTimer
+from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
 
 from PySide6.QtWidgets import QApplication, QGraphicsOpacityEffect, QLabel, QSizePolicy, QWidget
 from ssvep.ui.bci_evaluator_operator import Ui_BCIEvaluatorOperator
@@ -236,6 +236,13 @@ class SequenceWidget(QWidget):
         self.__expected_colors.clear()
         self.__last_highlighted_index = None
 
+        # Una secuencia más corta que una fila completa (ej. los 6 ítems de
+        # la Validación) se reparte en todo el ancho, en vez de quedar
+        # amontonada en las primeras columnas de las COLUMNS posibles.
+        used_columns = min(self.COLUMNS, len(sequence))
+        for c in range(self.COLUMNS):
+            self.__ui.expectedSequenceLayout.setColumnStretch(c, 1 if c < used_columns else 0)
+
         for i, index in enumerate(sequence):
             resource_path = self.__stimulus_icons_neutral.get(index)
 
@@ -353,6 +360,10 @@ class ScalableLabel(QLabel):
     MIN_SIZE = 20
     PREFERRED_SIZE = 90
     FADED_OPACITY = 0.3
+    HIGHLIGHT_WIDTH = 3
+    HIGHLIGHT_RADIUS = 8
+    # Aire entre el ícono y el recuadro de resaltado (fracción del lado).
+    ICON_PADDING = 0.12
 
     def __init__(self, pixmap: QPixmap, parent: QWidget = None) -> None:
         """
@@ -364,6 +375,7 @@ class ScalableLabel(QLabel):
         """
         super().__init__(parent)
         self.__original_pixmap = pixmap
+        self.__highlight_color: str | None = None
         self.setAlignment(Qt.AlignCenter)
         self.setMinimumSize(self.MIN_SIZE, self.MIN_SIZE)
         # Antes era setFixedSize(PREFERRED_SIZE, PREFERRED_SIZE): el icono
@@ -396,10 +408,29 @@ class ScalableLabel(QLabel):
         Args:
             color (str | None): Color CSS del borde (ej. "#F2C200"), o None.
         """
-        if color:
-            self.setStyleSheet(f"border: 3px solid {color}; border-radius: 6px;")
-        else:
-            self.setStyleSheet("")
+        # El recuadro se pinta a mano (ver paintEvent) y no con un borde de
+        # hoja de estilo: ese borde seguía el tamaño de la celda entera (un
+        # rectángulo alto y angosto) y quedaba encima del ícono.
+        self.__highlight_color = color
+        self.update()
+
+    def __square(self) -> QRectF:
+        """Cuadrado centrado más grande que entra en el widget."""
+        side = min(self.width(), self.height())
+        return QRectF((self.width() - side) / 2, (self.height() - side) / 2, side, side)
+
+    def paintEvent(self, event) -> None:
+        """Dibuja el ícono y, si está resaltado, un recuadro cuadrado a su alrededor."""
+        super().paintEvent(event)
+        if not self.__highlight_color:
+            return
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(QColor(self.__highlight_color), self.HIGHLIGHT_WIDTH))
+        half = self.HIGHLIGHT_WIDTH / 2
+        frame = self.__square().adjusted(half, half, -half, -half)
+        painter.drawRoundedRect(frame, self.HIGHLIGHT_RADIUS, self.HIGHLIGHT_RADIUS)
+        painter.end()
 
     def resizeEvent(self, event) -> None:
         """
@@ -416,8 +447,11 @@ class ScalableLabel(QLabel):
         if self.__original_pixmap.isNull() or self.size().width() <= 0:
             return
         
+        side = int(self.__square().width() * (1 - 2 * self.ICON_PADDING))
+        if side <= 0:
+            return
         scaled = self.__original_pixmap.scaled(
-            self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            QSize(side, side), Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
         self.setPixmap(scaled)
 

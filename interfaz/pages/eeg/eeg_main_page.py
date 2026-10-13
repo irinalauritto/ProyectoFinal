@@ -10,11 +10,12 @@ son ventanas flotantes propias y no rompen la estetica de esta pantalla.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
+    QDialogButtonBox,
     QDoubleSpinBox,
     QFrame,
     QGraphicsOpacityEffect,
@@ -34,6 +35,8 @@ from PySide6.QtWidgets import (
 from interfaz.eeg.session import NULL_STIMULUS_INDEX
 from interfaz.pages.eeg.eeg_live_widget import EegLiveWidget
 from interfaz.pages.eeg.eeg_psd_widget import EegPsdWidget
+from interfaz.shell import patient_store
+from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
 from interfaz.shell.asterics_launcher import AstericsLauncher, set_topmost
 
 # Orden fijo de estimulos -> (nombre, tecla). Coincide con
@@ -53,10 +56,6 @@ STIMULUS_LABELS = ["Nulo", "Espacio", "Derecha", "Arriba", "Izquierda", "Abajo"]
 # (StimulusViewer.__arrow_mask) -- estos glifos se actualizaron igual, para
 # que combinen.
 STIMULUS_ICONS = ["■", "●", "▶", "▲", "◀", "▼"]
-# Nombre por forma/direccion (no por la tecla que dispara, a diferencia de
-# STIMULUS_LABELS) -- se usa para anunciar por voz el estimulo que hay que
-# MIRAR durante la prueba de validacion (ver _on_iniciar_prueba).
-STIMULUS_SPOKEN_NAMES = ["Cuadrado", "Círculo", "Derecha", "Arriba", "Izquierda", "Abajo"]
 
 # Canales que se pueden sumar a los fijos (O1/Oz/O2): son los mismos
 # electrodos que ofrece ElectrodeHeadWidget en vision. El total esta acotado
@@ -141,11 +140,20 @@ class EegMainPage(QWidget):
         self._head_dialog = None
         self._head_widget = None
         self._test_connections: list = []
-        self._test_waiting_for_stimulator = False
         self._enable_control_before_test = False
+        self._validator = None  # ThresholdCalibrator, se crea al abrir "Iniciar prueba"
+        # Guardado del umbral elegido con el slider: se espera a que deje de
+        # moverse (arrastrarlo dispara un cambio por cada paso).
+        self._umbral_timer = QTimer(self)
+        self._umbral_timer.setSingleShot(True)
+        self._umbral_timer.setInterval(600)
+        self._umbral_timer.timeout.connect(self._guardar_umbral)
+        self._validation_viewer = None
+        self._val_item_text = ""
         self._calibrator = None  # se crea al abrir "Iniciar calibración"
         self._calibration_viewer = None
         self._asterics = AstericsLauncher(parent=self)
+        self._asterics.configured.connect(self._on_asterics_configured)
         self._estimulador_estaba_abierto = False  # para detectar el cierre del estimulador
         self._enable_control_before_calibracion = False
         self._calib_current_freq = 0.0
@@ -469,6 +477,22 @@ class EegMainPage(QWidget):
         self._spin_duracion.valueChanged.connect(self._on_duracion_changed)
         layout.addWidget(self._spin_duracion)
 
+        lbl_barrido = QLabel("Tiempo de barrido (AsTeRICS)")
+        lbl_barrido.setObjectName("MutedLabel")
+        layout.addWidget(lbl_barrido)
+        self._spin_barrido = QDoubleSpinBox()
+        self._spin_barrido.setToolTip(
+            "Cada cuánto avanza el barrido automático de AsTeRICS (solo método Barrido). "
+            "Se envía a AsTeRICS al abrirla y cada vez que cambia."
+        )
+        self._spin_barrido.setRange(0.3, 10.0)
+        self._spin_barrido.setSingleStep(0.1)
+        self._spin_barrido.setDecimals(1)
+        self._spin_barrido.setValue(DEFAULT_SCAN_TIME_S)
+        self._spin_barrido.setSuffix(" s")
+        self._spin_barrido.valueChanged.connect(self._on_barrido_changed)
+        layout.addWidget(self._spin_barrido)
+
         self._lbl_evaluacion_footer = QLabel("Última evaluación: sin registrar")
         self._lbl_evaluacion_footer.setObjectName("MutedLabel")
         self._lbl_evaluacion_footer.setWordWrap(True)
@@ -583,10 +607,13 @@ class EegMainPage(QWidget):
 
         self._psd_widget.set_target_frequencies([stim.freq for stim in prefs.stimulus])
 
+        # Umbral guardado del usuario (lo calcula la Validación, ver
+        # _on_validacion_finalizada); el slider permite ajustarlo en vivo.
+        umbral = round(prefs.threshold * 100)
         self._slider_umbral.blockSignals(True)
-        self._slider_umbral.setValue(10)
+        self._slider_umbral.setValue(umbral)
         self._slider_umbral.blockSignals(False)
-        self._on_umbral_changed(10)
+        self._on_umbral_changed(umbral)
 
         # stop_streaming() (cambio de metodo, frecuencia o canales) tambien
         # cierra el estimulador: se resincroniza el boton y, con el, AsTeRICS.
@@ -724,9 +751,48 @@ class EegMainPage(QWidget):
         umbral = value / 100.0
         self._lbl_umbral_value.setText(f"{umbral:.2f}")
         self._session.set_threshold(umbral)
+        prefs = self._session.current_preferences
+        if prefs is not None and round(prefs.threshold * 100) != value:
+            self._umbral_timer.start()
+        else:
+            self._umbral_timer.stop()
+
+    def _guardar_umbral(self) -> None:
+        """Persiste en las preferencias del usuario (SQLite) el umbral
+        elegido con el slider, para que se conserve al cerrar la aplicacion."""
+        self._umbral_timer.stop()
+        prefs = self._session.current_preferences
+        umbral = self._slider_umbral.value() / 100.0
+        if prefs is None or round(prefs.threshold * 100) == self._slider_umbral.value():
+            return
+        self._session.save_threshold(umbral)
 
     def _on_duracion_changed(self, value: int) -> None:
         self._session.keyboard.set_press_duration(value)
+        # La pulsación mínima que exige AsTeRICS se deriva de esta duración.
+        self._asterics.apply_settings(self._asterics_settings())
+
+    def _on_barrido_changed(self, _value: float) -> None:
+        self._asterics.apply_settings(self._asterics_settings())
+
+    def _asterics_settings(self) -> AstericsInputSettings:
+        """Lo que esta pantalla le pide a AsTeRICS (método, barrido, pulsación)."""
+        modo = self._combo_modo_entrada.itemData(self._combo_modo_entrada.currentIndex())
+        return AstericsInputSettings(
+            mode=modo or DEFAULT_INPUT_MODE,
+            scan_time_ms=round(self._spin_barrido.value() * 1000),
+            key_hold_ms=self._spin_duracion.value(),
+        )
+
+    def _on_asterics_configured(self, ok: bool, message: str) -> None:
+        # Solo se avisa cuando falla; si salió bien, AsTeRICS ya está lista.
+        if not ok:
+            QMessageBox.warning(
+                self,
+                "AsTeRICS",
+                message + "\n\nAsTeRICS se abrió igual: configure a mano el método de entrada, el "
+                "tiempo de barrido y la duración de la pulsación.",
+            )
 
     def _on_canal_changed(self, index: int) -> None:
         if index < 0:
@@ -753,7 +819,7 @@ class EegMainPage(QWidget):
         respuesta = QMessageBox.question(
             self,
             "Calibración",
-            "La calibración recorre 9 frecuencias candidatas (8 a 16 Hz) con 3 repeticiones "
+            "La calibración recorre 9 frecuencias candidatas (8 a 16 Hz) con 2 repeticiones "
             "cada una y dura varios minutos. Al terminar reasigna las frecuencias según el "
             "método de entrada elegido: las de mayor exactitud van primero a Espacio y a los "
             "demás estímulos del método, y Nulo recibe la última de ellas (la segunda en Barrido).\n\n"
@@ -889,11 +955,30 @@ class EegMainPage(QWidget):
         nuevo_stimulus_on = _stimulus_on_for_mode(modo_key)
         if nuevo_stimulus_on == prefs.stimulus_on:
             return
+        from ssvep.app.dataclasses import DEFAULT_THRESHOLD
+
         self._session.stop_streaming()
         prefs.stimulus_on = nuevo_stimulus_on
+        # El umbral validado valia para los estimulos del metodo anterior (el
+        # margen depende de cuantos compiten): se vuelve al de fabrica hasta
+        # que se valide de nuevo.
+        prefs.threshold = DEFAULT_THRESHOLD
         self._session.save_preferences(prefs)
         self._load_from_preferences()
         self._session.start_streaming()
+
+        etiqueta = INPUT_MODES[modo_key]["label"]
+        self._lbl_evaluacion_footer.setText(
+            f"⚠ Falta validar el método {etiqueta}: el umbral volvió a {DEFAULT_THRESHOLD:.2f}."
+        )
+        respuesta = QMessageBox.question(
+            self,
+            "Validación",
+            f"Cambió el método de entrada a {etiqueta}. El umbral validado antes ya no aplica "
+            f"y volvió al valor por defecto ({DEFAULT_THRESHOLD:.2f}).\n\n¿Validar ahora?",
+        )
+        if respuesta == QMessageBox.StandardButton.Yes:
+            self._on_iniciar_prueba()
 
     def _set_calibracion_controles_habilitados(self, habilitado: bool) -> None:
         """Mientras corre la calibración, se bloquean los controles que
@@ -946,9 +1031,6 @@ class EegMainPage(QWidget):
         self._barra_calibracion.setValue(self._calib_trials_done)
 
     def _on_calibracion_finalizada(self, result: dict) -> None:
-        # _finalizar_calibracion() pone self._calibrator en None -- se guarda
-        # la referencia antes para poder generar el reporte con ella.
-        calibrator = self._calibrator
         self._finalizar_calibracion()
 
         # `result["selected"]` viene ordenada de mayor a menor exactitud: se
@@ -961,22 +1043,18 @@ class EegMainPage(QWidget):
             prefs.stimulus[stim_index].freq = freq
         self._session.save_preferences(prefs)
         self._load_from_preferences()
-
-        try:
-            self._session.calibration_repository().save(self._session.current_user_id, result)
-        except Exception:
-            pass
-
-        report_path = None
-        try:
-            import os
-
-            os.makedirs(self._session.reports_dir(), exist_ok=True)
-            user_name = self._session.user_manager.get_user(self._session.current_user_id)["name"]
-            report_path = os.path.join(self._session.reports_dir(), f"calibracion-{user_name}.pdf")
-            calibrator.generate_report(report_path, result)
-        except Exception:
-            report_path = None
+        # El detalle completo queda solo en la ficha del paciente (patients.json):
+        # no se genera PDF ni se guarda en otra tabla.
+        registro = {
+            "modo": modo,
+            "exactitudes": {f"{f:g}": round(acc, 1) for f, acc in result["accuracies"].items()},
+            "frecuencias_elegidas": [float(f) for f in result["selected"]],
+            "asignacion": {STIMULUS_LABELS[i]: f for i, f in asignacion.items()},
+        }
+        for clave in ("seed", "refresh_rate", "anchor_freq"):
+            if result.get(clave) is not None:
+                registro[clave] = result[clave]
+        self._registrar_resultado("calibracion", registro)
 
         accs = result["accuracies"]
         accs_text = ", ".join(f"{f:g}Hz: {accs[f]:.0f}%" for f in sorted(accs))
@@ -995,8 +1073,6 @@ class EegMainPage(QWidget):
                 "\n\nSin reasignar (no hubo suficientes frecuencias sin colisión armónica, "
                 f"conservan la anterior): {', '.join(sin_asignar)}"
             )
-        if report_path:
-            mensaje += f"\n\nReporte: {report_path}"
         QMessageBox.information(self, "Calibración", mensaje)
 
     def _on_calibracion_fallida(self, motivo: str) -> None:
@@ -1037,22 +1113,18 @@ class EegMainPage(QWidget):
         )
 
     def _on_stimuli_ready(self, hwnd: int) -> None:
-        # La ventana del estimulador termino de abrirse. Si hay una prueba
-        # esperando, arranca la prueba (su propio flujo: parpadea y se ubica
-        # la ventana de la secuencia). Si no (boton "Abrir estimulador"), los
-        # estimulos quedan QUIETOS y se abre AsTeRICS en el espacio libre; el
-        # parpadeo empieza recien con "Iniciar estimulacion".
-        if self._test_waiting_for_stimulator:
-            self._test_waiting_for_stimulator = False
-            self._begin_test()
-        else:
-            if not self._asterics.open(place=self._ubicar_en_espacio_libre):
-                QMessageBox.warning(
-                    self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado."
-                )
-            self._actualizar_boton_estimulador()
+        # La ventana del estimulador (boton "Abrir estimulador") termino de
+        # abrirse: los estimulos quedan QUIETOS y se abre AsTeRICS en el
+        # espacio libre; el parpadeo empieza recien con "Iniciar
+        # estimulacion". La prueba de validacion usa su propio visor (ver
+        # _on_iniciar_prueba), no pasa por aca.
+        if not self._asterics.open(place=self._ubicar_en_espacio_libre, settings=self._asterics_settings()):
+            QMessageBox.warning(
+                self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado."
+            )
+        self._actualizar_boton_estimulador()
 
-    def _ubicar_en_espacio_libre(self, hwnd: int) -> None:
+    def _ubicar_en_espacio_libre(self, hwnd: int, viewer=None) -> None:
         """Ubica una ventana en el espacio libre del monitor del estimulador,
         con el calculo que ya hace GameManager (escala del monitor y margenes
         del estimulador). Se usa `_position_window` y no `place_window` a
@@ -1064,9 +1136,12 @@ class EegMainPage(QWidget):
         Los estimulos no direccionales (Nulo, Espacio) ocupan la columna
         izquierda y las flechas, la fila inferior (ver StimulusViewer). Si no
         hay flechas activas (Barrido) esa fila queda vacia, y la ventana
-        aprovecha tambien ese alto."""
+        aprovecha tambien ese alto.
+
+        `viewer`: visor cuyo espacio libre se usa (por defecto, el
+        estimulador de la sesion). La prueba de validacion pasa el suyo."""
         game_manager = self._session.game_manager
-        info = dict(self._session.stimulus_viewer.get_screen_info())
+        info = dict((viewer or self._session.stimulus_viewer).get_screen_info())
         if not self._usa_fila_inferior():
             info["margins"] = (0, info["margins"][1])
         game_manager.load_screen_info(info)
@@ -1120,31 +1195,44 @@ class EegMainPage(QWidget):
                 self._chk_audio.setChecked(False)
         self._estimulador_estaba_abierto = corriendo
 
-    def _begin_test(self) -> None:
-        if self._eval_widgets is None:
-            return
-        eval_op, eval_user = self._eval_widgets[0], self._eval_widgets[1]
-        eval_op.enable_buttons()
-        self._session.begin_stimulation()
-        # La ventana con el orden de estimulos va en el espacio libre del
-        # estimulador (igual que AsTeRICS), siempre visible.
-        self._ubicar_en_espacio_libre(int(eval_user.winId()))
-        set_topmost(int(eval_user.winId()), True)
-
     # ------------------------------------------------------------------
-    # Validacion (prueba de desempeño) -- reusa BCIEvaluator + sus widgets
+    # Validacion: calcula el umbral de aceptacion del usuario (ver
+    # threshold_calibrator.py en interfaz_ssvep). Reusa los popups del
+    # evaluador (BCIEvaluatorOperator/User/SequenceWidget), cableados a las
+    # señales de ThresholdCalibrator.
     # ------------------------------------------------------------------
     def _on_iniciar_prueba(self) -> None:
         if self._eval_widgets is not None:
             return
 
-        from ssvep.app.bci_evaluator_widgets import BCIEvaluatorOperator, BCIEvaluatorUser, SequenceWidget
+        import builtins
 
-        sequence = self._session.evaluation_sequence()
-        self._session.evaluator.set_sequence(sequence)
+        from ssvep.app.bci_evaluator_widgets import BCIEvaluatorOperator, BCIEvaluatorUser, SequenceWidget
+        from ssvep.app.stimulus_viewer import StimulusViewer
+        from ssvep.app.threshold_calibrator import ThresholdCalibrator
+
+        # Solo puede haber un visor de estimulos abierto a la vez -- si el
+        # estimulador manual estaba corriendo, se cierra antes de abrir el
+        # propio de la validacion (que muestra los estimulos activos del
+        # metodo de entrada elegido).
+        self._session.stimulus_viewer.stop_stim()
+
+        prefs = self._session.current_preferences
+        self._validation_viewer = StimulusViewer()
+        self._validator = ThresholdCalibrator(
+            stimulus_viewer=self._validation_viewer,
+            final_freqs=[stim.freq for stim in prefs.stimulus],
+            user_preferences=prefs,
+            voice=self._session.voice,
+            sample_rate=builtins.SAMPLE_RATE,
+            harmonics=builtins.SETTINGS.f_bands,
+        )
+        sequence = self._validator.item_order
 
         eval_op = BCIEvaluatorOperator()
+        eval_op.setWindowTitle("Validación — operador")
         eval_user = BCIEvaluatorUser()
+        eval_user.setWindowTitle("Validación")
         seq_op = SequenceWidget()
         seq_user = SequenceWidget()
         eval_op.load_sequence_widget(seq_op)
@@ -1154,17 +1242,18 @@ class EegMainPage(QWidget):
         seq_user.add_sequence(sequence)
         self._eval_widgets = (eval_op, eval_user, seq_op, seq_user)
 
-        ev = self._session.evaluator
+        validator = self._validator
         self._test_connections = [
-            (ev.index_hit, self._make_hit_handler(eval_op, seq_op)),
-            (ev.index_miss, self._make_miss_handler(eval_op, seq_op)),
-            (ev.index_sequence, seq_op.highlight_expected_index),
-            (ev.index_sequence, seq_user.highlight_expected_index),
-            (ev.index_sequence, self._make_anuncio_handler(sequence)),
-            (ev.finished, self._on_prueba_finalizada),
-            (ev.send_time, eval_op.set_time),
+            (validator.item_started, self._on_validacion_item),
+            (validator.cueing, self._on_validacion_aviso),
+            (validator.time_elapsed, self._on_validacion_tiempo),
+            (validator.window_classified, self._on_validacion_ventana),
+            (validator.calibration_finished, self._on_validacion_finalizada),
+            (validator.calibration_failed, self._on_validacion_fallida),
+            (self._validation_viewer.stimuli_ready, self._on_validacion_estimulos_listos),
+            (self._session.classification_result, validator.receive_classification),
             (eval_op.stop_test_request, self._on_stop_test_request),
-            (eval_op.start_test_request, ev.start),
+            (eval_op.start_test_request, validator.start),
             (eval_user.window_closed, self._on_stop_test_request),
         ]
         for signal, slot in self._test_connections:
@@ -1172,86 +1261,189 @@ class EegMainPage(QWidget):
 
         self._enable_control_before_test = self._session.enable_control
         self._session.set_enable_control(False)
-        self._session.set_add_test_data(True)
+        self._session.use_classifier(validator.classifier)
         self._btn_prueba.setEnabled(False)
         self._chk_enviar_teclas.setEnabled(False)
         self._combo_modo_entrada.setEnabled(False)
         self._btn_estimulador.setEnabled(False)
         self._sync_freq_tiles()
+        self._sync_channel_widgets()
+        self._actualizar_boton_estimulador()
+        self._lbl_evaluacion_footer.setText("Validación lista: presioná \"Iniciar\" en la ventana del operador.")
 
         eval_op.show()
         eval_user.show()
+        # "Iniciar" (ventana del operador) arranca la corrida: recien ahi se
+        # abre el visor con los estimulos (ver ThresholdCalibrator.start).
+        eval_op.enable_buttons()
 
-        # El estimulador se abre recien aca, al correr la prueba (no antes):
-        # los botones del operador se habilitan y empieza el parpadeo cuando
-        # su ventana termina de abrirse (ver _on_stimuli_ready/_begin_test).
-        viewer = self._session.stimulus_viewer
-        if viewer.is_running():
-            self._begin_test()
-        else:
-            self._test_waiting_for_stimulator = True
-            viewer.start_stim()
-        self._actualizar_boton_estimulador()
+    def _on_validacion_estimulos_listos(self, _hwnd: int) -> None:
+        # La ventana con el orden de estimulos va en el espacio libre del
+        # visor (igual que AsTeRICS), siempre visible.
+        if self._eval_widgets is None:
+            return
+        eval_user = self._eval_widgets[1]
+        self._ubicar_en_espacio_libre(int(eval_user.winId()), viewer=self._validation_viewer)
+        set_topmost(int(eval_user.winId()), True)
 
-    def _make_hit_handler(self, eval_op, seq_op):
-        def _handler(index: int) -> None:
+    def _on_validacion_item(self, item_index: int, item_num: int, n_items: int) -> None:
+        if self._eval_widgets is None:
+            return
+        eval_op, _eval_user, seq_op, seq_user = self._eval_widgets
+        seq_op.highlight_expected_index(item_num - 1)
+        seq_user.highlight_expected_index(item_num - 1)
+        eval_op.set_time(0)
+        self._val_item_text = f"Ítem {item_num}/{n_items} ({STIMULUS_ICONS[item_index]} {STIMULUS_LABELS[item_index]})"
+
+    def _on_validacion_aviso(self, segundos_restantes: int) -> None:
+        self._lbl_evaluacion_footer.setText(f"{self._val_item_text} — aviso, arranca en {segundos_restantes}s")
+
+    def _on_validacion_tiempo(self, segundos: int) -> None:
+        if self._eval_widgets is not None:
+            self._eval_widgets[0].set_time(segundos)
+        self._lbl_evaluacion_footer.setText(f"{self._val_item_text} — midiendo… {segundos}s")
+
+    def _on_validacion_ventana(self, _item_index: int, predicho: int, _margen: float, fue_correcta: bool) -> None:
+        # Cada ventana del tramo limpio se muestra, acierte o no (a
+        # diferencia de BCIEvaluator, que resolvia cada posicion con un
+        # unico intento).
+        if self._eval_widgets is None:
+            return
+        eval_op, _eval_user, seq_op, _seq_user = self._eval_widgets
+        if fue_correcta:
             eval_op.register_hit()
-            seq_op.add_hit(index)
-
-        return _handler
-
-    def _make_anuncio_handler(self, sequence: list):
-        # ev.index_sequence manda la POSICION dentro de la secuencia (no el
-        # tipo de estimulo -- a diferencia de index_hit/index_miss, que sí
-        # mandan el tipo), asi que hay que resolverla contra `sequence` para
-        # saber que forma anunciar.
-        def _handler(position: int) -> None:
-            if position < 0 or position >= len(sequence):
-                return
-            stim_index = sequence[position]
-            if 0 <= stim_index < len(STIMULUS_SPOKEN_NAMES):
-                self._session.announce_text(STIMULUS_SPOKEN_NAMES[stim_index])
-
-        return _handler
-
-    def _make_miss_handler(self, eval_op, seq_op):
-        def _handler(index: int) -> None:
+            seq_op.add_hit(predicho)
+        else:
             eval_op.register_miss()
-            seq_op.add_miss(index)
-
-        return _handler
+            seq_op.add_miss(predicho)
 
     def _on_stop_test_request(self) -> None:
-        # Boton "Detener" del operador, o cierre de la ventana de usuario:
-        # dispara evaluator.stop(), que a su vez emite `finished` --
-        # _on_prueba_finalizada es quien hace la limpieza real (ver abajo).
-        # No limpiar aca directamente: evaluator.stop() ya lo va a disparar.
-        self._session.evaluator.stop()
-
-    def _on_prueba_finalizada(self) -> None:
-        # Conectado a evaluator.finished, que se dispara tanto al completar
-        # la secuencia como al llamar stop() manualmente -- por eso esto
-        # solo hace limpieza de UI/estado, nunca vuelve a llamar stop()
-        # (si no, stop() volveria a emitir finished -> recursion infinita).
-        accuracy = self._session.evaluator.accuracy()
-        self._lbl_evaluacion_footer.setText(f"Última evaluación: {accuracy:.0f}% de exactitud")
+        # Boton "Detener" del operador, o cierre de alguna de las ventanas.
+        # ThresholdCalibrator.cancel() corta sin emitir calibration_finished,
+        # asi que la limpieza se hace aca directamente.
+        self._lbl_evaluacion_footer.setText("Validación cancelada.")
         self._cerrar_ventanas_prueba()
 
+    def _on_validacion_fallida(self, motivo: str) -> None:
+        self._lbl_evaluacion_footer.setText("La validación falló. Ver detalle.")
+        self._cerrar_ventanas_prueba()
+        QMessageBox.critical(self, "Validación", f"La validación no pudo completarse:\n\n{motivo}")
+
+    def _on_validacion_finalizada(self, result: dict) -> None:
+        self._cerrar_ventanas_prueba()
+
+        resumen = self._pedir_umbral_final(result)
+        if resumen is None:
+            self._lbl_evaluacion_footer.setText(
+                f"Validación sin guardar (umbral calculado: {result['threshold']:.2f})."
+            )
+            return
+
+        # Mismo patron que el resto de los cambios de preferencias: se corta
+        # el stream, se guarda y se recarga todo antes de volver a arrancar.
+        prefs = self._session.current_preferences
+        self._session.stop_streaming()
+        prefs.threshold = resumen["threshold"]
+        self._session.save_preferences(prefs)
+        self._registrar_resultado("validacion", {
+            "umbral": resumen["threshold"],
+            "umbral_automatico": result["threshold"],
+            "exactitud": resumen["accuracy"],
+            "itr_bits_min": resumen["itr"],
+        })
+        self._load_from_preferences()
+        self._session.start_streaming()
+        self._lbl_evaluacion_footer.setText(
+            f"Última validación: umbral {resumen['threshold']:.2f} — "
+            f"{resumen['accuracy']:.0f}% de exactitud, ITR {resumen['itr']:.1f} bits/min"
+        )
+
+    def _pedir_umbral_final(self, result: dict) -> dict | None:
+        """Muestra el umbral calculado (con la exactitud/ITR que logra) en un
+        campo editable, pre-cargado con el valor automatico, para que el
+        operador pueda ajustarlo a mano antes de guardarlo. Devuelve el
+        resumen (ver summarize_threshold) del umbral elegido, o None si se
+        descarta."""
+        from ssvep.app.threshold_calibrator import summarize_threshold
+
+        dialog = QDialog(self.window())
+        dialog.setWindowTitle("Validación")
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(10)
+
+        intro = f"Umbral calculado automáticamente: {result['threshold']:.2f}\n"
+        if result["swept_threshold"] != result["threshold"]:
+            intro += (
+                f"(el cálculo dio {result['swept_threshold']:.2f}; se reemplazó por el umbral "
+                "por defecto para conservar el estado \"sin detección\")\n"
+            )
+        lbl_intro = QLabel(intro + "Se puede ajustar a mano antes de guardarlo.")
+        layout.addWidget(lbl_intro)
+
+        fila = QHBoxLayout()
+        fila.addWidget(QLabel("Umbral CCA"))
+        spin = QDoubleSpinBox()
+        spin.setDecimals(2)
+        spin.setRange(0.0, 1.0)
+        spin.setSingleStep(0.01)
+        spin.setValue(result["threshold"])
+        fila.addWidget(spin)
+        fila.addStretch(1)
+        layout.addLayout(fila)
+
+        lbl_resumen = QLabel("")
+        layout.addWidget(lbl_resumen)
+
+        def _resumen(umbral: float) -> dict:
+            return summarize_threshold(
+                result["records_by_item"], umbral, result["time_window"], n_classes=result["n_classes"]
+            )
+
+        def _actualizar(umbral: float) -> None:
+            r = _resumen(umbral)
+            lbl_resumen.setText(
+                f"Exactitud: {r['accuracy']:.0f}%\n"
+                f"Ítems sin resolver: {r['unresolved_fraction']:.0%}\n"
+                f"ITR: {r['itr']:.1f} bits/min"
+            )
+
+        spin.valueChanged.connect(_actualizar)
+        _actualizar(spin.value())
+
+        botones = QDialogButtonBox()
+        botones.addButton("Guardar", QDialogButtonBox.ButtonRole.AcceptRole)
+        botones.addButton("Descartar", QDialogButtonBox.ButtonRole.RejectRole)
+        botones.accepted.connect(dialog.accept)
+        botones.rejected.connect(dialog.reject)
+        layout.addWidget(botones)
+
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return None
+        return _resumen(round(spin.value(), 2))
+
     def _cerrar_ventanas_prueba(self) -> None:
-        """Solo cierra ventanas/restaura estado -- NUNCA llama
-        evaluator.stop() (ver _on_stop_test_request/_on_prueba_finalizada)."""
+        """Limpieza comun a cancelar, fallar y terminar la validacion: corta
+        la corrida si seguia en curso, cierra las ventanas y restaura el
+        clasificador principal y los controles deshabilitados."""
         if self._eval_widgets is None:
             return
         eval_op, eval_user, _seq_op, _seq_user = self._eval_widgets
+        # Primero se desconecta: cerrar las ventanas vuelve a emitir
+        # stop_test_request/window_closed.
         for signal, slot in self._test_connections:
             try:
                 signal.disconnect(slot)
             except (RuntimeError, TypeError):
                 pass
         self._test_connections = []
-        self._test_waiting_for_stimulator = False
+        if self._validator is not None:
+            self._validator.cancel()
+        if self._validation_viewer is not None and self._validation_viewer.is_running():
+            self._validation_viewer.stop_stim()
+        self._validator = None
+        self._validation_viewer = None
+        self._session.restore_main_classifier()
         self._session.set_enable_control(self._enable_control_before_test)
-        self._session.set_add_test_data(False)
         eval_op.stop()
         eval_user.stop()
         self._eval_widgets = None
@@ -1260,12 +1452,88 @@ class EegMainPage(QWidget):
         self._combo_modo_entrada.setEnabled(True)
         self._btn_estimulador.setEnabled(True)
         self._sync_freq_tiles()
-        # Igual que el AppController original: al terminar la prueba se cierra el estimulador.
-        self._session.stimulus_viewer.stop_stim()
+        self._sync_channel_widgets()
         self._actualizar_boton_estimulador()
 
     # ------------------------------------------------------------------
+    # Ficha del paciente (ver interfaz/shell/patient_store.py)
+    # ------------------------------------------------------------------
+    def attach_ficha(self, patient_id: str | None) -> None:
+        """Asocia la pantalla a la ficha del paciente. La configuración de
+        EEG que manda sigue siendo la de la base SQLite (la restaura
+        `EegSession.load_user`); acá se restauran los ajustes que SQLite no
+        guarda (pulsación, refractario, tiempo de barrido) y, desde ahora, se
+        refleja en la ficha cada cambio, la calibración y la validación."""
+        self._ficha_id = patient_id
+        if not getattr(self, "_ficha_conectada", False):
+            self._ficha_conectada = True
+            self._ficha_timer = QTimer(self)
+            self._ficha_timer.setSingleShot(True)
+            self._ficha_timer.setInterval(600)  # junta ráfagas (arrastrar el deslizador)
+            self._ficha_timer.timeout.connect(self._guardar_config)
+            for senal in (
+                self._spin_duracion.valueChanged,
+                self._spin_refractario.valueChanged,
+                self._spin_barrido.valueChanged,
+                self._slider_umbral.valueChanged,
+                self._combo_modo_entrada.currentIndexChanged,
+                self._session.preferences_saved,
+            ):
+                senal.connect(self._programar_guardado)
+        self._restaurar_config()
+        self._programar_guardado()  # deja reflejado en la ficha el estado actual
+
+    def _restaurar_config(self) -> None:
+        cfg = patient_store.get_config(self._ficha_id, "eeg")
+        ajustes = (
+            ("duracion_tecla_ms", self._spin_duracion, int, self._session.keyboard.set_press_duration),
+            ("refractario_s", self._spin_refractario, float, self._session.set_refractory_period),
+            ("tiempo_barrido_s", self._spin_barrido, float, None),
+        )
+        for clave, spin, tipo, aplicar in ajustes:
+            if clave not in cfg:
+                continue
+            try:
+                valor = tipo(cfg[clave])
+            except (TypeError, ValueError):
+                continue
+            spin.blockSignals(True)  # sin disparar avisos ni reescrituras mientras se restaura
+            spin.setValue(valor)
+            spin.blockSignals(False)
+            if aplicar is not None:
+                aplicar(spin.value())
+
+    def _programar_guardado(self, *_args) -> None:
+        if getattr(self, "_ficha_id", None):
+            self._ficha_timer.start()
+
+    def _guardar_config(self) -> None:
+        prefs = self._session.current_preferences
+        if not getattr(self, "_ficha_id", None) or prefs is None:
+            return
+        patient_store.update_config(self._ficha_id, "eeg", {
+            "modo": _mode_for_stimulus_on(prefs.stimulus_on) or DEFAULT_INPUT_MODE,
+            "frecuencias_hz": {STIMULUS_LABELS[i]: s.freq for i, s in enumerate(prefs.stimulus)},
+            "estimulos_activos": [STIMULUS_LABELS[i] for i, on in enumerate(prefs.stimulus_on) if on],
+            "umbral": round(self._slider_umbral.value() / 100.0, 2),
+            "canales": list(prefs.channels.values()),
+            "ventana_s": prefs.time_window,
+            "metodo_clasificacion": prefs.classification_method,
+            "duracion_tecla_ms": self._spin_duracion.value(),
+            "refractario_s": self._spin_refractario.value(),
+            "tiempo_barrido_s": self._spin_barrido.value(),
+            "ssvep_user_id": self._session.current_user_id,
+        })
+
+    def _registrar_resultado(self, tipo: str, datos: dict) -> None:
+        """Guarda en la ficha el último resultado ("calibracion" o "validacion")."""
+        if getattr(self, "_ficha_id", None):
+            patient_store.set_result(self._ficha_id, "eeg", tipo, datos)
+
+    # ------------------------------------------------------------------
     def liberar_recursos(self) -> None:
+        if self._umbral_timer.isActive():
+            self._guardar_umbral()  # no perder un cambio hecho justo antes de salir
         self._cerrar_ventanas_prueba()
         if self._calibrator is not None and self._calibrator.is_running():
             self._cancelar_calibracion()

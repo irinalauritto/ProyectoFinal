@@ -7,3 +7,14 @@ interfaz_emg/data/*.csv
 # Artefactos de compilación de ESP-IDF (se regeneran solos, no corresponde versionarlos)
 firmware/**/build/
 firmware/**/sdkconfig.old
+
+# Datos de pacientes: no se versionan. La lista unificada vive fuera del repo
+# (%LOCALAPPDATA%\ComandoAAC\patients.json); este es el archivo viejo, que solo
+# se lee una vez para migrarlo.
+interfaz/data/patients.json
+
+# Bitácoras de sesión (EMG) y reportes PDF: llevan nombres de pacientes, no se versionan.
+# Las carpetas las crea la aplicación al generarlos.
+logs/
+interfaz_emg/logs/
+interfaz_ssvep/vision_data/reportes/

@@ -147,7 +147,8 @@ class PreferencesManager:
             stimulus_on=user_prefs.stimulus_on,
             stimulus_type=[stim.stim_type for stim in user_prefs.stimulus],
             stimulus_theta=[stim.theta for stim in user_prefs.stimulus],
-            stimulus_direction=[stim.direction for stim in user_prefs.stimulus]
+            stimulus_direction=[stim.direction for stim in user_prefs.stimulus],
+            threshold=user_prefs.threshold
         )
 
         # 2. Decisión de persistencia (Upsert)
@@ -206,6 +207,7 @@ class PreferencesManager:
             channels=prefs.channels,
             stimulus=stimulus,
             stimulus_on=prefs.stimulus_on,
+            threshold=prefs.threshold,
         )
 
     def remove_user_preferences(self, user_id: int) -> None:

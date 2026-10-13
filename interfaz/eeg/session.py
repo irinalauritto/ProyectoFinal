@@ -26,6 +26,7 @@ class EegSession(QObject):
     classification_result = Signal(int)
     error_occurred = Signal(str)
     stimuli_ready = Signal(int)  # hwnd de la ventana de estimulos
+    preferences_saved = Signal()  # se guardaron preferencias (para reflejarlas en la ficha)
 
     def __init__(self, data_dir: str, eeg_bin_path: Optional[str] = None, parent=None):
         super().__init__(parent)
@@ -89,6 +90,15 @@ class EegSession(QObject):
         self.keyboard = KeyboardController(press_duration_ms=builtins.SETTINGS.press_duration_ms)
         self.voice = VoiceFeedback()
         self.evaluator = BCIEvaluator(base_dir=self._data_dir)
+        # BCIEvaluator crea <data_dir>/reportes al construirse; como ya no se
+        # generan PDF, no se deja una carpeta vacía (si tiene reportes viejos
+        # rmdir falla y no se toca nada).
+        try:
+            import os
+
+            os.rmdir(self.reports_dir())
+        except OSError:
+            pass
         self.stimulus_viewer = StimulusViewer()
         self.game_manager = GameManager()
 
@@ -205,13 +215,16 @@ class EegSession(QObject):
         self._psd_estimator.load_time_windows(2.0)
 
         self._classifier.load_data(self._builtins.SAMPLE_RATE, prefs, self._builtins.SETTINGS.f_bands)
+        # Umbral guardado del usuario (el que calcula la Validación, ver
+        # threshold_calibrator.py en interfaz_ssvep).
+        self._classifier.load_threshold(prefs.threshold)
         self._processing_worker.load_classifier(self._classifier)
         self._processing_worker.set_classifier_ready(True)
 
         user_name = self.user_manager.get_user(user_id)["name"]
         self.evaluator.set_user_preferences(prefs)
-        self.evaluator.set_report_path(f"reporte-bci-{user_name}.pdf")
-        self.evaluator.set_auto_generate_report(True)
+        # Sin PDF: el resultado de la validación queda en la ficha del paciente.
+        self.evaluator.set_auto_generate_report(False)
 
         self.stimulus_viewer.load_stimulus_use(prefs.stimulus, prefs.stimulus_on)
 
@@ -286,6 +299,19 @@ class EegSession(QObject):
             raise RuntimeError("No hay un usuario cargado (llamar load_user primero)")
         self.prefs_manager.save_or_update_preferences(self.current_user_id, prefs)
         self.load_user(self.current_user_id)
+        self.preferences_saved.emit()
+
+    def save_threshold(self, value: float) -> None:
+        """Aplica `value` como umbral del clasificador y lo persiste en las
+        preferencias del usuario actual. A diferencia de `save_preferences`
+        no recarga el pipeline (filtros/clasificador/estimulador): el umbral
+        es lo unico que cambia, asi que se puede llamar con el stream andando."""
+        if self.current_user_id is None or self.current_preferences is None:
+            raise RuntimeError("No hay un usuario cargado (llamar load_user primero)")
+        self._classifier.load_threshold(value)
+        self.current_preferences.threshold = value
+        self.prefs_manager.save_or_update_preferences(self.current_user_id, self.current_preferences)
+        self.preferences_saved.emit()
 
     def set_eeg_source_file(self, path: Optional[str]) -> None:
         """Cambia el archivo fuente de EEGFileInterface (crudo .bin o .mat

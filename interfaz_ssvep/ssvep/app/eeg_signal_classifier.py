@@ -7,6 +7,28 @@ from sklearn.cross_decomposition import CCA
 from ssvep.app.dataclasses import UserPreferences
 
 
+def compute_margin(rho: np.ndarray) -> float:
+    """Margen normalizado de la correlación ganadora respecto de las demás.
+
+    `(max(rho) - min(rho)) / (sum(rho) - min(rho))`: es el valor que
+    `BaseEEGClassifier._validate_threshold` compara contra el umbral.
+
+    Args:
+        rho: Array de valores de correlación o puntuación para cada objetivo.
+
+    Returns:
+        float: El margen, o 0.0 si el denominador no es positivo (ej. un único
+            objetivo, o todas las correlaciones en cero), caso en el que nunca
+            se supera un umbral activo (> 0).
+    """
+    rho = np.asarray(rho, dtype=float)
+    min_rho = np.min(rho)
+    denominator = np.sum(rho) - min_rho
+    if denominator <= 0:
+        return 0.0
+    return float((np.max(rho) - min_rho) / denominator)
+
+
 class BaseEEGClassifier:
     """Clase base para clasificadores de señales EEG.
 
@@ -30,6 +52,12 @@ class BaseEEGClassifier:
         self._n_fbands: int | None = None
         self._n_targets: int | None = None
         self._target_labels: list[int] | None = None
+
+        # Última decisión cruda (antes de aplicar el umbral), ver last_raw_decision()
+        self._last_rho: np.ndarray | None = None
+        self._last_margin: float | None = None
+        self._last_stim_id: int | None = None
+        self._decision_count = 0
 
         self._buffer = np.zeros((buffer_size, *sample_shape))
         self._class_buffer = [-1, -1, -1, -1]
@@ -115,6 +143,35 @@ class BaseEEGClassifier:
         """
         self._target_labels = target_labels
 
+    @property
+    def last_rho(self) -> np.ndarray | None:
+        """Vector de correlaciones (rho) crudo de la última ventana clasificada."""
+        return self.last_raw_decision()[1]
+
+    @property
+    def last_margin(self) -> float | None:
+        """Margen normalizado (ver `compute_margin`) de la última ventana clasificada."""
+        return self.last_raw_decision()[2]
+
+    def last_raw_decision(self) -> tuple[int, np.ndarray | None, float | None, int | None]:
+        """Devuelve la última decisión cruda, tal como estaba justo antes de aplicar el umbral.
+
+        Los cuatro valores se leen juntos bajo el mismo lock, por lo que
+        siempre corresponden a la misma ventana aunque el clasificador corra
+        en otro hilo.
+
+        Returns:
+            tuple: `(n, rho, margen, stim_id)`, donde `n` es la cantidad de
+                ventanas clasificadas hasta el momento (sirve para detectar si
+                hubo una ventana nueva desde la última lectura), `rho` una
+                copia del vector de correlaciones, `margen` su margen
+                normalizado y `stim_id` el índice real del estímulo de mayor
+                correlación. Antes de la primera ventana es `(0, None, None, None)`.
+        """
+        with self._lock:
+            rho = None if self._last_rho is None else self._last_rho.copy()
+            return self._decision_count, rho, self._last_margin, self._last_stim_id
+
     def _validate_threshold(self, rho: np.ndarray) -> int:
         """Valida las correlaciones (rho) contra el umbral configurado.
 
@@ -130,22 +187,19 @@ class BaseEEGClassifier:
         if self._target_labels is not None:
             stim_id = self._target_labels[stim_id]
 
+        # Con denominador no positivo el margen es 0.0, que nunca alcanza un
+        # umbral activo (> 0): cae en la rama de "sin detección" de abajo.
+        margin = compute_margin(rho)
+        with self._lock:
+            self._last_rho = np.array(rho, dtype=float)
+            self._last_margin = margin
+            self._last_stim_id = stim_id
+            self._decision_count += 1
+
         if self._threshold <= 0:
             return stim_id
-            
-        max_rho = np.max(rho)
-        min_rho = np.min(rho)
-        denominator = np.sum(rho) - min_rho
-        
-        if denominator <= 0:
-            with self._lock:
-                self._class_buffer[self._index] = -1
-                self._index = (self._index + 1) % len(self._class_buffer)
-            return -1
-            
-        sum_rho = (max_rho - min_rho) / denominator
-        
-        if sum_rho >= self._threshold:
+
+        if margin >= self._threshold:
             with self._lock:
                 self._class_buffer[self._index] = stim_id
                 self._index = (self._index + 1) % len(self._class_buffer)

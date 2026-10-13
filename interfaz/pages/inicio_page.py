@@ -31,7 +31,15 @@ from PySide6.QtWidgets import (
 )
 
 from interfaz.shell.app_state import PatientInfo, SharedAppState
-from interfaz.shell.patient_store import load_patients, save_patient
+from interfaz.shell.patient_store import (
+    find_by_name,
+    full_name,
+    get_patient,
+    link_ssvep_user,
+    load_patients,
+    save_patient,
+    sync_ssvep_users,
+)
 
 # Los logos institucionales ya existen como recursos del modulo SSVEP proveniente de vision
 _LOGOS_DIR = Path(__file__).resolve().parent.parent.parent / "interfaz_ssvep" / "res" / "images"
@@ -243,6 +251,7 @@ class InicioPage(QWidget):
 
         outer.addStretch(1)
 
+        self._sincronizar_con_ssvep()
         self._reload_pacientes_guardados()
         self._on_tab_changed(1)
 
@@ -254,9 +263,9 @@ class InicioPage(QWidget):
         self._refresh_start_button()
 
     def _on_modalidad_changed(self, modality_id: int) -> None:
-        """ Cambia entre la modalidad EMG y la modalidad EEG. """
         self._modalidad = "emg" if modality_id == 0 else "eeg"
-        self._reload_pacientes_guardados()
+        # La lista de pacientes es la misma para las dos modalidades (ver
+        # patient_store): elegir una no la recarga ni cambia la selección.
         self._refresh_start_button()
 
     def _ensure_ssvep_connection(self) -> None:
@@ -281,39 +290,43 @@ class InicioPage(QWidget):
         self._ssvep_user_manager = UserManager(UserRepositorySQLAlchemy(db_session)) #en esta línea y en la siguiente se crean los managers de SSVEP para poder acceder a la base de datos de usuarios y preferencias
         self._ssvep_prefs_manager = PreferencesManager(PreferencesRepositorySQLAlchemy(db_session))
 
-    def _reload_pacientes_guardados(self) -> None:
-        if self._modalidad == "eeg":
+    def _sincronizar_con_ssvep(self) -> None:
+        """Une la lista con los usuarios de la base SSVEP: cada usuario queda
+        vinculado a una ficha y los que no tenían ficha se agregan. Si no hay
+        base todavía (nunca se usó EEG), no se conecta a nada."""
+        db = Path(__file__).resolve().parent.parent.parent / "interfaz_ssvep" / "vision_data" / "data" / "user_database.db"
+        if not db.exists():
+            return
+        try:
             self._ensure_ssvep_connection()
-            self._ssvep_users = list(self._ssvep_user_manager.get_all_users().items())
-            self.combo_pacientes.blockSignals(True)
-            self.combo_pacientes.clear()
-            if not self._ssvep_users:
-                self.combo_pacientes.addItem("No hay usuarios guardados todavía")
-            else:
-                for _uid, name in self._ssvep_users:
-                    self.combo_pacientes.addItem(name)
-            self.combo_pacientes.blockSignals(False)
+            sync_ssvep_users(self._ssvep_user_manager.get_all_users().items())
+        except Exception:
+            # Sin la base de SSVEP la lista de EMG sigue funcionando.
             return
 
-        self._pacientes_guardados = load_patients()
+    def _reload_pacientes_guardados(self) -> None:
+        """Una sola lista para las dos modalidades (ver patient_store)."""
+        # Se conserva el paciente elegido (si sigue en la lista) al recargar.
+        previo = self._pacientes_guardados[self.combo_pacientes.currentIndex()]["id"] if (
+            0 <= self.combo_pacientes.currentIndex() < len(self._pacientes_guardados)
+        ) else None
+        self._pacientes_guardados = sorted(load_patients(), key=lambda e: full_name(e).lower())
         self.combo_pacientes.blockSignals(True)
         self.combo_pacientes.clear()
         if not self._pacientes_guardados:
             self.combo_pacientes.addItem("No hay pacientes guardados todavía")
         else:
             for entry in self._pacientes_guardados:
-                nombre_completo = f"{entry['nombre']} {entry.get('apellido', '')}".strip()
-                self.combo_pacientes.addItem(nombre_completo)
+                self.combo_pacientes.addItem(full_name(entry))
+            for i, entry in enumerate(self._pacientes_guardados):
+                if entry["id"] == previo:
+                    self.combo_pacientes.setCurrentIndex(i)
+                    break
         self.combo_pacientes.blockSignals(False)
 
     def _patient_seleccionado(self) -> PatientInfo | None:
         if self.btn_tab_guardado.isChecked():
             index = self.combo_pacientes.currentIndex()
-            if self._modalidad == "eeg":
-                if index < 0 or index >= len(self._ssvep_users):
-                    return None
-                _uid, name = self._ssvep_users[index]
-                return PatientInfo(nombre=name)
             if index < 0 or index >= len(self._pacientes_guardados):
                 return None
             entry = self._pacientes_guardados[index]
@@ -321,39 +334,43 @@ class InicioPage(QWidget):
                 nombre=entry["nombre"],
                 apellido=entry.get("apellido", ""),
                 observaciones=entry.get("observaciones", ""),
+                id=entry["id"],
             )
         nombre = self.txt_nombre.text().strip()
         if not nombre:
             return None
+        existente = find_by_name(nombre, self.txt_apellido.text().strip())
         return PatientInfo(
             nombre=nombre,
             apellido=self.txt_apellido.text().strip(),
             observaciones=self.txt_observaciones.toPlainText().strip(),
+            id=existente["id"] if existente else None,
         )
 
     def _resolve_ssvep_user_id(self, patient: PatientInfo) -> int | None:
-        """Busca (por nombre, sin distinguir mayusculas) un usuario SSVEP
-        existente que coincida con `patient`, o crea uno nuevo con las
-        preferencias por defecto si no existe."""
+        """Usuario SSVEP del paciente: el que ya tiene vinculado en su ficha,
+        o uno con su mismo nombre (sin distinguir mayúsculas), o uno nuevo con
+        las preferencias por defecto. Deja el vínculo guardado en la ficha."""
         self._ensure_ssvep_connection()
+        usuarios = dict(self._ssvep_user_manager.get_all_users().items())
 
-        if self.btn_tab_guardado.isChecked():
-            index = self.combo_pacientes.currentIndex()
-            if index < 0 or index >= len(self._ssvep_users):
-                return None
-            return self._ssvep_users[index][0]
+        entry = get_patient(patient.id)
+        if entry is not None and entry.get("ssvep_user_id") in usuarios:
+            return entry["ssvep_user_id"]
 
-        username = patient.nombre_completo
-        for uid, name in self._ssvep_users:
-            if name.strip().lower() == username.strip().lower():
+        objetivo = patient.nombre_completo.strip().lower()
+        for uid, name in usuarios.items():
+            if name.strip().lower() == objetivo:
+                link_ssvep_user(patient.id, uid)
                 return uid
 
         import builtins
 
-        new_user = self._ssvep_user_manager.register_new_user(username)
+        new_user = self._ssvep_user_manager.register_new_user(patient.nombre_completo)
         self._ssvep_prefs_manager.save_or_update_preferences(
             new_user.id, builtins.SETTINGS.default_user_preferences
         )
+        link_ssvep_user(patient.id, new_user.id)
         return new_user.id
 
     def _refresh_start_button(self) -> None:
@@ -371,23 +388,22 @@ class InicioPage(QWidget):
         if patient is None or self._modalidad is None:
             return
 
+        # Un paciente nuevo se guarda en la lista si se lo pidió. En EEG
+        # siempre: su usuario de SSVEP se persiste en la base de todos modos
+        # (lo exige su modelo de datos) y la ficha tiene que acompañarlo.
+        if self.btn_tab_nuevo.isChecked() and (self.chk_guardar.isChecked() or self._modalidad == "eeg"):
+            entry = save_patient(patient.nombre, patient.apellido, patient.observaciones)
+            patient.id = entry["id"]
+
         if self._modalidad == "eeg":
             user_id = self._resolve_ssvep_user_id(patient)
             if user_id is None:
                 return
             self._state.ssvep_user_id = user_id
-            self._state.set_patient(patient)
-            self.session_started.emit(self._modalidad)
-            if self.btn_tab_nuevo.isChecked():
-                self._reload_pacientes_guardados()
-            return
-
-        if self.btn_tab_nuevo.isChecked() and self.chk_guardar.isChecked():
-            save_patient(patient.nombre, patient.apellido, patient.observaciones)
-            self._reload_pacientes_guardados()
 
         self._state.set_patient(patient)
         self.session_started.emit(self._modalidad)
+        self._reload_pacientes_guardados()
 
     def notificar_sesion_no_disponible(self, modalidad: str = "EMG") -> None:
         QMessageBox.information(

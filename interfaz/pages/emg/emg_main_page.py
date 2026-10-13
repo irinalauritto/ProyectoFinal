@@ -10,9 +10,10 @@ Autora: Irina Lauritto
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
+    QDoubleSpinBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -26,6 +27,8 @@ from PySide6.QtWidgets import (
 )
 
 from interfaz.pages.emg.emg_live_widget import EmgLiveWidget
+from interfaz.shell import patient_store
+from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
 from interfaz.shell.asterics_launcher import AstericsLauncher
 
 
@@ -37,6 +40,7 @@ class EmgMainPage(QWidget):
         super().__init__(parent)
         self._engine = engine
         self._asterics = AstericsLauncher(parent=self)
+        self._asterics.configured.connect(self._on_asterics_configured)
 
         import emg.interfazEmg as emgmod
 
@@ -245,6 +249,22 @@ class EmgMainPage(QWidget):
         self._spin_duracion.valueChanged.connect(self._on_duracion_changed)
         layout.addWidget(self._spin_duracion)
 
+        lbl_barrido = QLabel("Tiempo de barrido (AsTeRICS)")
+        lbl_barrido.setObjectName("MutedLabel")
+        layout.addWidget(lbl_barrido)
+        self._spin_barrido = QDoubleSpinBox()
+        self._spin_barrido.setToolTip(
+            "Cada cuánto avanza el barrido automático de AsTeRICS. Se envía a AsTeRICS "
+            "al abrirla desde este botón y cada vez que cambia."
+        )
+        self._spin_barrido.setRange(0.3, 10.0)
+        self._spin_barrido.setSingleStep(0.1)
+        self._spin_barrido.setDecimals(1)
+        self._spin_barrido.setValue(DEFAULT_SCAN_TIME_S)
+        self._spin_barrido.setSuffix(" s")
+        self._spin_barrido.valueChanged.connect(self._on_barrido_changed)
+        layout.addWidget(self._spin_barrido)
+
         self._btn_asterics = QPushButton("Abrir AsTeRICS")
         self._btn_asterics.setObjectName("SecondaryButton")
         self._btn_asterics.setToolTip(
@@ -393,11 +413,33 @@ class EmgMainPage(QWidget):
     def _on_duracion_changed(self, valor: int) -> None:
         self._engine.set_duracion_tecla_ms(valor)
         self._avisar_si_no_calibrado()
+        # La pulsación mínima que exige AsTeRICS se deriva de esta duración.
+        self._asterics.apply_settings(self._asterics_settings())
+
+    def _on_barrido_changed(self, _valor: float) -> None:
+        self._asterics.apply_settings(self._asterics_settings())
+
+    def _asterics_settings(self) -> AstericsInputSettings:
+        """EMG es un pulsador único: siempre método Barrido."""
+        return AstericsInputSettings(
+            mode="barrido",
+            scan_time_ms=round(self._spin_barrido.value() * 1000),
+            key_hold_ms=self._spin_duracion.value(),
+        )
+
+    def _on_asterics_configured(self, ok: bool, message: str) -> None:
+        if not ok:
+            QMessageBox.warning(
+                self,
+                "AsTeRICS",
+                message + "\n\nAsTeRICS se abrió igual: configure a mano el método de entrada, el "
+                "tiempo de barrido y la duración de la pulsación.",
+            )
 
     def _on_abrir_asterics(self) -> None:
         # Sin estimulador de por medio: solo se abre (si ya estaba abierta
         # por este boton, se la trae al frente), sin ubicarla.
-        if not self._asterics.open():
+        if not self._asterics.open(settings=self._asterics_settings()):
             QMessageBox.warning(self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado.")
 
     # ------------------------------------------------------------------
@@ -439,5 +481,97 @@ class EmgMainPage(QWidget):
         self._ocultar_aviso_repetir_prueba()
 
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Ficha del paciente (ver interfaz/shell/patient_store.py)
+    # ------------------------------------------------------------------
+    def attach_ficha(self, patient_id: str | None) -> None:
+        """Asocia la pantalla a la ficha del paciente: restaura su última
+        configuración y, desde ahora, guarda cada cambio, la calibración y la
+        validación. NO restaura el umbral calibrado: la calibración se repite
+        en cada sesión (depende de cómo quedó colocado el electrodo)."""
+        self._ficha_id = patient_id
+        if not getattr(self, "_ficha_conectada", False):
+            self._ficha_conectada = True
+            self._ficha_timer = QTimer(self)
+            self._ficha_timer.setSingleShot(True)
+            self._ficha_timer.setInterval(600)  # junta ráfagas (arrastrar el deslizador)
+            self._ficha_timer.timeout.connect(self._guardar_config)
+            for senal in (
+                self._slider_sens.valueChanged,
+                self._spin_refractario.valueChanged,
+                self._combo_tecla.currentIndexChanged,
+                self._spin_duracion.valueChanged,
+                self._spin_barrido.valueChanged,
+            ):
+                senal.connect(self._programar_guardado)
+            self._engine.calibration_finished.connect(self._guardar_calibracion)
+            self._engine.validation_finished.connect(self._guardar_validacion)
+        self._restaurar_config()
+
+    def _restaurar_config(self) -> None:
+        cfg = patient_store.get_config(self._ficha_id, "emg")
+        if not cfg:
+            return
+        m = self._emgmod
+        # Se aplica al motor directamente y con los avisos de los controles
+        # apagados: cada cambio mostraría "Calibración requerida" (todavía no
+        # se calibró en esta sesión).
+        widgets = (self._slider_sens, self._spin_refractario, self._combo_tecla, self._spin_duracion, self._spin_barrido)
+        for w in widgets:
+            w.blockSignals(True)
+        try:
+            if isinstance(cfg.get("sensibilidad"), (int, float)):
+                sens = min(max(float(cfg["sensibilidad"]), m.K_MIN), m.K_MAX)
+                self._slider_sens.setValue(round(sens * 10))
+                self._lbl_sens_valor.setText(f"{sens:.1f}")
+                self._engine.set_k(sens)
+            if isinstance(cfg.get("refractario_ms"), (int, float)):
+                self._spin_refractario.setValue(int(cfg["refractario_ms"]))
+                self._engine.set_refractario_ms(self._spin_refractario.value())
+            if cfg.get("tecla") in m.TECLAS_DISPONIBLES:
+                self._combo_tecla.setCurrentText(cfg["tecla"])
+                self._engine.set_tecla(cfg["tecla"])
+            if isinstance(cfg.get("duracion_tecla_ms"), (int, float)):
+                self._spin_duracion.setValue(int(cfg["duracion_tecla_ms"]))
+                self._engine.set_duracion_tecla_ms(self._spin_duracion.value())
+            if isinstance(cfg.get("tiempo_barrido_s"), (int, float)):
+                self._spin_barrido.setValue(float(cfg["tiempo_barrido_s"]))
+        finally:
+            for w in widgets:
+                w.blockSignals(False)
+
+    def _programar_guardado(self, *_args) -> None:
+        if getattr(self, "_ficha_id", None):
+            self._ficha_timer.start()
+
+    def _guardar_config(self) -> None:
+        if not getattr(self, "_ficha_id", None):
+            return
+        patient_store.update_config(self._ficha_id, "emg", {
+            "sensibilidad": self._slider_sens.value() / 10.0,
+            "refractario_ms": self._spin_refractario.value(),
+            "tecla": self._combo_tecla.currentText(),
+            "duracion_tecla_ms": self._spin_duracion.value(),
+            "tiempo_barrido_s": self._spin_barrido.value(),
+        })
+
+    def _guardar_calibracion(self, umbral: float, media: float, sd: float) -> None:
+        if getattr(self, "_ficha_id", None):
+            patient_store.set_result(self._ficha_id, "emg", "calibracion", {
+                "umbral": round(umbral, 2),
+                "media_reposo": round(media, 2),
+                "sd_reposo": round(sd, 2),
+                "sensibilidad": self._emgmod._espejar_escala_k(self._engine.k),
+                "k": self._engine.k,
+            })
+
+    def _guardar_validacion(self, eventos_por_intento: list) -> None:
+        if getattr(self, "_ficha_id", None):
+            patient_store.set_result(self._ficha_id, "emg", "validacion", {
+                "eventos_por_intento": list(eventos_por_intento),
+                "correcta": all(n == 1 for n in eventos_por_intento),
+                "refractario_ms": self._engine.refractario_ms,
+            })
+
     def liberar_recursos(self) -> None:
         pass

@@ -52,10 +52,19 @@ _NO_THRESHOLD = -1
 
 DEFAULT_CANDIDATE_FREQS: Tuple[float, ...] = tuple(float(f) for f in range(8, 17))  # 8..16 Hz, paso 1
 DEFAULT_ANCHOR_FREQ = 17.0
-DEFAULT_N_REPEATS = 3
-DEFAULT_TRIAL_DURATION_S = 13.0
-DEFAULT_DISCARD_S = 4.0
-DEFAULT_REST_DURATION_S = 6.0
+DEFAULT_N_REPEATS = 2
+# Estructura del trial de Rejer & Cieszyński (2017), 13 s en total: 2 s de
+# aviso sin parpadear + 11 s de estimulación, de los que se analizan los
+# últimos 10 ("from 4th to 13th second": se descarta el primer segundo de
+# parpadeo).
+DEFAULT_TRIAL_DURATION_S = 11.0
+DEFAULT_DISCARD_S = 1.0
+DEFAULT_REST_DURATION_S = 2.0
+# Las ventanas del clasificador se alinean (vaciando su búfer) este margen
+# ANTES de que termine el descarte: las muestras llegan con algo de demora
+# respecto del reloj del trial, y sin el margen la última ventana del tramo
+# analizado se completaría justo después del final del trial y se perdería.
+DEFAULT_WINDOW_ALIGN_MARGIN_S = 0.3
 DEFAULT_N_HARMONICS_COLLISION = 2
 DEFAULT_N_FINAL = 6
 
@@ -273,6 +282,11 @@ class FrequencyCalibrator(QObject):
         self._rest_timer.setInterval(1000)
         self._rest_timer.timeout.connect(self._on_rest_tick)
 
+        self._align_timer = QTimer(self)
+        self._align_timer.setSingleShot(True)
+        self._align_timer.setInterval(int(max(0.0, discard_s - DEFAULT_WINDOW_ALIGN_MARGIN_S) * 1000))
+        self._align_timer.timeout.connect(self.classifier.clear_buffer)
+
         self._stimulus_viewer.stimuli_ready.connect(self._on_stimuli_ready)
         # Opcional: StimulusViewerCalibration expone stimulus_failed cuando
         # el proceso de la ventana crashea antes de abrir (ver su docstring)
@@ -316,6 +330,7 @@ class FrequencyCalibrator(QObject):
         self._resting = False
         self._trial_timer.stop()
         self._rest_timer.stop()
+        self._align_timer.stop()
         if self._stimulus_viewer.is_running():
             self._stimulus_viewer.stop_stim()
 
@@ -389,6 +404,7 @@ class FrequencyCalibrator(QObject):
         self._resting = False
         self._trial_timer.stop()
         self._rest_timer.stop()
+        self._align_timer.stop()
         self.calibration_failed.emit(reason)
 
     def _on_stimuli_ready(self, _hwnd: int) -> None:
@@ -418,6 +434,7 @@ class FrequencyCalibrator(QObject):
             self._resting = False
             self._stimulus_viewer.start_flicker()
             self._trial_timer.start()
+            self._align_timer.start()
 
     def _on_trial_tick(self) -> None:
         self._trial_elapsed += 1

@@ -10,6 +10,10 @@ class PatientInfo:
     nombre: str
     apellido: str = ""
     observaciones: str = ""
+    # Identificador de la ficha en patient_store (None si es un paciente
+    # temporal que no se guardó): las pantallas lo usan para guardar su
+    # configuración y resultados en la ficha.
+    id: str | None = None
 
     @property
     def nombre_completo(self) -> str:

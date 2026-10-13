@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QPushButton, QStackedWid
 from interfaz.pages.eeg_page import EegPage
 from interfaz.pages.emg_page import EmgPage
 from interfaz.pages.inicio_page import InicioPage
+from interfaz.shell import patient_store
 from interfaz.shell.app_state import SharedAppState
 from interfaz.shell.sidebar import Sidebar
 
@@ -94,13 +95,23 @@ class MainShell(QMainWindow):
             nombre_completo = patient.nombre_completo if patient else ""
             if not self.emg_page.iniciar_sesion(nombre_completo):
                 return
+            self._abrir_ficha(self.emg_page, "emg")
             self._show(self.emg_page, "emg")
         else:
             if self.state.ssvep_user_id is None:
                 return
             if not self.eeg_page.iniciar_sesion(self.state.ssvep_user_id):
                 return
+            self._abrir_ficha(self.eeg_page, "eeg")
             self._show(self.eeg_page, "eeg")
+
+    def _abrir_ficha(self, page, modalidad: str) -> None:
+        """Asocia la pantalla a la ficha del paciente (restaura su configuración y
+        guarda lo que cambie) y registra el inicio de la sesión en su historial."""
+        patient = self.state.patient
+        patient_id = patient.id if patient else None
+        page.vincular_ficha(patient_id)
+        patient_store.start_session(patient_id, modalidad)
 
     def _on_patient_changed(self, patient) -> None:
         texto = patient.nombre_completo if patient else "(sin definir)"
@@ -121,6 +132,8 @@ class MainShell(QMainWindow):
 
     # ------------------------------------------------------------------
     def closeEvent(self, event) -> None:
+        patient = self.state.patient
+        patient_store.end_session(patient.id if patient else None)
         self.emg_page.liberar_recursos()
         self.eeg_page.liberar_recursos()
         super().closeEvent(event)

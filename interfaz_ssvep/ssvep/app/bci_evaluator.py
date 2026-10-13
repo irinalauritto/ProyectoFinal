@@ -25,6 +25,61 @@ SPECIAL_LABEL_NAMES: Dict[int, str] = {
 }
 
 
+def bits_per_trial(p: float, n: int) -> float:
+    """
+    Calcula los bits de información por trial según Wolpaw et al.
+
+    Maneja los casos límite donde P=0 o P=1, que de otro modo producirían
+    log(0) (indefinido).
+
+    Args:
+        p: Accuracy como probabilidad (0.0 a 1.0).
+        n: Cantidad de clases N.
+
+    Returns:
+        float: Bits por trial.
+    """
+    if p <= 0:
+        # Peor caso: rendimiento al azar o peor -> se considera 0 bits útiles
+        return 0.0
+    if p >= 1:
+        # Mejor caso: certeza total
+        return math.log2(n)
+
+    return (
+        math.log2(n)
+        + p * math.log2(p)
+        + (1 - p) * math.log2((1 - p) / (n - 1))
+    )
+
+
+def calculate_itr(p: float, n: int, t_seconds: float) -> float:
+    """
+    Calcula la Tasa de Transferencia de Información (ITR) en bits por minuto.
+
+    Utiliza la fórmula de Wolpaw et al.:
+        bits_por_trial = log2(N) + P*log2(P) + (1-P)*log2((1-P)/(N-1))
+        ITR = bits_por_trial * (60 / T)
+
+    Args:
+        p: Accuracy como probabilidad (0.0 a 1.0).
+        n: Cantidad de clases posibles (estímulos activos).
+        t_seconds: Tiempo promedio por selección, en segundos.
+
+    Returns:
+        float: ITR en bits por minuto. Devuelve 0.0 si `t_seconds` no es positivo.
+
+    Raises:
+        ValueError: Si no hay al menos 2 clases (N < 2), ya que el ITR
+                    no está definido para un único estímulo.
+    """
+    if n < 2:
+        raise ValueError("El ITR requiere al menos 2 clases activas (N >= 2)")
+    if t_seconds <= 0:
+        return 0.0
+    return bits_per_trial(p, n) * (60.0 / t_seconds)
+
+
 class BCIEvaluator(QObject):
     """
     Evalúa el rendimiento de un clasificador BCI en tiempo real.
@@ -382,12 +437,7 @@ class BCIEvaluator(QObject):
         n_trials = len(self.__true_labels)
         t_seconds = (self.__duration_ms / 1000.0) / n_trials
 
-        if t_seconds <= 0:
-            return 0.0
-
-        bits_per_trial = self.__bits_per_trial(p, n)
-        itr = bits_per_trial * (60.0 / t_seconds)
-        return itr
+        return calculate_itr(p, n, t_seconds)
 
     def __number_of_classes(self) -> int:
         """
@@ -418,18 +468,8 @@ class BCIEvaluator(QObject):
         Returns:
             float: Bits por trial.
         """
-        if p <= 0:
-            # Peor caso: rendimiento al azar o peor -> se considera 0 bits útiles
-            return 0.0
-        if p >= 1:
-            # Mejor caso: certeza total
-            return math.log2(n)
+        return bits_per_trial(p, n)
 
-        return (
-            math.log2(n)
-            + p * math.log2(p)
-            + (1 - p) * math.log2((1 - p) / (n - 1))
-        )
     # ------------------------------------------------------------------
     # REPORTE PDF
     # ------------------------------------------------------------------

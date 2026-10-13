@@ -9,6 +9,8 @@ a sus respectivas representaciones persistentes.
 from sqlalchemy import Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from ssvep.app.dataclasses import DEFAULT_THRESHOLD
+
 
 # ==============================================================================
 # Base ORM
@@ -63,6 +65,7 @@ class PreferencesModel(Base):
         stim_theta: Fases o ángulos de los estímulos (serializado).
         stim_type: Tipos de estímulos (serializado).
         stim_direction: Direcciones de movimiento de los estímulos (serializado).
+        threshold: Umbral de aceptación del clasificador.
     """
     __tablename__ = "preferences"
 
@@ -81,6 +84,12 @@ class PreferencesModel(Base):
     stim_theta: Mapped[str] = mapped_column(String(1000), nullable=False)
     stim_type: Mapped[str] = mapped_column(String(1000), nullable=False)
     stim_direction: Mapped[str] = mapped_column(String(1000), nullable=False)
+    threshold: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=DEFAULT_THRESHOLD,
+        server_default=str(DEFAULT_THRESHOLD),
+    )
 
 
 class TrainingWeightsModel(Base):

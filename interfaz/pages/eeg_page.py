@@ -63,6 +63,11 @@ class EegPage(QWidget):
 
         return True
 
+    def vincular_ficha(self, patient_id) -> None:
+        """Asocia la pantalla a la ficha del paciente (ver patient_store)."""
+        if self._main_page is not None:
+            self._main_page.attach_ficha(patient_id)
+
     def liberar_recursos(self) -> None:
         if self._main_page is not None:
             self._main_page.liberar_recursos()

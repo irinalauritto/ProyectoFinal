@@ -9,6 +9,8 @@ modelos de clasificación de señales EEG.
 import numpy as np
 from typing import Any
 
+from ssvep.app.dataclasses import DEFAULT_THRESHOLD
+
 
 # ==============================================================================
 # Clase User
@@ -95,6 +97,7 @@ class Preferences:
         stimulus_type: list[str],
         stimulus_theta: list[float],
         stimulus_direction: list[str | None],
+        threshold: float | int = DEFAULT_THRESHOLD,
     ) -> None:
         """
         Inicializa una nueva instancia de Preferences.
@@ -110,6 +113,7 @@ class Preferences:
             stimulus_type: Lista de tipos de estímulo (ej. 'flic', 'check').
             stimulus_theta: Lista de fases o ángulos para cada estímulo.
             stimulus_direction: Lista de direcciones de movimiento (o None si es estático).
+            threshold: Umbral de aceptación del clasificador.
         """
         self.user_id = user_id
         self.time_windows = time_windows
@@ -121,6 +125,7 @@ class Preferences:
         self.stimulus_type = stimulus_type
         self.stimulus_theta = stimulus_theta
         self.stimulus_direction = stimulus_direction
+        self.threshold = threshold
 
     # --- Propiedades y Validadores (Getters y Setters agrupados por atributo) ---
 
@@ -233,6 +238,17 @@ class Preferences:
         if not isinstance(value, list):
             raise ValueError("Error de tipo: El parámetro stimulus_direction debe ser una Lista.")
         self.__stimulus_direction = value
+
+    @property
+    def threshold(self) -> float:
+        """float: Umbral de aceptación del clasificador."""
+        return self.__threshold
+
+    @threshold.setter
+    def threshold(self, value: float | int) -> None:
+        if isinstance(value, bool) or not isinstance(value, (float, int)):
+            raise ValueError("Error de tipo: El umbral debe ser un número entero o decimal.")
+        self.__threshold = float(value)
 
 
 # ==============================================================================

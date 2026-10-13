@@ -10,6 +10,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Tuple
 
+# Umbral de aceptación del clasificador para un usuario que todavía no corrió
+# la Validación (ver threshold_calibrator.py).
+DEFAULT_THRESHOLD: float = 0.1
+
 # ==============================================================================
 # Enums (Constantes y Tipos)
 # ==============================================================================
@@ -84,12 +88,15 @@ class UserPreferences:
             configuración visual del experimento.
         stimulus_on: Lista de booleanos que indica el estado (encendido/apagado) 
             de cada estímulo correspondiente en la lista `stimulus`.
+        threshold: Umbral de aceptación del clasificador (margen normalizado
+            mínimo para dar por válida una detección).
     """
     classification_method: str
     time_window: float
     channels: dict[int, str] = field(default_factory=dict)
     stimulus: list[Stimulus] = field(default_factory=list)
     stimulus_on: list[bool] = field(default_factory=list)
+    threshold: float = DEFAULT_THRESHOLD
     
 
 @dataclass
