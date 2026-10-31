@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFrame,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSlider,
     QSpinBox,
     QVBoxLayout,
@@ -70,7 +72,20 @@ class EmgMainPage(QWidget):
 
         self._emgmod = emgmod
 
-        outer = QVBoxLayout(self)
+        # Todo el contenido va dentro de un QScrollArea: con la señal y las
+        # 3 tarjetas la pantalla puede no entrar en alto en monitores mas
+        # chicos o con escalado de DPI alto. Mismo criterio que EegMainPage.
+        self_layout = QVBoxLayout(self)
+        self_layout.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self_layout.addWidget(scroll)
+
+        content = QWidget()
+        scroll.setWidget(content)
+
+        outer = QVBoxLayout(content)
         outer.setContentsMargins(28, 24, 28, 24)
         outer.setSpacing(14)
 
@@ -272,6 +287,21 @@ class EmgMainPage(QWidget):
         self._spin_duracion.setSuffix(" ms")
         self._spin_duracion.valueChanged.connect(self._on_duracion_changed)
         layout.addWidget(self._spin_duracion)
+
+        self._chk_enviar_teclas = QCheckBox("Enviar teclas")
+        self._chk_enviar_teclas.setToolTip(
+            "Al detectarse una activación, envía la tecla elegida a la ventana activa. "
+            "Destildar para usar el EMG sin controlar nada (por ejemplo, para practicar)."
+        )
+        self._chk_enviar_teclas.setChecked(True)
+        self._chk_enviar_teclas.toggled.connect(self._engine.set_enviar_teclas)
+        layout.addWidget(self._chk_enviar_teclas)
+
+        self._chk_audio = QCheckBox("Retroalimentación auditiva")
+        self._chk_audio.setToolTip("Emite un pitido cada vez que la señal supera el umbral.")
+        self._chk_audio.setChecked(True)
+        self._chk_audio.toggled.connect(self._engine.set_sonido)
+        layout.addWidget(self._chk_audio)
 
         lbl_barrido = QLabel("Tiempo de barrido (AsTeRICS)")
         lbl_barrido.setObjectName("MutedLabel")
@@ -532,6 +562,8 @@ class EmgMainPage(QWidget):
                 self._combo_tecla.currentIndexChanged,
                 self._spin_duracion.valueChanged,
                 self._spin_barrido.valueChanged,
+                self._chk_enviar_teclas.toggled,
+                self._chk_audio.toggled,
             ):
                 senal.connect(self._programar_guardado)
             self._engine.calibration_finished.connect(self._guardar_calibracion)
@@ -546,7 +578,10 @@ class EmgMainPage(QWidget):
         # Se aplica al motor directamente y con los avisos de los controles
         # apagados: cada cambio mostraría "Calibración requerida" (todavía no
         # se calibró en esta sesión).
-        widgets = (self._slider_sens, self._spin_refractario, self._combo_tecla, self._spin_duracion, self._spin_barrido)
+        widgets = (
+            self._slider_sens, self._spin_refractario, self._combo_tecla, self._spin_duracion,
+            self._spin_barrido, self._chk_enviar_teclas, self._chk_audio,
+        )
         for w in widgets:
             w.blockSignals(True)
         try:
@@ -566,6 +601,12 @@ class EmgMainPage(QWidget):
                 self._engine.set_duracion_tecla_ms(self._spin_duracion.value())
             if isinstance(cfg.get("tiempo_barrido_s"), (int, float)):
                 self._spin_barrido.setValue(float(cfg["tiempo_barrido_s"]))
+            if isinstance(cfg.get("enviar_teclas"), bool):
+                self._chk_enviar_teclas.setChecked(cfg["enviar_teclas"])
+                self._engine.set_enviar_teclas(cfg["enviar_teclas"])
+            if isinstance(cfg.get("retroalimentacion_auditiva"), bool):
+                self._chk_audio.setChecked(cfg["retroalimentacion_auditiva"])
+                self._engine.set_sonido(cfg["retroalimentacion_auditiva"])
         finally:
             for w in widgets:
                 w.blockSignals(False)
@@ -583,6 +624,8 @@ class EmgMainPage(QWidget):
             "tecla": self._combo_tecla.currentText(),
             "duracion_tecla_ms": self._spin_duracion.value(),
             "tiempo_barrido_s": self._spin_barrido.value(),
+            "enviar_teclas": self._chk_enviar_teclas.isChecked(),
+            "retroalimentacion_auditiva": self._chk_audio.isChecked(),
         })
 
     def _guardar_calibracion(self, umbral: float, media: float, sd: float) -> None:

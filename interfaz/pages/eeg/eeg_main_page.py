@@ -41,10 +41,20 @@ from interfaz.shell import patient_store
 from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
 from interfaz.shell.asterics_launcher import (
     AstericsLauncher,
+    monitor_work_areas,
     patient_monitor_index,
     patient_monitor_is_secondary,
+    place_in_rect,
     set_topmost,
 )
+
+# Espacio que se deja entre AsTeRICS y los estímulos, como fracción del
+# tamaño del estímulo (con un mínimo en píxeles físicos): la ventana proyecta
+# una sombra y no debe oscurecerlos. Hacia los bordes libres del monitor
+# (arriba, derecha, y abajo si no hay fila de flechas) alcanza con _EDGE_PX.
+_GAP_FRACTION = 0.15
+_MIN_GAP_PX = 24
+_EDGE_PX = 6
 
 # Orden fijo de estimulos -> (nombre, tecla). Coincide con
 # Settings.__stimuli_config y KeyboardController.__actions en interfaz_ssvep
@@ -54,7 +64,7 @@ from interfaz.shell.asterics_launcher import (
 # solo se lee para que esta etiqueta sea fiel al mapeo real).
 # El indice 0 ("Nulo", Escape en Settings) NO manda ninguna tecla: es el
 # estimulo nulo, que solo inicia el periodo refractario (ver
-# NULL_STIMULUS_INDEX en session.py). Siempre esta activo, en todos los modos.
+# NULL_STIMULUS_INDEX en session.py). Solo esta activo en Barrido.
 STIMULUS_LABELS = ["Nulo", "Espacio", "Derecha", "Arriba", "Izquierda", "Abajo"]
 # Forma de cada estimulo (Settings.__stimuli_config en interfaz_ssvep, mismo
 # orden/indice), como glifos lisos (no emoji con color) para que combinen
@@ -72,35 +82,33 @@ EXTRA_CHANNELS = ["PO3", "PO4", "POz", "PO7", "PO8"]
 # Modos de entrada preseteados (para uso con software de barrido/entrada
 # externo, ej. AsTeRICS): cada uno define qué subconjunto de los 6
 # estímulos queda activo (`UserPreferences.stimulus_on`). Las posiciones en
-# pantalla de cada estímulo NO cambian entre modos -- StimulusViewer ya
-# calcula la posición sobre el conjunto completo de 6 posibles, no sobre
-# los activos (ver su propio docstring de load_stimulus_use), así que
-# desactivar unos no reacomoda a los demás.
-# El estímulo Nulo (índice 0) está activo en TODOS los modos. Además de
-# servir para hacer entrar en período refractario sin mandar tecla, cumple
-# lo que necesita el clasificador CCA: al menos 2 estímulos activos (si no,
-# su fórmula de umbral da 0/0 -- ver frequency_calibrator.py), lo que en
-# "Barrido" (que solo necesita Espacio) lo hace imprescindible.
+# pantalla de cada estímulo NO cambian entre modos -- StimulusViewer le da a
+# cada uno un lugar fijo según su forma/dirección (ver
+# __calculate_stimulus_positions), elegido para que los activos de cada
+# modo queden lo más separados posible.
+# El estímulo Nulo (índice 0) solo está activo en "Barrido": ahí hace falta
+# porque el clasificador CCA necesita al menos 2 estímulos activos (si no,
+# su fórmula de umbral da 0/0 -- ver frequency_calibrator.py) y Barrido solo
+# usa Espacio. En Secuencial y Direccional ya hay suficientes y no se usa.
 # "frequency_order": orden en que la calibración reparte las frecuencias
 # seleccionadas (de mayor a menor exactitud) entre los 6 estímulos -- la
 # primera va al primer índice de la tupla, la segunda al siguiente, etc.
-# Primero los estímulos activos del modo, por orden de importancia, con el
-# Nulo en último lugar entre ellos (segundo en Barrido); los inactivos
-# reciben el resto.
+# Primero los estímulos activos del modo, por orden de importancia; los
+# inactivos reciben el resto.
 INPUT_MODES: dict[str, dict] = {
     "barrido": {  # Nulo + Espacio
         "label": "Barrido",
         "active_indices": (0, 1),
         "frequency_order": (1, 0, 2, 4, 3, 5),
     },
-    "secuencial": {  # Nulo + Espacio, Derecha, Izquierda
+    "secuencial": {  # Espacio, Derecha, Izquierda
         "label": "Secuencial",
-        "active_indices": (0, 1, 2, 4),
-        "frequency_order": (1, 2, 4, 0, 3, 5),
+        "active_indices": (1, 2, 4),
+        "frequency_order": (1, 2, 4, 3, 5, 0),
     },
-    "direccional": {  # Nulo + Espacio + 4 flechas (los 6)
+    "direccional": {  # Espacio + 4 flechas
         "label": "Direccional",
-        "active_indices": (0, 1, 2, 3, 4, 5),
+        "active_indices": (1, 2, 3, 4, 5),
         "frequency_order": (1, 2, 4, 3, 5, 0),
     },
 }
@@ -116,13 +124,14 @@ def _stimulus_on_for_mode(mode_key: str) -> list[bool]:
 
 def _mode_for_stimulus_on(stimulus_on) -> str | None:
     """Modo que corresponde a un `stimulus_on` guardado, o None si no calza
-    con ninguno. También reconoce la variante anterior, guardada cuando el
-    Nulo (Escape) todavía no estaba siempre activo (ej. [F,T,T,F,T,F] era
-    "Secuencial"), para migrarla sin perder el modo que se había elegido."""
+    con ninguno. También reconoce las variantes guardadas antes, con o sin
+    el Nulo (ej. [T,T,T,F,T,F], de cuando el Nulo estaba activo en todos los
+    modos, es "Secuencial"; [F,T,F,F,F,F] es "Barrido"), para migrarlas sin
+    perder el modo que se había elegido."""
     activos = {i for i, on in enumerate(stimulus_on) if on}
+    variantes = (activos, activos | {NULL_STIMULUS_INDEX}, activos - {NULL_STIMULUS_INDEX})
     for key, info in INPUT_MODES.items():
-        del_modo = set(info["active_indices"])
-        if activos == del_modo or (activos | {NULL_STIMULUS_INDEX}) == del_modo:
+        if set(info["active_indices"]) in variantes:
             return key
     return None
 
@@ -828,7 +837,7 @@ class EegMainPage(QWidget):
             "La calibración recorre 9 frecuencias candidatas (8 a 16 Hz) con 2 repeticiones "
             "cada una y dura varios minutos. Al terminar reasigna las frecuencias según el "
             "método de entrada elegido: las de mayor exactitud van primero a Espacio y a los "
-            "demás estímulos del método, y Nulo recibe la última de ellas (la segunda en Barrido).\n\n"
+            "demás estímulos del método (en Barrido, Nulo recibe la segunda).\n\n"
             "Mientras corre no se puede usar el control por teclado, abrir el estimulador "
             "manual ni iniciar una prueba de validación.\n\n¿Iniciar calibración ahora?",
         )
@@ -919,8 +928,8 @@ class EegMainPage(QWidget):
 
     def _ensure_modo_entrada_default(self) -> None:
         """Deja `stimulus_on` exactamente como lo define el modo guardado:
-        si corresponde a un modo guardado con el formato anterior (sin el
-        Nulo activo), se agrega el Nulo y se conserva el modo; si no calza
+        si corresponde a un modo guardado con un formato anterior (con el
+        Nulo de más o de menos), se corrige y se conserva el modo; si no calza
         con ninguno de los 3 modos, se aplica DEFAULT_INPUT_MODE
         ("Direccional") como punto de partida."""
         prefs = self._session.current_preferences
@@ -1115,8 +1124,8 @@ class EegMainPage(QWidget):
             f"{leyenda}\n\n"
             "\"Iniciar calibración\" recorre un barrido de frecuencias candidatas y las "
             "reasigna según el método de entrada elegido: las de mayor exactitud van "
-            "primero a Espacio y a los demás estímulos del método, y Nulo recibe la "
-            "última de ellas (la segunda en Barrido). También se puede ajustar la frecuencia de "
+            "primero a Espacio y a los demás estímulos del método (en Barrido, Nulo "
+            "recibe la segunda). También se puede ajustar la frecuencia de "
             "cada estímulo a mano, sin calibrar, en \"Frecuencias asignadas\".",
         )
 
@@ -1133,27 +1142,32 @@ class EegMainPage(QWidget):
         self._actualizar_boton_estimulador()
 
     def _ubicar_en_espacio_libre(self, hwnd: int, viewer=None) -> None:
-        """Ubica una ventana en el espacio libre del monitor del estimulador,
-        con el calculo que ya hace GameManager (escala del monitor y margenes
-        del estimulador). Se usa `_position_window` y no `place_window` a
-        proposito: `place_window` registra la ventana como "juego" y
-        GameManager.close_game() (que se llama en cada stop_streaming) le
-        mandaria un cierre -- AsTeRICS lo maneja AstericsLauncher (que solo
-        cierra ventanas propias) y la ventana de la prueba, su propio cierre.
+        """Ubica una ventana en el espacio libre del área de trabajo del
+        monitor del estimulador: todo lo que no ocupan los estímulos, menos
+        un margen para que la sombra de la ventana no los oscurezca.
 
         Los estimulos no direccionales (Nulo, Espacio) ocupan la columna
-        izquierda y las flechas, la fila inferior (ver StimulusViewer). Si no
-        hay flechas activas (Barrido) esa fila queda vacia, y la ventana
-        aprovecha tambien ese alto.
+        izquierda y las flechas, la fila inferior (ver StimulusViewer); los
+        dos tienen el ancho/alto de un estímulo. Si no hay flechas activas
+        (Barrido) esa fila queda vacia, y la ventana aprovecha tambien ese
+        alto.
 
         `viewer`: visor cuyo espacio libre se usa (por defecto, el
         estimulador de la sesion). La prueba de validacion pasa el suyo."""
-        game_manager = self._session.game_manager
-        info = dict((viewer or self._session.stimulus_viewer).get_screen_info())
-        if not self._usa_fila_inferior():
-            info["margins"] = (0, info["margins"][1])
-        game_manager.load_screen_info(info)
-        game_manager._position_window(hwnd)
+        info = (viewer or self._session.stimulus_viewer).get_screen_info()
+        areas = monitor_work_areas()
+        index = info.get("monitor_index")
+        if index is None or not 0 <= index < len(areas) or not info.get("margins"):
+            return
+        left, top, right, bottom = areas[index]
+        # El visor trabaja en píxeles lógicos (divididos por la escala del
+        # monitor cuando es mayor a 1); la ventana se ubica en físicos. El
+        # margen vertical del visor es el tamaño del estímulo.
+        scale = info.get("monitor_scale") or 1
+        size = round(info["margins"][0] * (scale if scale > 1 else 1))
+        gap = max(_MIN_GAP_PX, round(size * _GAP_FRACTION))
+        bottom_reserved = size + gap if self._usa_fila_inferior() else _EDGE_PX
+        place_in_rect(hwnd, left + size + gap, top + _EDGE_PX, right - _EDGE_PX, bottom - bottom_reserved)
 
     def _activar_asterics(self) -> None:
         activar = getattr(self._asterics, "activate", None)

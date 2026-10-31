@@ -13,7 +13,7 @@ from PySide6.QtCore import QObject, QThread, Signal
 
 # Índice del estímulo "nulo" (Escape en Settings.__stimuli_config, "Nulo" en
 # la interfaz): al detectarlo no se envía ninguna tecla, solo se inicia el
-# período refractario. Está activo en todos los métodos de entrada.
+# período refractario. Solo está activo en el método Barrido.
 NULL_STIMULUS_INDEX = 0
 
 

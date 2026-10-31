@@ -218,6 +218,8 @@ class EmgEngine(QObject):
         # --- Parámetros configurables ---
         self.k = K_DEFAULT
         self.refractario_ms = REFRACTARIO_DEFAULT_MS
+        self.enviar_teclas = True
+        self.sonido = True
 
         # --- Estado de calibración ---
         self.calibrando = False
@@ -353,11 +355,12 @@ class EmgEngine(QObject):
     def _aceptar_evento(self, marca_tiempo, valor) -> None:
         self.ultimo_evento_tiempo = marca_tiempo
 
-        # Pulsación de tecla simulada 
-        self._enviar_tecla(self._tecla_actual)
+        # Pulsación de tecla simulada
+        if self.enviar_teclas:
+            self._enviar_tecla(self._tecla_actual)
 
         # Retroalimentación sonora
-        if _SONIDO_DISPONIBLE:
+        if self.sonido and _SONIDO_DISPONIBLE:
             winsound.MessageBeep(winsound.MB_OK)
 
         if self.registro is not None:
@@ -372,6 +375,15 @@ class EmgEngine(QObject):
 
     def set_duracion_tecla_ms(self, duracion_ms) -> None:
         self._duracion_tecla_ms = duracion_ms
+
+    def set_enviar_teclas(self, activo) -> None:
+        self.enviar_teclas = bool(activo)
+        if not self.enviar_teclas:
+            # Si había una tecla presionada, se suelta para que no quede pegada.
+            self._soltar_tecla()
+
+    def set_sonido(self, activo) -> None:
+        self.sonido = bool(activo)
 
     def _enviar_tecla(self, tecla) -> None:
         if self.tecla_activa is not None:

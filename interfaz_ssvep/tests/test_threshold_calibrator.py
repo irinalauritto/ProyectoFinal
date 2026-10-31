@@ -152,7 +152,7 @@ class ClassifierRawDecisionTests(unittest.TestCase):
 
 
 class BuildItemSequenceTests(unittest.TestCase):
-    MODES = {"barrido": [0, 1], "secuencial": [0, 1, 2, 4], "direccional": [0, 1, 2, 3, 4, 5]}
+    MODES = {"barrido": [0, 1], "secuencial": [1, 2, 4], "direccional": [1, 2, 3, 4, 5]}
 
     def test_every_mode_has_six_items(self):
         import random
@@ -171,10 +171,10 @@ class BuildItemSequenceTests(unittest.TestCase):
         for seed in range(50):
             barrido = Counter(build_item_sequence([0, 1], 6, random.Random(seed)))
             self.assertEqual(sorted(barrido.values()), [3, 3])
-            secuencial = Counter(build_item_sequence([0, 1, 2, 4], 6, random.Random(seed)))
-            self.assertEqual(sorted(secuencial.values()), [1, 1, 2, 2])
-            direccional = Counter(build_item_sequence(list(range(6)), 6, random.Random(seed)))
-            self.assertEqual(sorted(direccional.values()), [1] * 6)
+            secuencial = Counter(build_item_sequence([1, 2, 4], 6, random.Random(seed)))
+            self.assertEqual(sorted(secuencial.values()), [2, 2, 2])
+            direccional = Counter(build_item_sequence([1, 2, 3, 4, 5], 6, random.Random(seed)))
+            self.assertEqual(sorted(direccional.values()), [1, 1, 1, 1, 2])
 
     def test_same_stimulus_is_not_asked_twice_in_a_row(self):
         import random

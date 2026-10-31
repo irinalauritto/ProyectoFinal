@@ -217,6 +217,48 @@ def place_maximized(hwnd: int, area: Optional[tuple[int, int, int, int]]) -> Non
     _user32.ShowWindow(hwnd, _SW_MAXIMIZE)
 
 
+_DWMWA_EXTENDED_FRAME_BOUNDS = 9
+_SW_SHOWNORMAL = 1
+try:
+    _dwmapi = ctypes.WinDLL("dwmapi")
+    _dwmapi.DwmGetWindowAttribute.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
+    _dwmapi.DwmGetWindowAttribute.restype = ctypes.c_long
+except OSError:
+    _dwmapi = None
+
+
+def _visible_rect(hwnd: int) -> Optional[tuple[int, int, int, int]]:
+    """Rectángulo (izq, arriba, der, abajo) que se VE de la ventana: en
+    Windows 10/11 GetWindowRect incluye bordes invisibles de unos píxeles
+    (para redimensionar con el mouse) a los costados y abajo."""
+    if _dwmapi is None:
+        return None
+    rect = wintypes.RECT()
+    if _dwmapi.DwmGetWindowAttribute(hwnd, _DWMWA_EXTENDED_FRAME_BOUNDS, ctypes.byref(rect), ctypes.sizeof(rect)) != 0:
+        return None
+    return rect.left, rect.top, rect.right, rect.bottom
+
+
+def place_in_rect(hwnd: int, left: int, top: int, right: int, bottom: int) -> None:
+    """Ubica la ventana (restaurada, sin maximizar) de forma que lo que se VE
+    de ella ocupe exactamente (izq, arriba, der, abajo), en píxeles físicos:
+    se compensan los bordes invisibles (ver `_visible_rect`)."""
+    _user32.ShowWindow(hwnd, _SW_SHOWNORMAL)
+    flags = _SWP_NOZORDER | _SWP_NOACTIVATE
+    _user32.SetWindowPos(hwnd, None, left, top, right - left, bottom - top, flags)
+    outer, visible = _get_rect(hwnd), _visible_rect(hwnd)
+    if outer is None or visible is None:
+        return
+    x, y, w, h = outer
+    pad_left, pad_top = visible[0] - x, visible[1] - y
+    pad_right, pad_bottom = (x + w) - visible[2], (y + h) - visible[3]
+    if pad_left or pad_top or pad_right or pad_bottom:
+        _user32.SetWindowPos(
+            hwnd, None, left - pad_left, top - pad_top,
+            (right - left) + pad_left + pad_right, (bottom - top) + pad_top + pad_bottom, flags,
+        )
+
+
 def _list_windows() -> list[tuple[int, str, str]]:
     """Ventanas visibles con título de otros procesos: (hwnd, título, clase)."""
     found: list[tuple[int, str, str]] = []

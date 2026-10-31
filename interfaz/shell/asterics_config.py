@@ -14,6 +14,7 @@ depuración de Chromium, se la puede leer y escribir:
      modificar todo a mano: el perfil conserva sus cambios.
   3. Se escribe el bloque `inputConfig` del documento "MetaData" y se recarga
      la página para que AsTeRICS lo tome.
+  4. Se cierra la barra lateral de AsTeRICS (ver `_JS_CLOSE_SIDEBAR`).
 
 Los selectores de la primera apertura no dependen del idioma de AsTeRICS
 (primer `button.big-button` y botón principal de la tarjeta del tablero).
@@ -445,6 +446,16 @@ _JS_USE_DEFAULT_BOARD = (
     " }"
     " return false; })()"
 )
+# AsTeRICS abre su barra lateral (navegación) al cargar, y lo hace de forma
+# asíncrona después de leer su configuración: se la cierra con su propio
+# evento ('event-sidebar-close', ver mainVue.js de AsTeRICS Grid) durante
+# unos segundos, para que no le quite lugar al tablero del paciente. El
+# profesional la puede volver a abrir con el botón de menú.
+_JS_CLOSE_SIDEBAR = (
+    "(() => { const close = () => document.dispatchEvent(new Event('event-sidebar-close'));"
+    " close(); let n = 0; const t = setInterval(() => { close(); if (++n >= 30) clearInterval(t); }, 500);"
+    " return true; })()"
+)
 
 
 def _js_read_meta(db_name: str) -> str:
@@ -487,13 +498,42 @@ def _wait_until(
 
 
 # Botón flotante que se muestra DENTRO de la página de AsTeRICS (que ocupa toda
-# la pantalla, así que un botón de nuestra interfaz quedaría tapado). Solo se
-# ve cuando hay un tablero abierto (#grid/...), no en la bienvenida ni en la
-# lista de tableros. Un clic deja la bandera `listo` para que Python la lea.
+# la pantalla, así que un botón de nuestra interfaz quedaría tapado). Se ve
+# cuando hay un tablero abierto (#grid/...) y también en la lista de tableros
+# (#grids) si el usuario ya tiene tableros propios: al importar un tablero,
+# AsTeRICS termina en esa lista sin abrir ninguno. No se ve en la bienvenida
+# ni en la lista de plantillas de un usuario sin tableros. Un clic deja la
+# bandera `listo` para que Python la lea.
 _JS_OVERLAY = """
 (() => {
   if (window.__comandoAac) return;
-  window.__comandoAac = {listo: false};
+  window.__comandoAac = {listo: false, boards: false};
+  let checking = false, lastCheck = 0;
+  const dbs = {};
+  const checkBoards = () => {
+    // ¿Hay algún tablero (GridData) guardado? Se revisan las bases de
+    // PouchDB de todos los usuarios de AsTeRICS (una por usuario, prefijo
+    // `_pouch_`) -- LAST_ACTIVEUSER_KEY puede venir vacío. Como mucho cada 2 s.
+    if (checking || Date.now() - lastCheck < 2000 || typeof PouchDB === 'undefined' || !indexedDB.databases) return;
+    checking = true; lastCheck = Date.now();
+    indexedDB.databases()
+      .then(list => Promise.all(list
+        .map(d => d.name || '')
+        .filter(n => n.startsWith('_pouch_'))
+        .map(n => {
+          const name = n.slice(7);
+          dbs[name] = dbs[name] || new PouchDB(name);
+          return dbs[name].allDocs({include_docs: true})
+            .then(a => a.rows.some(r => r.doc && r.doc.modelName === 'GridData'))
+            .catch(() => null);  // no se pudo leer: no se sabe
+        })))
+      .then(found => {
+        if (found.some(f => f === true)) window.__comandoAac.boards = true;
+        else if (found.every(f => f === false)) window.__comandoAac.boards = false;
+      })
+      .catch(() => {})
+      .then(() => { checking = false; });
+  };
   const ensure = () => {
     let b = document.getElementById('comando-aac-listo');
     if (!b) {
@@ -504,15 +544,29 @@ _JS_OVERLAY = """
         + 'border-radius:8px;border:0;background:#d32f2f;color:#fff;font:700 16px sans-serif;'
         + 'box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer;opacity:.95';
       b.onclick = () => { window.__comandoAac.listo = true; };
-      document.documentElement.appendChild(b);
     }
-    b.style.display = location.hash.startsWith('#grid/') ? 'block' : 'none';
+    // En "Pantalla completa" AsTeRICS pone el <body> en pantalla completa y
+    // el navegador solo dibuja lo que está DENTRO de ese elemento: el botón
+    // se mueve adentro de él (y vuelve al <body> al salir).
+    const parent = document.fullscreenElement || document.body || document.documentElement;
+    if (b.parentElement !== parent) parent.appendChild(b);
+    const enLista = location.hash.startsWith('#grids');
+    if (enLista) checkBoards();
+    const visible = location.hash.startsWith('#grid/') || (enLista && window.__comandoAac.boards);
+    b.style.display = visible ? 'block' : 'none';
   };
   setInterval(ensure, 400);
 })()
 """
 _JS_OVERLAY_STATE = (
-    "JSON.stringify({listo: !!(window.__comandoAac && window.__comandoAac.listo), hash: location.hash})"
+    "JSON.stringify({inyectado: !!window.__comandoAac,"
+    " listo: !!(window.__comandoAac && window.__comandoAac.listo), hash: location.hash,"
+    " boards: !!(window.__comandoAac && window.__comandoAac.boards),"
+    " boton: (() => { const b = document.getElementById('comando-aac-listo'); if (!b) return 'no existe';"
+    "  const r = b.getBoundingClientRect(); const fe = document.fullscreenElement;"
+    "  return getComputedStyle(b).display + ' en ' + (b.parentElement ? b.parentElement.tagName : '-')"
+    "   + ' ' + [r.x|0, r.y|0, r.width|0, r.height|0].join(',') + ' de ' + innerWidth + 'x' + innerHeight"
+    "   + (fe ? ' pantalla completa: ' + fe.tagName : ''); })()})"
 )
 
 
@@ -624,6 +678,7 @@ def configure(
                 )
             if not apply_to_input_config(input_config, settings):
                 _log(f"sin cambios: {settings}")
+                page.eval(_JS_CLOSE_SIDEBAR)
                 return True, "AsTeRICS ya tenía la configuración pedida."
             meta["encryptedDataBase64"] = json.dumps(inner)
             outcome = page.eval(_js_put(user, meta))
@@ -631,6 +686,7 @@ def configure(
                 _log(f"configuración escrita: {settings}")
                 page.call("Page.reload")
                 wait(lambda: state()["ready"], "recarga de la página")
+                page.eval(_JS_CLOSE_SIDEBAR)
                 return True, "AsTeRICS configurado."
             if outcome != "conflict":
                 raise AstericsConfigError(f"No se pudo guardar la configuración ({outcome}).")
@@ -662,9 +718,11 @@ def wait_setup_done(
     profile = profile_dir()
     page: Optional[_Page] = None
     board_seen = False
+    last_seen = None  # para registrar solo los cambios de pantalla/botón
+    reinjected = False
 
-    def attach() -> "_Page":
-        pg = _Page(_find_page_ws(port, time.monotonic() + 60, cancelled))
+    def attach(timeout: float = 60.0) -> "_Page":
+        pg = _Page(_find_page_ws(port, time.monotonic() + timeout, cancelled))
         pg.call("Page.addScriptToEvaluateOnNewDocument", source=_JS_OVERLAY)
         pg.eval(_JS_OVERLAY)
         return pg
@@ -681,13 +739,35 @@ def wait_setup_done(
                 # La página puede estar navegando o la ventana cerrada.
                 if not _port_alive(port):
                     break
+                page.close()
                 try:
-                    page.close()
-                    page = attach()
+                    page = attach(timeout=8.0)
                 except Exception:
-                    time.sleep(0.5)
+                    # El navegador sigue vivo (en segundo plano) pero ya no
+                    # tiene ninguna página de AsTeRICS: la ventana se cerró.
+                    # Sin esto la espera no terminaba nunca y no se podía
+                    # volver a configurar.
+                    page = None
+                    _log("no queda ninguna ventana de AsTeRICS abierta")
+                    break
                 continue
-            if str(state.get("hash", "")).startswith("#grid/"):
+            if not state.get("inyectado"):
+                # La página se recargó antes de que el script automático
+                # quedara registrado: se vuelve a poner el botón.
+                if not reinjected:
+                    _log("botón ausente en la página: se vuelve a inyectar")
+                reinjected = True
+                try:
+                    page.eval(_JS_OVERLAY, attempts=1)
+                except Exception:
+                    pass
+                time.sleep(poll_s)
+                continue
+            snapshot = (state.get("hash"), state.get("boards"), state.get("boton"))
+            if snapshot != last_seen:
+                last_seen = snapshot
+                _log(f"pantalla: {snapshot[0]} | tableros propios: {snapshot[1]} | botón: {snapshot[2]}")
+            if str(state.get("hash", "")).startswith("#grid/") or state.get("boards"):
                 board_seen = True
             if state.get("listo"):
                 _log("botón 'Continuar' presionado")
@@ -698,7 +778,11 @@ def wait_setup_done(
                 return True, "AsTeRICS preparada."
             time.sleep(poll_s)
 
-        # La ventana se cerró (el profesional usó la X).
+        # La ventana se cerró (el profesional usó la X). Si el navegador quedó
+        # vivo en segundo plano se lo cierra, para que el perfil quede libre
+        # para la próxima configuración.
+        if _port_alive(port):
+            shutdown_browser(port, profile)
         wait_profile_free(10.0, profile)
         clean_cache(profile)
         if board_seen:

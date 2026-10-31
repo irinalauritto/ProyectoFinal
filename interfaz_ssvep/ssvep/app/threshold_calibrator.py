@@ -48,7 +48,7 @@ from ssvep.app.frequency_calibrator import (
 # los estímulos siguen parpadeando también durante el aviso.
 DEFAULT_CUE_DURATION_S = 2.0
 # Cantidad mínima de ítems de una corrida: con menos estímulos activos
-# (Barrido: 2, Secuencial: 4) se repiten hasta llegar, para que la Validación
+# (Barrido: 2, Secuencial: 3, Direccional: 5) se repiten hasta llegar, para que la Validación
 # dure lo mismo en todos los métodos de entrada.
 DEFAULT_MIN_ITEMS = 6
 DEFAULT_MAX_UNRESOLVED_FRACTION = 0.2
@@ -268,7 +268,7 @@ class ThresholdCalibrator(QObject):
     `stimulus_viewer` debe ser un `StimulusViewer` (`stimulus_viewer.py`, el
     de siempre -- no `StimulusViewerCalibration`, que está armado para
     exactamente 2 estímulos): se le cargan los estímulos activos del usuario
-    (`user_preferences.stimulus_on`: 2 en Barrido, 4 en Secuencial, 6 en
+    (`user_preferences.stimulus_on`: 2 en Barrido, 3 en Secuencial, 5 en
     Direccional) y quedan parpadeando toda la corrida. Solo esos son ítems de
     la corrida: el margen depende de cuántos estímulos compiten, así que el
     umbral vale para ese conjunto y hay que volver a validar si cambia.

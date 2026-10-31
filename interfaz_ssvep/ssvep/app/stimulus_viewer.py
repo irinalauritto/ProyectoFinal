@@ -164,10 +164,9 @@ class StimulusViewer(QWidget):
         Carga la configuración completa de estímulos posibles y cuáles están
         activos actualmente.
 
-        Las posiciones en pantalla se calculan siempre sobre el conjunto
-        completo de estímulos posibles (`all_stimuli`), no sobre la cantidad
-        de activos. De esa forma cada estímulo tiene un lugar fijo en
-        pantalla que no cambia al activar o desactivar otros estímulos.
+        Cada estímulo tiene un lugar fijo en pantalla según su forma o
+        dirección (ver __calculate_stimulus_positions), que no cambia al
+        activar o desactivar otros estímulos.
 
         Args:
             all_stimuli: Lista completa de estímulos posibles, en su orden
@@ -307,96 +306,75 @@ class StimulusViewer(QWidget):
     # Lógica Interna: Cálculos Geométricos y de Configuración
     # ---------------------------------------------------------------------
 
-    # Orden visual deseado para los estímulos tipo flecha en la fila
-    # inferior de la pantalla (de izquierda a derecha).
-    __ARROW_DISPLAY_ORDER = {'down': 0, 'left': 1, 'up': 2, 'right': 3}
+    # Lugar fijo de cada estímulo sobre el recorrido en L de la pantalla
+    # (columna izquierda, de arriba hacia abajo, y fila inferior, de
+    # izquierda a derecha), como (tramo, fracción del tramo): ('col', 0) es
+    # arriba de todo, ('col', 1) y ('row', 0) son la misma esquina inferior
+    # izquierda y ('row', 1) es el extremo derecho. Es un único layout para
+    # todos los métodos de entrada, elegido para que en cada uno los
+    # estímulos activos queden lo más separados posible (Ng et al. 2012:
+    # mejor exactitud con más de 5° entre estímulos):
+    #   - Espacio (círculo): arriba de la columna, siempre.
+    #   - Flechas: Izquierda en la esquina, Derecha en el extremo derecho y
+    #     Abajo/Arriba equiespaciadas entre ellas.
+    #   - Nulo (cuadrado): también en la esquina. Solo está activo en
+    #     Barrido, donde no hay flechas, así que no se superpone con
+    #     Izquierda; y queda en la columna, no en la fila (que en Barrido
+    #     aprovecha AsTeRICS).
+    __SHAPE_SLOTS = {'circle': ('col', 0.0), 'square': ('col', 1.0)}
+    __ARROW_SLOTS = {'left': ('row', 0.0), 'down': ('row', 1 / 3), 'up': ('row', 2 / 3), 'right': ('row', 1.0)}
+    # Lugar de un estímulo no direccional cuando el suyo está ocupado (ej. el
+    # cuadrado con la flecha izquierda activa a la vez, como en vision con
+    # los 6) o cuando su forma no está en __SHAPE_SLOTS.
+    __FALLBACK_SLOT = ('col', 0.5)
 
-    @staticmethod
-    def __display_order(stimuli_by_index: Dict[int, Any]) -> List[int]:
-        """
-        Determina en qué orden se le asignan las posiciones geométricas
-        recorridas a un conjunto de estímulos.
-
-        Los estímulos no direccionales conservan su orden original (para que
-        sigan ocupando primero la columna izquierda). Los estímulos tipo
-        flecha se ordenan como abajo, izquierda, arriba, derecha, de forma
-        que -al caer en la fila inferior- queden dispuestos de izquierda a
-        derecha en ese orden.
-
-        Args:
-            stimuli_by_index: Diccionario {índice: estímulo} a ordenar.
-
-        Returns:
-            list[int]: Índices de `stimuli_by_index`, en el orden en que
-                deben recibir cada posición geométrica recorrida.
-        """
-        def sort_key(item):
-            index, stim = item
-            if stim.shape_type == 'arrow' and stim.direction in StimulusViewer.__ARROW_DISPLAY_ORDER:
-                return (1, StimulusViewer.__ARROW_DISPLAY_ORDER[stim.direction])
-            return (0, index)
-
-        ordered_items = sorted(stimuli_by_index.items(), key=sort_key)
-        return [index for index, _ in ordered_items]
+    def __slot_for(self, stim: Any, occupied: List[Tuple[str, float]]) -> Tuple[str, float]:
+        """Lugar (tramo, fracción) que le toca a `stim`, según __SHAPE_SLOTS /
+        __ARROW_SLOTS. `occupied`: lugares que ya ocupa otro estímulo activo."""
+        if stim.shape_type == 'arrow' and stim.direction in StimulusViewer.__ARROW_SLOTS:
+            return StimulusViewer.__ARROW_SLOTS[stim.direction]
+        slot = StimulusViewer.__SHAPE_SLOTS.get(stim.shape_type, StimulusViewer.__FALLBACK_SLOT)
+        # ('col', 1) y ('row', 0) son el mismo punto (la esquina).
+        corner = {('col', 1.0), ('row', 0.0)}
+        if slot in occupied or (slot in corner and corner & set(occupied)):
+            return StimulusViewer.__FALLBACK_SLOT
+        return slot
 
     def __calculate_stimulus_positions(self) -> List[Tuple[int, int]]:
         """
         Calcula las posiciones (x, y) de los estímulos activos en pantalla.
 
-        Las posiciones se calculan una única vez sobre el conjunto COMPLETO
-        de estímulos posibles (`__all_stimuli`), no sobre la cantidad de
-        estímulos activos. Así, cada estímulo tiene siempre el mismo lugar
-        fijo en pantalla, sin importar cuáles otros estén activos.
+        Cada estímulo tiene un lugar fijo según su forma/dirección (ver
+        __SHAPE_SLOTS y __ARROW_SLOTS), que no cambia al activar o
+        desactivar otros estímulos.
         """
-        if not self.__stimulus_config or not self.__all_stimuli:
+        if not self.__stimulus_config:
             return []
 
-        n_total = len(self.__all_stimuli)
         size = self.__stimulus_size
         width = self.__screen_width or 0
         height = self.__screen_height or 0
-        h_margin = self.__margin[0] if self.__margin else 0
 
-        total_length = width + height - h_margin - size / 2
-        usable_length = total_length - size * n_total
-        spacing = int(usable_length / (n_total - 1)) if n_total > 1 else 0
-
-        slots = []
-        x_pos = int(-width / 2 + size / 2)
-        y_pos = int(height / 2 - size / 2)
-        x_init = x_pos
-        y_lim = int(-height / 2 + h_margin)
+        x_left = int(-width / 2 + size / 2)
+        x_right = int(width / 2 - size / 2)
+        y_top = int(height / 2 - size / 2)
         y_bottom = int(-height / 2 + size / 2)
 
-        slots.append((x_pos, y_pos))
-        step = size + spacing
+        def to_xy(slot: Tuple[str, float]) -> Tuple[int, int]:
+            part, t = slot
+            if part == 'col':
+                return (x_left, int(round(y_top + t * (y_bottom - y_top))))
+            return (int(round(x_left + t * (x_right - x_left))), y_bottom)
 
-        for i in range(1, n_total):
-            if x_pos == x_init:
-                y_pos = y_pos - step
+        # Primero las flechas (tienen siempre su lugar) y después los no
+        # direccionales, que pueden tener que correrse si el suyo está ocupado.
+        slots: Dict[int, Tuple[str, float]] = {}
+        arrows_first = sorted(self.__stimulus_config.items(), key=lambda item: item[1].shape_type != 'arrow')
+        for index, stim in arrows_first:
+            slots[index] = self.__slot_for(stim, list(slots.values()))
 
-            if y_pos < y_bottom:
-                if x_pos == x_init:
-                    rest = int(y_lim - y_pos)
-                    x_pos = x_pos + rest
-                    slots.append((x_pos, y_bottom))
-                else:
-                    x_pos = x_pos + step
-                    slots.append((x_pos, y_bottom))
-            else:
-                slots.append((x_pos, y_pos))
-
-        # Los slots están en orden geométrico de recorrido (columna
-        # izquierda, luego fila inferior); se le asigna a cada estímulo del
-        # conjunto COMPLETO una posición fija según __display_order.
-        all_stimuli_by_index = dict(enumerate(self.__all_stimuli))
-        fixed_positions: Dict[int, Tuple[int, int]] = {}
-        for slot, stim_index in zip(slots, self.__display_order(all_stimuli_by_index)):
-            fixed_positions[stim_index] = slot
-
-        # Solo se devuelven las posiciones (fijas) de los estímulos
-        # actualmente activos, en el mismo orden que __stimulus_config.
-        positions = [fixed_positions[index] for index in self.__stimulus_config]
+        # En el mismo orden que __stimulus_config.
+        positions = [to_xy(slots[index]) for index in self.__stimulus_config]
         self.__stimulus_positions = positions
         return positions
 
