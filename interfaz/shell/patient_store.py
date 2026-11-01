@@ -1,7 +1,7 @@
 """Almacén unificado de pacientes (EMG y EEG/SSVEP).
 
-Un solo archivo JSON con UNA ficha por paciente. Todo lo que la aplicación
-guarda de un paciente queda acá y no se genera además en otros documentos
+Un archivo JSON por paciente (su ficha). Todo lo que la aplicación guarda de
+un paciente queda en su archivo y no se genera además en otros documentos
 (sin PDF ni bitácoras por sesión). Cada ficha tiene:
 
   * su identidad y datos básicos;
@@ -10,21 +10,18 @@ guarda de un paciente queda acá y no se genera además en otros documentos
   * `historial`: UNA lista cronológica general con las sesiones, calibraciones
     y validaciones de cualquier modalidad (campo `modalidad` en cada una).
 
+    datos_pacientes/Ana_Evequoz_1a2b3c4d.json:
     {
       "version": 3,
-      "patients": [
-        {
-          "id": "…", "nombre": "…", "apellido": "…", "observaciones": "…",
-          "creado": "…", "ultima_sesion": "…", "ultima_modalidad": "emg"|"eeg"|null,
-          "ssvep_user_id": 5 | null,          # vínculo con la base SQLite de SSVEP
-          "asterics_configurado": "…" | null, # cuándo se preparó su perfil de AsTeRICS
-          "config": {"emg": {…}, "eeg": {…}},
-          "historial": [
-            {"fecha": "…", "tipo": "sesion", "modalidad": "eeg", "fin": "…", "duracion_s": 1800},
-            {"fecha": "…", "tipo": "calibracion", "modalidad": "emg", "umbral": …},
-            {"fecha": "…", "tipo": "validacion", "modalidad": "eeg", "umbral": …}
-          ]
-        }
+      "id": "…", "nombre": "…", "apellido": "…", "observaciones": "…",
+      "creado": "…", "ultima_sesion": "…", "ultima_modalidad": "emg"|"eeg"|null,
+      "ssvep_user_id": 5 | null,          # vínculo con la base SQLite de SSVEP
+      "asterics_configurado": "…" | null, # cuándo se preparó su perfil de AsTeRICS
+      "config": {"emg": {…}, "eeg": {…}},
+      "historial": [
+        {"fecha": "…", "tipo": "sesion", "modalidad": "eeg", "fin": "…", "duracion_s": 1800},
+        {"fecha": "…", "tipo": "calibracion", "modalidad": "emg", "umbral": …},
+        {"fecha": "…", "tipo": "validacion", "modalidad": "eeg", "umbral": …}
       ]
     }
 
@@ -33,11 +30,12 @@ interfaz_ssvep (modo de entrada, frecuencias, canales, umbral): acá se la
 REFLEJA para que quede en la ficha y se guardan además los ajustes que SQLite
 no tiene (pulsación, refractario, tiempo de barrido).
 
-El archivo vive en `interfaz/datos_pacientes/` (ignorado por git: contiene
-datos de pacientes y el repositorio es público). Si no existe, se copia el que
-usaban las versiones anteriores (`%LOCALAPPDATA%\\ComandoAAC\\patients.json`);
-si tampoco está y hay uno viejo en `interfaz/data/patients.json` (lista simple
-de EMG), se importa una sola vez.
+Los archivos viven en `interfaz/datos_pacientes/` (ignorada por git: contiene
+datos de pacientes y el repositorio es público). Si la carpeta todavía no tiene
+fichas, se separa una sola vez la lista única que usaban las versiones
+anteriores: `datos_pacientes/patients.json` (que queda renombrado como
+`patients.migrado.json`), o si no `%LOCALAPPDATA%\\ComandoAAC\\patients.json`,
+o si no la lista simple de EMG de `interfaz/data/patients.json`.
 También se migran las fichas del esquema 2 (bloques `emg`/`eeg` separados).
 """
 
@@ -45,7 +43,7 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
+import re
 import threading
 import time
 import uuid
@@ -59,8 +57,9 @@ TIPOS_REGISTRO = ("calibracion", "validacion")
 MAX_HISTORIAL = 500  # por paciente: los más viejos se descartan
 
 _INTERFAZ_DIR = Path(__file__).resolve().parent.parent
-PATIENTS_FILE = _INTERFAZ_DIR / "datos_pacientes" / "patients.json"
-# Ubicación de las versiones anteriores: de ahí se copia la primera vez.
+PATIENTS_DIR = _INTERFAZ_DIR / "datos_pacientes"
+# Listas únicas de versiones anteriores: se separan en fichas la primera vez.
+SINGLE_FILE = PATIENTS_DIR / "patients.json"
 OLD_APP_FILE = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local")) / "ComandoAAC" / "patients.json"
 LEGACY_FILE = _INTERFAZ_DIR / "data" / "patients.json"
 
@@ -151,59 +150,79 @@ def _normalize(entry: dict) -> dict:
 # ----------------------------------------------------------------------
 # Lectura y escritura (atómica)
 # ----------------------------------------------------------------------
-def _read_legacy() -> list[dict]:
+def _read_list(path: Path) -> list[dict]:
+    """Fichas de una lista única vieja (esquema 3 `{"patients": [...]}` o lista simple)."""
     try:
-        with open(LEGACY_FILE, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return [e for e in data if isinstance(e, dict) and e.get("nombre")]
     except (OSError, ValueError):
         return []
+    if isinstance(data, dict):
+        data = data.get("patients", [])
+    return [e for e in data if isinstance(e, dict) and e.get("nombre")]
+
+
+def patient_file(entry: dict) -> Path:
+    """Archivo de la ficha: nombre legible + comienzo del id (por si se repite el nombre)."""
+    nombre = re.sub(r"[^\w-]+", "_", full_name(entry)).strip("_") or "paciente"
+    return PATIENTS_DIR / f"{nombre}_{entry['id'][:8]}.json"
+
+
+def _write_entry(entry: dict) -> None:
+    path = patient_file(entry)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"version": SCHEMA_VERSION, **entry}, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, path)  # nunca queda un archivo a medio escribir
 
 
 def _write(data: dict) -> None:
-    PATIENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = PATIENTS_FILE.with_suffix(".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, PATIENTS_FILE)  # nunca queda un archivo a medio escribir
+    for entry in data["patients"]:
+        _write_entry(entry)
+
+
+def _migrate_single_list() -> None:
+    """Separa en fichas la lista única de versiones anteriores (una sola vez)."""
+    if SINGLE_FILE.exists():
+        old = _read_list(SINGLE_FILE)
+    elif OLD_APP_FILE.exists():
+        old = _read_list(OLD_APP_FILE)  # el original queda como respaldo
+    else:
+        # La lista vieja de interfaz/data solo guardaba pacientes de EMG.
+        old = [{**e, "ultima_modalidad": e.get("ultima_modalidad") or "emg"} for e in _read_list(LEGACY_FILE)]
+    if not old:
+        return
+    try:
+        for e in old:
+            _write_entry(_normalize(e))
+        if SINGLE_FILE.exists():
+            SINGLE_FILE.replace(SINGLE_FILE.with_name("patients.migrado.json"))
+    except OSError:
+        pass
 
 
 def _read() -> dict:
     with _lock:
-        if not PATIENTS_FILE.exists() and OLD_APP_FILE.exists():
+        if not any(PATIENTS_DIR.glob("*.json")) or SINGLE_FILE.exists():
+            _migrate_single_list()
+        patients = []
+        for path in PATIENTS_DIR.glob("*.json"):
+            if path.name.startswith("patients."):  # respaldos de la lista única
+                continue
             try:
-                PATIENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(OLD_APP_FILE, PATIENTS_FILE)  # el original queda como respaldo
-            except OSError:
-                pass
-        if not PATIENTS_FILE.exists():
-            patients = []
-            for old_entry in _read_legacy():
-                entry = _normalize(old_entry)
-                # La lista vieja solo guardaba pacientes de EMG.
-                entry["ultima_modalidad"] = entry.get("ultima_modalidad") or "emg"
-                patients.append(entry)
-            data = {"version": SCHEMA_VERSION, "patients": patients}
-            if patients:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and data.get("nombre"):
+                    patients.append(_normalize(data))
+            except (OSError, ValueError):
+                # Archivo dañado: se lo conserva aparte (no se pierde) y se sigue con los demás.
                 try:
-                    _write(data)  # migración única de la lista vieja
+                    path.replace(path.with_suffix(f".corrupto-{int(time.time())}"))
                 except OSError:
                     pass
-            return data
-        try:
-            with open(PATIENTS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, list):  # por si alguien dejó una lista simple acá
-                data = {"patients": data}
-            patients = [_normalize(e) for e in data.get("patients", []) if isinstance(e, dict)]
-            return {"version": SCHEMA_VERSION, "patients": patients}
-        except (OSError, ValueError):
-            # Archivo dañado: se lo conserva aparte (no se pierde) y se empieza limpio.
-            try:
-                PATIENTS_FILE.replace(PATIENTS_FILE.with_name(f"patients.corrupto-{int(time.time())}.json"))
-            except OSError:
-                pass
-            return {"version": SCHEMA_VERSION, "patients": []}
+        patients.sort(key=lambda e: str(e.get("creado", "")))
+        return {"version": SCHEMA_VERSION, "patients": patients}
 
 
 def _mutate(patient_id: Optional[str], change: Callable[[dict], None]) -> bool:
@@ -215,7 +234,7 @@ def _mutate(patient_id: Optional[str], change: Callable[[dict], None]) -> bool:
         for entry in data["patients"]:
             if entry["id"] == patient_id:
                 change(entry)
-                _write(data)
+                _write_entry(entry)
                 return True
     return False
 
@@ -253,11 +272,10 @@ def save_patient(nombre: str, apellido: str, observaciones: str) -> dict:
             if _norm(full_name(entry)) == target:
                 entry["observaciones"] = observaciones
                 entry["fecha"] = _now()
-                _write(data)
+                _write_entry(entry)
                 return entry
         entry = _blank_entry(nombre, apellido, observaciones)
-        data["patients"].append(entry)
-        _write(data)
+        _write_entry(entry)
         return entry
 
 
