@@ -1,4 +1,8 @@
-"""Barra lateral del shell: logo, navegacion y estado (paciente/dispositivo)."""
+"""
+Barra lateral del shell: logo, navegacion y estado (paciente y dispositivo conectado).
+
+Autora: Irina Lauritto
+"""
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget

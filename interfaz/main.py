@@ -29,20 +29,14 @@ from PySide6.QtWidgets import QApplication
 from interfaz.shell.main_window import MainShell  
 from interfaz.shell.style import STYLESHEET 
 
-# Fondo/trazo por defecto de pyqtgraph, seteado antes de construir
-# cualquier PlotWidget en la app (propios o reusados de interfaz_ssvep,
-# como PSDWidget). El default real de pyqtgraph es negro; sin esto,
+# Fondo por defecto de pyqtgraph. El default real de pyqtgraph es negro, sin esto
 # cualquier PlotWidget que no fije su propio fondo explicito (como
-# PSDWidget) queda oscuro y no combina con la paleta Comando AAC. Se
-# ubica aca -- no en interfaz_emg/interfaz_ssvep -- para no depender de
-# que un modulo se importe antes que otro.
+# PSDWidget) queda oscuro y no combina con la paleta utilizada.
 pg.setConfigOption("background", "#f8f9fa")
 pg.setConfigOption("foreground", "#69707b")
 
 
 def _paleta_clara() -> QPalette:
-    # Misma paleta que arma interfazEmg.py en su propio main() Se necesita aca tambien porque en
-    # emg_page.py se instancia VentanaEmg.
     paleta = QPalette()
     paleta.setColor(QPalette.ColorRole.Window, QColor("#ffffff"))
     paleta.setColor(QPalette.ColorRole.WindowText, QColor("#000000"))
@@ -58,9 +52,6 @@ def _paleta_clara() -> QPalette:
 
 def main() -> None:
     app = QApplication(sys.argv)
-    # Sin esto, Windows usa su estilo nativo, que ignora buena parte del
-    # QSS (bordes, fondos, padding de botones con contenido propio como las
-    # tarjetas de modalidad) y puede terminar solapando texto. 
     app.setStyle("Fusion")
     app.styleHints().setColorScheme(Qt.ColorScheme.Light)
     app.setPalette(_paleta_clara())

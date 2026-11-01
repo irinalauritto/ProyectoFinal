@@ -53,8 +53,8 @@ ASTERICS_ORIGIN = "https://grid.asterics.eu"
 # palabras del título (sin distinguir mayúsculas), porque el título se traduce
 # según el idioma de AsTeRICS ("ARASAAC Comunicador Global Grid Core" en español).
 DEFAULT_BOARD_KEYWORDS = (
-    ("arasaac", "grid core"),       # Comunicador Global ARASAAC (el que se quiere)
-    ("asterics grid default",),     # respaldo: el tablero básico de AsTeRICS
+    ("arasaac", "grid core"),       # Comunicador Global ARASAAC
+    ("asterics grid default",),     # respaldo: el tablero básico de AsTeRICS (es un tablero distinto)
 )
 DEFAULT_BOARD_NAME = "ARASAAC Comunicador Global Grid Core"
 
@@ -173,7 +173,7 @@ def _port_file() -> Path:
 
 def _port_alive(port: int) -> bool:
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=0.7):
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=0.7):  # port es el puerto que utiliza el navegador para comunicarse
             return True
     except Exception:
         return False
