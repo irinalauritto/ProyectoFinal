@@ -8,9 +8,10 @@ interfaz_emg/data/*.csv
 firmware/**/build/
 firmware/**/sdkconfig.old
 
-# Datos de pacientes: no se versionan. La lista unificada vive fuera del repo
-# (%LOCALAPPDATA%\ComandoAAC\patients.json); este es el archivo viejo, que solo
-# se lee una vez para migrarlo.
+# Datos de pacientes: no se versionan. La lista unificada vive en
+# interfaz/datos_pacientes/; interfaz/data/patients.json es el archivo viejo,
+# que solo se lee una vez para migrarlo.
+interfaz/datos_pacientes/
 interfaz/data/patients.json
 
 # Bitácoras de sesión (EMG) y reportes PDF: llevan nombres de pacientes, no se versionan.

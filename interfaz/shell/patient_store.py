@@ -33,9 +33,11 @@ interfaz_ssvep (modo de entrada, frecuencias, canales, umbral): acá se la
 REFLEJA para que quede en la ficha y se guardan además los ajustes que SQLite
 no tiene (pulsación, refractario, tiempo de barrido).
 
-El archivo vive fuera del repositorio (`%LOCALAPPDATA%\\ComandoAAC`): contiene
-datos de pacientes y no debe subirse a git. Si no existe y hay uno viejo en
-`interfaz/data/patients.json` (lista simple de EMG), se importa una sola vez.
+El archivo vive en `interfaz/datos_pacientes/` (ignorado por git: contiene
+datos de pacientes y el repositorio es público). Si no existe, se copia el que
+usaban las versiones anteriores (`%LOCALAPPDATA%\\ComandoAAC\\patients.json`);
+si tampoco está y hay uno viejo en `interfaz/data/patients.json` (lista simple
+de EMG), se importa una sola vez.
 También se migran las fichas del esquema 2 (bloques `emg`/`eeg` separados).
 """
 
@@ -43,6 +45,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import threading
 import time
 import uuid
@@ -55,9 +58,11 @@ MODALIDADES = ("emg", "eeg")
 TIPOS_REGISTRO = ("calibracion", "validacion")
 MAX_HISTORIAL = 500  # por paciente: los más viejos se descartan
 
-APP_DIR = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local")) / "ComandoAAC"
-PATIENTS_FILE = APP_DIR / "patients.json"
-LEGACY_FILE = Path(__file__).resolve().parent.parent / "data" / "patients.json"
+_INTERFAZ_DIR = Path(__file__).resolve().parent.parent
+PATIENTS_FILE = _INTERFAZ_DIR / "datos_pacientes" / "patients.json"
+# Ubicación de las versiones anteriores: de ahí se copia la primera vez.
+OLD_APP_FILE = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local")) / "ComandoAAC" / "patients.json"
+LEGACY_FILE = _INTERFAZ_DIR / "data" / "patients.json"
 
 _lock = threading.RLock()
 
@@ -165,6 +170,12 @@ def _write(data: dict) -> None:
 
 def _read() -> dict:
     with _lock:
+        if not PATIENTS_FILE.exists() and OLD_APP_FILE.exists():
+            try:
+                PATIENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(OLD_APP_FILE, PATIENTS_FILE)  # el original queda como respaldo
+            except OSError:
+                pass
         if not PATIENTS_FILE.exists():
             patients = []
             for old_entry in _read_legacy():
