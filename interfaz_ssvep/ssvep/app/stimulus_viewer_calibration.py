@@ -6,7 +6,7 @@ estímulos centrados verticalmente y bien separados, no el reparto
 automático en zigzag) y un mensaje de texto + resaltado en rojo durante un
 breve descanso antes de cada trial ("Debe mirar el estímulo remarcado").
 
-Archivo nuevo: `stimulus_viewer.py` NO se modifica. Se reusan tal cual sus
+Archivo aparte de `stimulus_viewer.py`, del que se reusan tal cual sus
 piezas de bajo nivel (detección de monitor/DPI, creación de estímulos y de
 parpadeo, creación de ventana, detección de refresco) en vez de
 duplicarlas -- ver los imports de abajo. `StimulusViewer.__monitor_scales`
@@ -58,8 +58,10 @@ class StimulusViewerCalibration(QWidget):
         ...                                  # mostrar el descanso unos segundos
         viewer.start_flicker()              # arranca el parpadeo del trial
         ...
-        viewer.start_rest()                 # (opcional) volver a descanso sin cerrar
-        viewer.stop_stim()                  # cierra la ventana al terminar el trial
+        viewer.start_rest()                 # siguiente trial: vuelve a descanso sin cerrar
+        viewer.update_stimulus_use(c2, a2)  # y cambia la candidata/ancla
+        ...
+        viewer.stop_stim()                  # cierra la ventana al terminar todo el barrido
 
     Señales:
         stimuli_ready(hwnd): la ventana terminó de abrirse.

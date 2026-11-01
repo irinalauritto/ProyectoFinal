@@ -1,10 +1,13 @@
-"""Calibración individual de frecuencias SSVEP.
+"""
+Calibración individual de frecuencias SSVEP.
 
 Mide, para el usuario actual, la exactitud del clasificador CCA en varias
 frecuencias candidatas y selecciona las 6 finales evitando colisiones
-armónicas entre ellas. Archivo nuevo: no modifica ningún otro archivo de
-`ssvep/app/` -- reusa tal cual `EEGSignalCCAClassifier`, `StimulusViewer`,
-`Stimulus`/`UserPreferences` y el patrón de reporte PDF de `BCIEvaluator`.
+armónicas entre ellas. Reusa `EEGSignalCCAClassifier` y
+`Stimulus`/`UserPreferences`; la ventana de estímulos es
+`StimulusViewerCalibration` (ver más abajo). `generate_report` sigue el
+patrón de reporte PDF de `BCIEvaluator`, aunque la interfaz unificada ya no
+genera PDF (el resultado queda en la ficha del paciente).
 
 Metodología (ver también Mu et al. 2022 para la nocion de colisión
 armónica, y Kozin et al. 2023 / Keihani et al. 2018 para el diseño general
@@ -12,21 +15,22 @@ de barrido de frecuencias candidata por candidata, discutidos en el diseño
 de este proyecto):
 
 Por cada candidata se arma una configuración de SOLO 2 estímulos activos
-(la candidata + un ancla fija fuera de la banda de candidatas) porque el
-umbral del clasificador (`BaseEEGClassifier._validate_threshold`) calcula
-qué tan por encima está la correlación ganadora *respecto de las demás
-candidatas* -- con un solo estímulo activo esa cuenta da 0/0 siempre y el
-clasificador nunca puede devolver un resultado válido. Con 2 estímulos (el
-umbral en 0.0, decisión cruda por ventana) cada intento es un forzado
-"la candidata gana, o gana el ancla", que es justamente la señal que
-interesa medir.
+(la candidata + un ancla fija fuera de la banda de candidatas). El
+clasificador se usa con umbral 0.0: decisión cruda por ventana, sin el
+cálculo de margen ni el voto de continuidad de
+`EEGSignalCCAClassifier._validate_threshold`/`update_buffer` -- devuelve
+directamente el estímulo con mayor correlación. Con un solo estímulo activo
+ese siempre ganaría (exactitud 100% sin importar la señal); con el ancla,
+cada ventana es un forzado "la candidata gana, o gana el ancla", que es
+justamente la señal que interesa medir.
 
 La ventana de estímulos es `StimulusViewerCalibration`
-(`stimulus_viewer_calibration.py`, archivo nuevo también): candidata y
-ancla centradas y bien separadas, con un descanso de `rest_duration_s`
-antes de cada trial (candidata resaltada en rojo + mensaje "Debe mirar el
-estímulo remarcado") -- ni `stimulus_viewer.py` ni ningún otro archivo
-existente de `ssvep/app/` se modifican.
+(`stimulus_viewer_calibration.py`): candidata y ancla centradas y bien
+separadas, con un descanso de `rest_duration_s` antes de cada trial
+(candidata resaltada en rojo + mensaje "Debe mirar el estímulo remarcado").
+La ventana se abre una sola vez y queda abierta durante todo el barrido.
+
+Autora: Irina Lauritto
 """
 
 from __future__ import annotations
@@ -44,9 +48,9 @@ from ssvep.app.dataclasses import Stimulus, UserPreferences
 from ssvep.app.eeg_signal_classifier import EEGSignalCCAClassifier
 
 # Códigos especiales que puede devolver EEGSignalCCAClassifier.update_buffer
-# (ver base_classifier.py) -- con threshold=0.0 (ver _run_current_trial)
+# (ver eeg_signal_classifier.py) -- con threshold=0.0 (ver _advance_trial)
 # -1 ("no supera el umbral") no debería ocurrir nunca, pero se filtra igual
-# por robustez.
+# por robustez (junto con cualquier otro código negativo).
 _NO_ENOUGH_SAMPLES = -2
 _NO_THRESHOLD = -1
 
@@ -104,14 +108,15 @@ def compute_candidate_accuracies(decisions: List[Tuple[float, int, int]]) -> Dic
     Args:
         decisions: Lista de `(candidate_freq, true_label, predicted_label)`.
             `true_label` es siempre 0 (la candidata ocupa la posición 0 en
-            cada trial, ver `FrequencyCalibrator._start_trial`) -- se
+            cada trial, ver `FrequencyCalibrator._advance_trial`) -- se
             conserva igual en la tupla para que el formato sea el mismo
             que `BCIEvaluator.true_labels`/`predicted_labels`.
 
     Returns:
-        `{frecuencia: accuracy}` -- 0.0 para una candidata sin decisiones
-        registradas (no debería pasar en una corrida real, pero evita
-        división por cero si un trial no llegó a producir ninguna).
+        `{frecuencia: accuracy}`, solo con las candidatas que tienen al
+        menos una decisión registrada: una candidata cuyos trials no
+        produjeron ninguna decisión válida no aparece en el resultado (y por
+        lo tanto tampoco puede ser seleccionada).
     """
     correct: Dict[float, int] = defaultdict(int)
     total: Dict[float, int] = defaultdict(int)
@@ -161,8 +166,9 @@ def _detect_refresh_rate() -> int:
     """Tasa de refresco (Hz) del monitor principal, vía la API de Windows
     (GDI `GetDeviceCaps`) -- independiente de `StimulusViewer`/PsychoPy
     (que detectan la suya propia, pero solo la usan puertas adentro del
-    proceso de estímulos, sin exponerla). Se usa acá solo para registrarla
-    como metadato de la corrida; 60 Hz como valor de respaldo si la
+    proceso de estímulos, sin exponerla). Se registra como metadato de la
+    corrida y se le pasa al visor (`set_refresh_rate`, ver `start`) para que
+    no tenga que medirla de nuevo; 60 Hz como valor de respaldo si la
     consulta falla."""
     try:
         user32 = ctypes.windll.user32
@@ -195,13 +201,18 @@ class FrequencyCalibrator(QObject):
 
     `stimulus_viewer` debe ser una instancia de `StimulusViewerCalibration`
     (`stimulus_viewer_calibration.py`): expone `load_stimulus_use(candidata,
-    ancla)`, `start_stim()`, `start_rest()`, `start_flicker()`, `stop_stim()`,
-    `is_running()` y la señal `stimuli_ready`.
+    ancla)`, `update_stimulus_use(candidata, ancla)`, `start_stim()`,
+    `start_rest()`, `start_flicker()`, `stop_stim()`, `is_running()` y la
+    señal `stimuli_ready` (y, opcionales, `set_refresh_rate()` y la señal
+    `stimulus_failed`).
 
-    Cada trial: `start_stim()` -> espera `stimuli_ready` -> `rest_duration_s`
-    de descanso (candidata resaltada + mensaje, sin parpadear) ->
+    Primer trial: `load_stimulus_use()` + `start_stim()` -> espera
+    `stimuli_ready`. Trials siguientes (la ventana sigue abierta):
+    `start_rest()` + `update_stimulus_use()`. En todos: `rest_duration_s` de
+    descanso (candidata resaltada + mensaje, sin parpadear) ->
     `start_flicker()` -> `trial_duration_s` de parpadeo (se descartan las
-    decisiones de los primeros `discard_s`) -> `stop_stim()`.
+    decisiones de los primeros `discard_s`). `stop_stim()` recién al
+    terminar todo el barrido.
 
     Señales:
         candidate_started(freq, candidate_num, n_candidates): nueva candidata.
@@ -298,8 +309,8 @@ class FrequencyCalibrator(QObject):
 
     # ------------------------------------------------------------------
     def start(self) -> None:
-        """Arranca el barrido completo (bloquea hasta `calibration_finished`
-        o `calibration_failed`, ambas asíncronas vía señales Qt)."""
+        """Arranca el barrido completo. No bloquea: el resultado llega
+        después por `calibration_finished` o `calibration_failed`."""
         if self._running:
             return
         self._running = True
@@ -378,7 +389,7 @@ class FrequencyCalibrator(QObject):
         )
 
         self.classifier.load_data(self._sample_rate, trial_prefs, self._harmonics)
-        self.classifier.load_threshold(0.0)  # decision cruda, sin voto de continuidad (ver docstring de modulo)
+        self.classifier.load_threshold(0.0)  # decision cruda por ventana, sin margen ni voto de continuidad (ver docstring de modulo)
         self.classifier.clear_buffer()
 
         if self._stimulus_viewer.is_running():
