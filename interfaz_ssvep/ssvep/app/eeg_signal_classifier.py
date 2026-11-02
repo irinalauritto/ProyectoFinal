@@ -1,3 +1,7 @@
+"""
+Autor: Lautaro Francisconi 
+
+"""
 import threading
 from typing import Any
 
@@ -5,6 +9,12 @@ import numpy as np
 from sklearn.cross_decomposition import CCA
 
 from ssvep.app.dataclasses import UserPreferences
+
+# Regla de decisión con umbral activo: cada ventana vota cada 1/VOTES_PER_REVISION
+# de su duración y se revisa cada VOTES_PER_REVISION votos; decide el estímulo con
+# al menos MIN_VOTES. La Validación simula esta misma regla (threshold_calibrator.py).
+VOTES_PER_REVISION = 4
+MIN_VOTES = 3
 
 
 def compute_margin(rho: np.ndarray) -> float:
@@ -59,8 +69,13 @@ class BaseEEGClassifier:
         self._last_stim_id: int | None = None
         self._decision_count = 0
 
+        # Registro de ventanas para la Validación, ver enable_window_log().
+        self._window_log: list[tuple[float, int]] | None = None
+        self._filled_samples = 0
+        self._window_full = False
+
         self._buffer = np.zeros((buffer_size, *sample_shape))
-        self._class_buffer = [-1, -1, -1, -1]
+        self._class_buffer = [-1] * VOTES_PER_REVISION
         self._index = 0
         self._samples_count = 0
         
@@ -73,9 +88,31 @@ class BaseEEGClassifier:
         with self._lock:
             self._buffer = np.zeros(self._buffer.shape)
             self._samples_count = 0
-            self._class_buffer = [-1, -1, -1, -1]
+            self._class_buffer = [-1] * VOTES_PER_REVISION
             self._index = 0
             self._s_steps_count = 0
+            self._filled_samples = 0
+            self._window_full = False
+            if self._window_log is not None:
+                self._window_log.clear()
+
+    def enable_window_log(self) -> None:
+        """Clasifica cada 1/VOTES_PER_REVISION de ventana y registra el margen y
+        el ganador de cada ventana llena, aunque el umbral sea 0. Lo usa la
+        Validación para simular después distintos umbrales sobre las mismas
+        ventanas que votan en producción."""
+        with self._lock:
+            self._window_log = []
+            self._recalculate_steps_under_lock()
+
+    def drain_window_log(self) -> list[tuple[float, int]]:
+        """Devuelve y vacía las ventanas `(margen, estímulo)` registradas, en orden."""
+        with self._lock:
+            if not self._window_log:
+                return []
+            windows = self._window_log
+            self._window_log = []
+            return windows
 
     def load_buffer_size(self, time_window: float, n_channels: int) -> None:
         """Configura el tamaño del búfer en función de la ventana de tiempo y canales.
@@ -92,6 +129,8 @@ class BaseEEGClassifier:
             n_samples = int(time_window * self._fs)
             self._buffer = np.zeros((n_samples, n_channels))
             self._samples_count = 0 
+            self._filled_samples = 0
+            self._window_full = False
             self._recalculate_steps_under_lock()
 
     def load_threshold(self, threshold: float) -> None:
@@ -110,9 +149,9 @@ class BaseEEGClassifier:
         Debe llamarse dentro de un bloque `with self._lock:`.
         """
         if self._fs and self._time_window > 0:
-            if self._threshold > 0:
+            if self._threshold > 0 or self._window_log is not None:
                 # Ventanas móviles (pasos del 25% para votación)
-                self._samples_per_step = int((self._time_window / 4.0) * self._fs)
+                self._samples_per_step = int((self._time_window / VOTES_PER_REVISION) * self._fs)
             else:
                 # Bloque completo del 100% de la ventana
                 self._samples_per_step = int(self._time_window * self._fs)
@@ -195,6 +234,8 @@ class BaseEEGClassifier:
             self._last_margin = margin
             self._last_stim_id = stim_id
             self._decision_count += 1
+            if self._window_log is not None and self._window_full:
+                self._window_log.append((margin, stim_id))
 
         if self._threshold <= 0:
             return stim_id
@@ -205,7 +246,7 @@ class BaseEEGClassifier:
                 self._index = (self._index + 1) % len(self._class_buffer)
                 
                 for candidate_stim in set(self._class_buffer):
-                    if candidate_stim != -1 and self._class_buffer.count(candidate_stim) >= 3:
+                    if candidate_stim != -1 and self._class_buffer.count(candidate_stim) >= MIN_VOTES:
                         return int(candidate_stim)
                 return -1
         else:
@@ -235,11 +276,13 @@ class BaseEEGClassifier:
         with self._lock:
             self._buffer[:-n_new_samples] = self._buffer[n_new_samples:]
             self._buffer[-n_new_samples:] = sample
-            self._samples_count += n_new_samples 
+            self._samples_count += n_new_samples
+            self._filled_samples += n_new_samples
             
             if self._samples_per_step > 0 and self._samples_count >= self._samples_per_step:
                 self._samples_count = 0
-                self._s_steps_count += 1 
+                self._s_steps_count += 1
+                self._window_full = self._filled_samples >= self._buffer.shape[0]
                 buffer_to_process = self._buffer.copy().T 
         
         if buffer_to_process is not None:
@@ -248,7 +291,7 @@ class BaseEEGClassifier:
             if self._threshold <= 0:
                 return raw_decision
             
-            if self._s_steps_count >= 4:
+            if self._s_steps_count >= VOTES_PER_REVISION:
                 self._s_steps_count = 0 
                 return raw_decision 
             

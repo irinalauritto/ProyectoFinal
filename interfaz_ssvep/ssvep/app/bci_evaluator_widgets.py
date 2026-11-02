@@ -3,6 +3,9 @@ Módulo de interfaces gráficas para el evaluador BCI.
 
 Contiene las clases de widgets para el operador, el usuario y 
 la visualización de secuencias de estímulos, utilizando PySide6.
+
+Autor: Lautaro Francisconi
+Modificaciones: Irina Lauritto
 """
 
 import sys
@@ -163,6 +166,7 @@ class SequenceWidget(QWidget):
     """
 
     COLUMNS = 12
+    DETECTED_ICON_SIZE = 44
 
     def __init__(self) -> None:
         """Inicializa el widget, carga la UI"""
@@ -223,6 +227,20 @@ class SequenceWidget(QWidget):
             grid = getattr(self.__ui, layout_name)
             for c in range(self.COLUMNS):
                 grid.setColumnStretch(c, 1)
+
+        # La secuencia detectada arranca arriba y crece hacia abajo con sus
+        # iconos de tamaño fijo: si no entra, aparece la barra de desplazamiento
+        # en vez de achicarse los iconos para repartir el alto disponible.
+        self.__ui.detectedSequenceLayout.removeItem(self.__ui.verticalSpacer)
+        self.__ui.gridLayout_4.setAlignment(self.__ui.detectedSequenceLayout, Qt.AlignTop)
+        for c in range(self.COLUMNS):
+            self.__ui.detectedSequenceLayout.setColumnMinimumWidth(c, self.DETECTED_ICON_SIZE)
+        scrollbar = self.__ui.scrollArea.verticalScrollBar()
+        scrollbar.rangeChanged.connect(lambda _minimum, maximum: scrollbar.setValue(maximum))
+
+    def set_detected_title(self, title: str) -> None:
+        """Cambia el título de la secuencia detectada."""
+        self.__ui.lblDetectedSequence.setText(title)
 
     def add_sequence(self, sequence: list[int]) -> None:
         """
@@ -324,10 +342,8 @@ class SequenceWidget(QWidget):
         row = self.__detected_count // self.COLUMNS
         col = self.__detected_count % self.COLUMNS
 
-        if col == 0:
-            self.__ui.detectedSequenceLayout.setRowStretch(row, 1)
-
-        self.__ui.detectedSequenceLayout.addWidget(label_img, row, col)
+        label_img.setFixedSize(self.DETECTED_ICON_SIZE, self.DETECTED_ICON_SIZE)
+        self.__ui.detectedSequenceLayout.addWidget(label_img, row, col, Qt.AlignCenter)
         self.__detected_count += 1
 
     def __clear_layout(self, layout) -> None:

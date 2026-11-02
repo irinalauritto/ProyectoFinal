@@ -1259,6 +1259,7 @@ class EegMainPage(QWidget):
             voice=self._session.voice,
             sample_rate=builtins.SAMPLE_RATE,
             harmonics=builtins.SETTINGS.f_bands,
+            preview_threshold=prefs.threshold,
         )
         sequence = self._validator.item_order
 
@@ -1269,6 +1270,7 @@ class EegMainPage(QWidget):
         seq_op = SequenceWidget()
         seq_user = SequenceWidget()
         eval_op.load_sequence_widget(seq_op)
+        seq_op.set_detected_title(f"Secuencia detectada con umbral {prefs.threshold:.2f}")
         seq_user.hide_detected_sequence(False)
         eval_user.load_sequence_widget(seq_user)
         seq_op.add_sequence(sequence)
@@ -1280,7 +1282,7 @@ class EegMainPage(QWidget):
             (validator.item_started, self._on_validacion_item),
             (validator.cueing, self._on_validacion_aviso),
             (validator.time_elapsed, self._on_validacion_tiempo),
-            (validator.window_classified, self._on_validacion_ventana),
+            (validator.revision_classified, self._on_validacion_revision),
             (validator.calibration_finished, self._on_validacion_finalizada),
             (validator.calibration_failed, self._on_validacion_fallida),
             (self._validation_viewer.stimuli_ready, self._on_validacion_estimulos_listos),
@@ -1336,10 +1338,10 @@ class EegMainPage(QWidget):
             self._eval_widgets[0].set_time(segundos)
         self._lbl_evaluacion_footer.setText(f"{self._val_item_text} — midiendo… {segundos}s")
 
-    def _on_validacion_ventana(self, _item_index: int, predicho: int, _margen: float, fue_correcta: bool) -> None:
-        # Cada ventana del tramo limpio se muestra, acierte o no (a
-        # diferencia de BCIEvaluator, que resolvia cada posicion con un
-        # unico intento).
+    def _on_validacion_revision(self, _item_index: int, predicho: int, fue_correcta: bool) -> None:
+        # Vista previa con el umbral actual del paciente: se muestra cada
+        # revision de 4 ventanas que llega a una decision. El resultado que
+        # cuenta se calcula al terminar, con el umbral elegido.
         if self._eval_widgets is None:
             return
         eval_op, _eval_user, seq_op, _seq_user = self._eval_widgets
@@ -1397,7 +1399,7 @@ class EegMainPage(QWidget):
         operador pueda ajustarlo a mano antes de guardarlo. Devuelve el
         resumen (ver summarize_threshold) del umbral elegido, o None si se
         descarta."""
-        from ssvep.app.threshold_calibrator import summarize_threshold
+        from ssvep.app.threshold_calibrator import item_outcomes, summarize_threshold
 
         dialog = QDialog(self.window())
         dialog.setWindowTitle("Validación")
@@ -1432,12 +1434,25 @@ class EegMainPage(QWidget):
                 result["records_by_item"], umbral, result["time_window"], n_classes=result["n_classes"]
             )
 
+        def _resultados_por_item(umbral: float) -> list[str]:
+            lineas = []
+            resultados = item_outcomes(result["records_by_item"], umbral, result["time_window"])
+            for num, (estimulo, resultado) in enumerate(zip(result["item_order"], resultados), start=1):
+                nombre = f"{STIMULUS_ICONS[estimulo]} {STIMULUS_LABELS[estimulo]}"
+                if resultado is None:
+                    lineas.append(f"{num}. {nombre}: sin resolver")
+                else:
+                    texto = "acierto" if resultado[0] else "error"
+                    lineas.append(f"{num}. {nombre}: {texto} ({resultado[1]:.1f} s)")
+            return lineas
+
         def _actualizar(umbral: float) -> None:
             r = _resumen(umbral)
             lbl_resumen.setText(
                 f"Exactitud: {r['accuracy']:.0f}%\n"
                 f"Ítems sin resolver: {r['unresolved_fraction']:.0%}\n"
-                f"ITR: {r['itr']:.1f} bits/min"
+                f"ITR: {r['itr']:.1f} bits/min\n\n"
+                + "\n".join(_resultados_por_item(umbral))
             )
 
         spin.valueChanged.connect(_actualizar)

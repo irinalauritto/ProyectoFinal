@@ -36,24 +36,33 @@ from ssvep.app.threshold_calibrator import (  # noqa: E402
     replace_null_threshold,
     compute_margin,
     evaluate_threshold,
+    item_outcomes,
+    revision_decision,
     summarize_threshold,
     sweep_thresholds,
 )
 
 T_VALUES = [i / 100.0 for i in range(0, 101)]
 
-# Secuencias fabricadas: 6 ítems, ventanas en orden temporal (margen, fue_correcta).
-# - Los ítems 0 a 3 aciertan desde la primera ventana, con margen claro.
-# - El ítem 4 arranca con una ventana ruidosa INCORRECTA de margen bajo
-#   (0.12) y recién después acierta con margen alto.
+
+
+def _windows(margins, stim=1, correct=True):
+    """Ventanas (margen, estímulo, fue_correcta) con un mismo ganador."""
+    return [(margin, stim, correct) for margin in margins]
+
+
+# Secuencias fabricadas: 6 ítems, ventanas en orden temporal.
+# - Los ítems 0 a 3 aciertan desde la primera revisión, con margen claro.
+# - El ítem 4 arranca con una revisión ruidosa INCORRECTA de margen bajo
+#   (0.12) y recién en la segunda acierta con margen alto.
 # - El ítem 5 es débil: acierta, pero nunca pasa de 0.35.
 RECORDS = {
-    0: [(0.50, True), (0.55, True), (0.60, True)],
-    1: [(0.45, True), (0.52, True), (0.48, True)],
-    2: [(0.62, True), (0.40, True), (0.58, True)],
-    3: [(0.41, True), (0.47, True), (0.66, True)],
-    4: [(0.12, False), (0.44, True), (0.51, True)],
-    5: [(0.30, True), (0.35, True), (0.28, True)],
+    0: _windows([0.50, 0.55, 0.60, 0.58]),
+    1: _windows([0.45, 0.52, 0.48, 0.50]),
+    2: _windows([0.62, 0.40, 0.58, 0.61]),
+    3: _windows([0.41, 0.47, 0.66, 0.44]),
+    4: _windows([0.12] * 4, stim=2, correct=False) + _windows([0.44, 0.51, 0.46, 0.49]),
+    5: _windows([0.30, 0.35, 0.28, 0.33]),
 }
 
 
@@ -150,6 +159,35 @@ class ClassifierRawDecisionTests(unittest.TestCase):
         results = [self.clf.classify_signal(window) for _ in range(3)]
         self.assertEqual(results, [-1, -1, 2])
 
+    def _feed(self, n_chunks):
+        rng = np.random.default_rng(0)
+        return [self.clf.update_buffer(rng.standard_normal((62, 3))) for _ in range(n_chunks)]
+
+    def test_window_log_is_off_by_default(self):
+        self.clf.load_threshold(0.0)
+        self.assertEqual(self._feed(3), [-2, -2, -2])  # ventana completa sin solapar
+        self.assertEqual(self.clf.drain_window_log(), [])
+
+    def test_window_log_classifies_each_quarter_but_keeps_only_full_windows(self):
+        self.clf.enable_window_log()
+        self.clf.load_threshold(0.0)
+        self.clf.clear_buffer()
+        self._feed(4)  # 248 de 250 muestras: todavía queda parte del búfer vacía
+        self.assertEqual(self.clf.last_raw_decision()[0], 4)
+        self.assertEqual(self.clf.drain_window_log(), [])
+        self._feed(2)
+        self.assertEqual(len(self.clf.drain_window_log()), 2)
+        self.assertEqual(self.clf.drain_window_log(), [])
+
+    def test_clear_buffer_discards_logged_windows_and_filling(self):
+        self.clf.enable_window_log()
+        self.clf.load_threshold(0.0)
+        self._feed(6)
+        self.clf.clear_buffer()
+        self.assertEqual(self.clf.drain_window_log(), [])
+        self._feed(1)
+        self.assertEqual(self.clf.drain_window_log(), [])
+
 
 class BuildItemSequenceTests(unittest.TestCase):
     MODES = {"barrido": [0, 1], "secuencial": [1, 2, 4], "direccional": [1, 2, 3, 4, 5]}
@@ -196,15 +234,56 @@ class BuildItemSequenceTests(unittest.TestCase):
         self.assertEqual(sorted(build_item_sequence(list(range(8)), 6, random.Random(0))), list(range(8)))
 
 
+class RevisionDecisionTests(unittest.TestCase):
+    def test_three_of_four_votes_decide(self):
+        block = [(0.5, 2, True), (0.5, 2, True), (0.5, 4, False), (0.5, 2, True)]
+        self.assertEqual(revision_decision(block, 0.3), 2)
+
+    def test_votes_below_threshold_do_not_count(self):
+        block = [(0.5, 2, True), (0.1, 2, True), (0.1, 2, True), (0.5, 2, True)]
+        self.assertIsNone(revision_decision(block, 0.3))
+
+    def test_votes_of_different_stimuli_do_not_add_up(self):
+        block = [(0.5, 1, False), (0.5, 2, True), (0.5, 3, False), (0.5, 2, True)]
+        self.assertIsNone(revision_decision(block, 0.3))
+
+    def test_last_window_must_reach_the_threshold(self):
+        block = [(0.5, 2, True), (0.5, 2, True), (0.5, 2, True), (0.1, 2, True)]
+        self.assertIsNone(revision_decision(block, 0.3))
+
+    def test_incomplete_block_does_not_decide(self):
+        self.assertIsNone(revision_decision(_windows([0.9, 0.9, 0.9]), 0.3))
+
+    def test_matches_the_real_classifier(self):
+        # La simulación no se puede apartar de la regla de producción.
+        rng = np.random.default_rng(7)
+        clf = EEGSignalCCAClassifier()
+        clf.load_threshold(0.3)
+        for _ in range(500):
+            block = []
+            for _ in range(4):
+                rho = rng.uniform(0.05, 1.0, size=3)
+                block.append((compute_margin(rho), int(np.argmax(rho)), True))
+                result = clf._validate_threshold(rho)
+            expected = revision_decision(block, 0.3)
+            self.assertEqual(result, -1 if expected is None else expected)
+
+
 class EvaluateThresholdTests(unittest.TestCase):
-    def test_takes_first_window_over_threshold_not_the_average(self):
-        # La primera ventana >= T es incorrecta; las siguientes, correctas.
-        records = {0: [(0.30, False), (0.80, True), (0.90, True)]}
+    def test_one_noisy_window_is_not_enough_to_decide(self):
+        # Con la regla anterior la primera ventana habría decidido el ítem.
+        records = {0: [(0.30, 2, False)] + _windows([0.40, 0.45, 0.50])}
+        outcome = evaluate_threshold(records, 0.2)
+        self.assertEqual(outcome.accuracy, 100.0)
+        self.assertEqual(outcome.mean_windows_to_decision, 4.0)
+
+    def test_item_stops_at_its_first_decision(self):
+        records = {0: _windows([0.30] * 4, stim=2, correct=False) + _windows([0.80] * 4)}
         self.assertEqual(evaluate_threshold(records, 0.2).accuracy, 0.0)
-        # Subiendo T, la primera que lo supera pasa a ser la segunda (correcta).
+        # Subiendo T, la primera revisión deja de decidir y decide la segunda.
         outcome = evaluate_threshold(records, 0.5)
         self.assertEqual(outcome.accuracy, 100.0)
-        self.assertEqual(outcome.mean_windows_to_decision, 2.0)
+        self.assertEqual(outcome.mean_windows_to_decision, 8.0)
 
     def test_item_without_any_window_over_threshold_is_unresolved(self):
         outcome = evaluate_threshold(RECORDS, 0.40)
@@ -212,7 +291,11 @@ class EvaluateThresholdTests(unittest.TestCase):
         self.assertEqual(outcome.accuracy, 100.0)  # entre los 5 resueltos
 
     def test_accuracy_is_among_resolved_items_only(self):
-        records = {0: [(0.9, True)], 1: [(0.9, False)], 2: [(0.1, True)]}
+        records = {
+            0: _windows([0.9] * 4),
+            1: _windows([0.9] * 4, stim=2, correct=False),
+            2: _windows([0.1] * 4),
+        }
         outcome = evaluate_threshold(records, 0.5)
         self.assertAlmostEqual(outcome.unresolved_fraction, 1 / 3)
         self.assertEqual(outcome.accuracy, 50.0)
@@ -222,7 +305,7 @@ class EvaluateThresholdTests(unittest.TestCase):
         self.assertEqual(outcome, (1.0, 0.0, 0.0))
 
     def test_item_without_windows_counts_as_unresolved(self):
-        outcome = evaluate_threshold({0: [(0.5, True)], 1: []}, 0.0)
+        outcome = evaluate_threshold({0: _windows([0.5] * 4), 1: []}, 0.0)
         self.assertEqual(outcome.unresolved_fraction, 0.5)
 
     def test_empty_records(self):
@@ -232,7 +315,7 @@ class EvaluateThresholdTests(unittest.TestCase):
 class SweepThresholdsTests(unittest.TestCase):
     def test_very_low_threshold_accepts_a_noisy_wrong_window(self):
         # T = 0.10 resuelve los 6, pero al ítem 4 lo resuelve con su primera
-        # ventana (0.12, incorrecta): 5/6.
+        # revisión (0.12, incorrecta): 5/6.
         outcome = evaluate_threshold(RECORDS, 0.10)
         self.assertEqual(outcome.unresolved_fraction, 0.0)
         self.assertAlmostEqual(outcome.accuracy, 5 / 6 * 100.0)
@@ -243,20 +326,20 @@ class SweepThresholdsTests(unittest.TestCase):
         self.assertEqual(outcome.accuracy, 100.0)
 
     def test_very_high_threshold_leaves_several_items_unresolved(self):
-        # T = 0.60: solo los ítems 0, 2 y 3 tienen alguna ventana que llegue.
-        outcome = evaluate_threshold(RECORDS, 0.60)
-        self.assertAlmostEqual(outcome.unresolved_fraction, 3 / 6)
+        # T = 0.50: solo los ítems 0 y 2 juntan 3 votos con la última ventana.
+        outcome = evaluate_threshold(RECORDS, 0.50)
+        self.assertAlmostEqual(outcome.unresolved_fraction, 4 / 6)
         self.assertEqual(outcome.accuracy, 100.0)
 
     def test_low_threshold_loses_against_a_better_one(self):
         self.assertAlmostEqual(sweep_thresholds(RECORDS, [0.10, 0.25]), 0.25)
 
     def test_high_threshold_is_discarded_despite_perfect_accuracy(self):
-        # 0.60 tiene 100% entre los resueltos, pero deja 50% sin resolver.
-        self.assertAlmostEqual(sweep_thresholds(RECORDS, [0.10, 0.60]), 0.10)
+        # 0.50 tiene 100% entre los resueltos, pero deja 4 de 6 sin resolver.
+        self.assertAlmostEqual(sweep_thresholds(RECORDS, [0.10, 0.50]), 0.10)
 
     def test_full_sweep_picks_lowest_threshold_with_best_accuracy(self):
-        # 100% recién se alcanza cuando T supera la ventana ruidosa (0.12);
+        # 100% recién se alcanza cuando T supera la revisión ruidosa (0.12);
         # de ahí en más hay empate y gana el T más bajo.
         self.assertAlmostEqual(sweep_thresholds(RECORDS, T_VALUES), 0.13)
 
@@ -265,12 +348,13 @@ class SweepThresholdsTests(unittest.TestCase):
 
     def test_unresolved_fraction_exactly_at_the_limit_is_kept(self):
         # 5 ítems, 1 sin resolver = 20% justo: no supera el máximo.
-        records = {i: [(0.9, True)] for i in range(4)}
-        records[4] = [(0.1, True)]
+        records = {i: _windows([0.9] * 4) for i in range(4)}
+        records[4] = _windows([0.1] * 4)
         self.assertAlmostEqual(sweep_thresholds(records, [0.5], max_unresolved_fraction=0.2), 0.5)
 
     def test_max_unresolved_fraction_is_configurable(self):
-        self.assertAlmostEqual(sweep_thresholds(RECORDS, [0.10, 0.60], max_unresolved_fraction=0.5), 0.60)
+        # 0.45 deja 2 de 6 sin resolver (ítems 3 y 5).
+        self.assertAlmostEqual(sweep_thresholds(RECORDS, [0.10, 0.45], max_unresolved_fraction=0.5), 0.45)
 
     def test_no_surviving_threshold_raises(self):
         with self.assertRaises(ValueError):
@@ -292,7 +376,7 @@ class ReplaceNullThresholdTests(unittest.TestCase):
 
     def test_all_first_windows_correct_ends_at_the_default(self):
         # Caso que motiva la regla: todo acierta de entrada, el barrido da 0.
-        records = {i: [(0.5, True), (0.6, True)] for i in range(6)}
+        records = {i: _windows([0.5, 0.6, 0.5, 0.6]) for i in range(6)}
         swept = sweep_thresholds(records, T_VALUES)
         self.assertEqual(swept, 0.0)
         self.assertEqual(replace_null_threshold(swept), 0.1)
@@ -301,19 +385,27 @@ class ReplaceNullThresholdTests(unittest.TestCase):
 class SummarizeThresholdTests(unittest.TestCase):
     def test_accuracy_and_itr_at_threshold(self):
         summary = summarize_threshold(RECORDS, 0.25, window_s=2.0)
-        # Todos resueltos con la 1ra ventana salvo el ítem 4 (2da): 7/6 ventanas.
+        # Todos con la 1ra revisión (4 ventanas) salvo el ítem 4 (8): 28/6 ventanas,
+        # solapadas de a 1/4 de los 2 s de cada una.
+        decision_time_s = 2.0 * (1 + (28 / 6 - 1) / 4)
         self.assertEqual(summary["accuracy"], 100.0)
         self.assertEqual(summary["unresolved_fraction"], 0.0)
-        self.assertAlmostEqual(summary["mean_decision_time_s"], 7 / 6 * 2.0)
-        self.assertAlmostEqual(summary["itr"], calculate_itr(1.0, 6, 7 / 6 * 2.0))
+        self.assertAlmostEqual(summary["mean_decision_time_s"], decision_time_s)
+        self.assertAlmostEqual(summary["itr"], calculate_itr(1.0, 6, decision_time_s))
 
     def test_itr_uses_shared_wolpaw_helper(self):
         summary = summarize_threshold(RECORDS, 0.10, window_s=1.0)
-        expected = bits_per_trial(5 / 6, 6) * 60.0
+        expected = calculate_itr(5 / 6, 6, 1.75)  # 4 ventanas de 1 s solapadas
         self.assertAlmostEqual(summary["itr"], expected)
 
     def test_nothing_resolved_gives_zero_itr(self):
         self.assertEqual(summarize_threshold(RECORDS, 0.99, window_s=1.0)["itr"], 0.0)
+
+    def test_item_outcomes_in_run_order(self):
+        outcomes = item_outcomes(RECORDS, 0.40, window_s=1.0)
+        self.assertEqual(outcomes[0], (True, 1.75))
+        self.assertEqual(outcomes[4], (True, 2.75))
+        self.assertIsNone(outcomes[5])
 
 
 class ThresholdPersistenceTests(unittest.TestCase):

@@ -1,4 +1,5 @@
-"""Validación: cálculo automático del umbral de aceptación (T) del usuario.
+"""
+Validación: cálculo automático del umbral de aceptación (T) del usuario.
 
 Mide, con los estímulos finales reales del usuario (las frecuencias que
 seleccionó la Calibración, ver `frequency_calibrator.py`; solo los que están
@@ -14,14 +15,21 @@ apagarse entre ítems -- por eso acá no hay descanso entre ítems. Por cada
 ítem (en orden aleatorio) se anuncia por voz cuál hay que mirar, se da una
 ventana de aviso (`cue_duration_s`) y después se registran
 `trial_duration_s` segundos, descartando las ventanas de los primeros
-`discard_s`. De cada ventana del tramo limpio se guarda
-`(margen, fue_correcta)`, donde el margen es el mismo valor que
-`BaseEEGClassifier._validate_threshold` compara contra el umbral (ver
+`discard_s`. Se clasifica con el mismo solapamiento que en producción (una
+ventana cada 1/4 de su duración) y de cada ventana llena del tramo limpio se
+guarda `(margen, estímulo, fue_correcta)`, donde el margen es el mismo valor
+que `BaseEEGClassifier._validate_threshold` compara contra el umbral (ver
 `compute_margin` en `eeg_signal_classifier.py`).
 
-El umbral final se elige con el criterio de Wang et al. (2020): se
-descartan los T que dejan sin resolver a más del 20% de los ítems y, entre
-los que quedan, se elige el de mayor exactitud (ver `sweep_thresholds`).
+Con esas ventanas se simula cada umbral con la regla de decisión de
+producción: 3 de 4 votos, revisados cada 4 ventanas (ver `revision_decision`).
+
+El umbral final se elige con un criterio adaptado de Wang et al. (2020,
+doi:10.3389/fnins.2020.00717): se descartan los T que dejan sin resolver a
+más del 20% de los ítems y, entre los que quedan, se elige el de mayor
+exactitud (ver `sweep_thresholds`).
+
+Autora: Irina Lauritto
 """
 
 from __future__ import annotations
@@ -36,7 +44,12 @@ from PySide6.QtCore import QObject, QTimer, Signal
 
 from ssvep.app.bci_evaluator import calculate_itr
 from ssvep.app.dataclasses import DEFAULT_THRESHOLD, UserPreferences
-from ssvep.app.eeg_signal_classifier import EEGSignalCCAClassifier, compute_margin  # noqa: F401  (compute_margin se re-exporta)
+from ssvep.app.eeg_signal_classifier import (  # noqa: F401  (compute_margin se re-exporta)
+    MIN_VOTES,
+    VOTES_PER_REVISION,
+    EEGSignalCCAClassifier,
+    compute_margin,
+)
 from ssvep.app.frequency_calibrator import (
     DEFAULT_DISCARD_S,
     DEFAULT_TRIAL_DURATION_S,
@@ -57,8 +70,8 @@ DEFAULT_READY_TIMEOUT_S = 60.0
 
 # Por ítem (clave: su posición en la secuencia de la corrida, no el estímulo
 # -- un mismo estímulo puede aparecer en más de un ítem), la lista en orden
-# temporal de (margen, fue_correcta) de cada ventana de su tramo limpio.
-RecordsByItem = Dict[int, List[Tuple[float, bool]]]
+# temporal de (margen, estímulo, fue_correcta) de cada ventana de su tramo limpio.
+RecordsByItem = Dict[int, List[Tuple[float, int, bool]]]
 
 
 # =============================================================================
@@ -100,8 +113,8 @@ def build_item_sequence(active_indices: Sequence[int], min_items: int, rng: rand
 def replace_null_threshold(threshold: float, default: float = DEFAULT_THRESHOLD) -> float:
     """Devuelve `default` si el umbral calculado es 0 (o menor); si no, el mismo umbral.
 
-    El barrido da 0 cuando la primera ventana de todos los ítems acierta:
-    todos los T bajos empatan y gana el más bajo. Pero la corrida solo mide
+    El barrido da 0 cuando ningún T más alto mejora la exactitud: los T bajos
+    empatan y gana el más bajo. Pero la corrida solo mide
     momentos en que el usuario mira un estímulo, y con umbral 0 el
     clasificador acepta cualquier ventana y nunca responde "sin detección"
     cuando no mira ninguno -- por eso ese resultado se reemplaza por el
@@ -128,17 +141,57 @@ class ThresholdOutcome(NamedTuple):
     mean_windows_to_decision: float
 
 
+def revision_decision(block: Sequence[Tuple[float, int, bool]], t: float) -> Optional[int]:
+    """Estímulo que decide una revisión de `VOTES_PER_REVISION` ventanas con umbral `t`.
+
+    Replica `BaseEEGClassifier._validate_threshold`: vota cada ventana con
+    margen >= `t`, decide el estímulo con al menos `MIN_VOTES` votos y, si la
+    última ventana de la revisión no llega al umbral, no hay decisión.
+
+    Returns:
+        El índice del estímulo, o None si no hubo decisión.
+    """
+    if len(block) < VOTES_PER_REVISION or block[-1][0] < t:
+        return None
+    votes = [stim for margin, stim, _ in block if margin >= t]
+    for stim in set(votes):
+        if votes.count(stim) >= MIN_VOTES:
+            return stim
+    return None
+
+
+def item_decision(windows: Sequence[Tuple[float, int, bool]], t: float) -> Optional[Tuple[int, bool]]:
+    """Primera decisión de un ítem con umbral `t`.
+
+    Returns:
+        `(ventanas usadas hasta decidir, fue_correcta)`, o None si el ítem
+        queda sin resolver.
+    """
+    for end in range(VOTES_PER_REVISION, len(windows) + 1, VOTES_PER_REVISION):
+        block = windows[end - VOTES_PER_REVISION:end]
+        stim = revision_decision(block, t)
+        if stim is not None:
+            return end, next(correct for _, voted, correct in block if voted == stim)
+    return None
+
+
+def windows_to_seconds(n_windows: float, window_s: float) -> float:
+    """Segundos de señal que ocupan `n_windows` ventanas solapadas (0 si no hay ninguna)."""
+    if n_windows <= 0:
+        return 0.0
+    return window_s * (1 + (n_windows - 1) / VOTES_PER_REVISION)
+
+
 def evaluate_threshold(records_by_item: RecordsByItem, t: float) -> ThresholdOutcome:
     """Simula el comportamiento real del clasificador con umbral `t`.
 
-    Para cada ítem se recorren sus ventanas en orden temporal y la decisión
-    del ítem es la de la PRIMERA ventana con margen >= `t` (no un promedio de
-    todas las ventanas sueltas): eso es lo que vería el usuario, que recibe
-    una acción apenas una ventana supera el umbral. Si ninguna ventana del
-    ítem lo supera, el ítem queda sin resolver.
+    Cada ítem se revisa cada 4 ventanas con la misma regla de producción (ver
+    `revision_decision`) y su decisión es la primera de esas revisiones: en
+    uso real, ahí ya se habría disparado la acción. Si ninguna revisión
+    decide, el ítem queda sin resolver.
 
     Args:
-        records_by_item: `{ítem: [(margen, fue_correcta), ...]}` en orden temporal.
+        records_by_item: `{ítem: [(margen, estímulo, fue_correcta), ...]}` en orden temporal.
         t: Umbral a simular.
 
     Returns:
@@ -153,12 +206,11 @@ def evaluate_threshold(records_by_item: RecordsByItem, t: float) -> ThresholdOut
     correct = 0
     windows_used = 0
     for windows in records_by_item.values():
-        for position, (margin, was_correct) in enumerate(windows):
-            if margin >= t:
-                resolved += 1
-                correct += 1 if was_correct else 0
-                windows_used += position + 1
-                break
+        decision = item_decision(windows, t)
+        if decision is not None:
+            resolved += 1
+            correct += 1 if decision[1] else 0
+            windows_used += decision[0]
 
     unresolved_fraction = (n_items - resolved) / n_items
     if resolved == 0:
@@ -171,14 +223,14 @@ def sweep_thresholds(
     t_values: Iterable[float],
     max_unresolved_fraction: float = DEFAULT_MAX_UNRESOLVED_FRACTION,
 ) -> float:
-    """Elige el umbral de aceptación según el criterio de Wang et al. (2020).
+    """Elige el umbral de aceptación con el criterio adaptado de Wang et al. (2020).
 
     Se descartan los T que dejan sin resolver a más de
     `max_unresolved_fraction` de los ítems y, entre los que quedan, se
     devuelve el de mayor exactitud (ver `evaluate_threshold`).
 
     Args:
-        records_by_item: `{ítem: [(margen, fue_correcta), ...]}` en orden temporal.
+        records_by_item: `{ítem: [(margen, estímulo, fue_correcta), ...]}` en orden temporal.
         t_values: Umbrales candidatos.
         max_unresolved_fraction: Fracción máxima (0-1) de ítems sin resolver
             que se tolera para un T.
@@ -197,8 +249,7 @@ def sweep_thresholds(
     best_accuracy = -1.0
     # Decisión explícita de desempate: se recorre de menor a mayor y solo se
     # reemplaza al mejor con una exactitud ESTRICTAMENTE mayor, así que ante
-    # un empate queda el T más bajo -- decide más rápido (acepta antes la
-    # primera ventana) sin perder exactitud.
+    # un empate queda el T más bajo -- decide más rápido sin perder exactitud.
     for t in sorted(set(t_values)):
         outcome = evaluate_threshold(records_by_item, t)
         if outcome.unresolved_fraction > max_unresolved_fraction + 1e-9:
@@ -224,12 +275,12 @@ def summarize_threshold(
     """Exactitud e ITR que se obtienen con el umbral `t` sobre una corrida.
 
     El tiempo por selección que entra al ITR es el promedio, entre los ítems
-    resueltos, del tiempo hasta la primera ventana aceptada dentro del tramo
-    limpio (ventanas necesarias x `window_s`); los ítems sin resolver no
-    suman tiempo ni cuentan en la exactitud.
+    resueltos, de la señal usada hasta la primera decisión dentro del tramo
+    limpio (ver `windows_to_seconds`); los ítems sin resolver no suman tiempo
+    ni cuentan en la exactitud.
 
     Args:
-        records_by_item: `{ítem: [(margen, fue_correcta), ...]}` en orden temporal.
+        records_by_item: `{ítem: [(margen, estímulo, fue_correcta), ...]}` en orden temporal.
         t: Umbral a evaluar.
         window_s: Duración (s) de cada ventana del clasificador.
         n_classes: Cantidad de clases N para el ITR; por defecto, la cantidad
@@ -241,7 +292,7 @@ def summarize_threshold(
     """
     outcome = evaluate_threshold(records_by_item, t)
     n = n_classes if n_classes is not None else len(records_by_item)
-    decision_time_s = outcome.mean_windows_to_decision * window_s
+    decision_time_s = windows_to_seconds(outcome.mean_windows_to_decision, window_s)
     itr = calculate_itr(outcome.accuracy / 100.0, n, decision_time_s) if n >= 2 else 0.0
     return {
         "threshold": t,
@@ -250,6 +301,20 @@ def summarize_threshold(
         "mean_decision_time_s": decision_time_s,
         "itr": itr,
     }
+
+
+def item_outcomes(records_by_item: RecordsByItem, t: float, window_s: float) -> List[Optional[Tuple[bool, float]]]:
+    """Resultado de cada ítem con umbral `t`, en orden de la corrida.
+
+    Returns:
+        Por ítem, `(fue_correcta, segundos hasta decidir)`, o None si quedó
+        sin resolver.
+    """
+    outcomes: List[Optional[Tuple[bool, float]]] = []
+    for position in sorted(records_by_item):
+        decision = item_decision(records_by_item[position], t)
+        outcomes.append(None if decision is None else (decision[1], windows_to_seconds(decision[0], window_s)))
+    return outcomes
 
 
 # =============================================================================
@@ -285,7 +350,9 @@ class ThresholdCalibrator(QObject):
             (`item_index` es el índice del estímulo; `item_num`, su posición 1..n).
         cueing(segundos_restantes): aviso previo al registro, cuenta regresiva.
         time_elapsed(segundos): segundos transcurridos en el registro del ítem actual.
-        window_classified(item_index, predicho, margen, fue_correcta): ventana registrada.
+        revision_classified(item_index, predicho, fue_correcta): decisión de una
+            revisión de 4 ventanas con `preview_threshold` (solo vista previa: el
+            umbral final se calcula al terminar y no depende de este valor).
         item_finished(item_index, hits, ventanas_validas): resumen del ítem recién terminado.
         calibration_finished(resultado): corrida completa -- ver `_finish`.
         calibration_failed(motivo)
@@ -294,7 +361,7 @@ class ThresholdCalibrator(QObject):
     item_started = Signal(int, int, int)
     cueing = Signal(int)
     time_elapsed = Signal(int)
-    window_classified = Signal(int, int, float, bool)
+    revision_classified = Signal(int, int, bool)
     item_finished = Signal(int, int, int)
     calibration_finished = Signal(dict)
     calibration_failed = Signal(str)
@@ -313,6 +380,7 @@ class ThresholdCalibrator(QObject):
         min_items: int = DEFAULT_MIN_ITEMS,
         t_values: Iterable[float] = DEFAULT_T_VALUES,
         max_unresolved_fraction: float = DEFAULT_MAX_UNRESOLVED_FRACTION,
+        preview_threshold: float = DEFAULT_THRESHOLD,
         ready_timeout_s: float = DEFAULT_READY_TIMEOUT_S,
         seed: Optional[int] = None,
         parent=None,
@@ -327,6 +395,8 @@ class ThresholdCalibrator(QObject):
                 cuáles están activos).
             voice: Objeto con `announce(item_index)` (ej. `VoiceFeedback`)
                 para anunciar el ítem a mirar; None para no anunciar.
+            preview_threshold: Umbral con el que se muestran las decisiones
+                durante la corrida (ver `revision_classified`).
         """
         super().__init__(parent)
 
@@ -365,6 +435,7 @@ class ThresholdCalibrator(QObject):
         self._discard_s = discard_s
         self._t_values = tuple(t_values)
         self._max_unresolved_fraction = max_unresolved_fraction
+        self._preview_threshold = preview_threshold
         self._seed = seed if seed is not None else random.SystemRandom().randrange(2**31)
 
         # El orden se arma acá (no en start()) para que la UI pueda mostrar
@@ -375,12 +446,12 @@ class ThresholdCalibrator(QObject):
 
         # Clasificador propio, aislado del que usa la sesión en producción.
         self.classifier = EEGSignalCCAClassifier()
+        self.classifier.enable_window_log()
 
         self._item_position = 0
         self._current_item: Optional[int] = None
-        self._current_records: List[Tuple[float, bool]] = []
+        self._current_records: List[Tuple[float, int, bool]] = []
         self._records_by_item: RecordsByItem = {}
-        self._last_decision_count = 0
         self._cue_elapsed = 0
         self._trial_elapsed = 0
         self._cueing = False
@@ -456,21 +527,22 @@ class ThresholdCalibrator(QObject):
     def receive_classification(self, result: int) -> None:
         """Conectar a la señal de clasificación del pipeline en uso mientras
         `is_running()` sea True (ver docstring de la clase)."""
-        if not self._running or self._waiting_ready or self._cueing or self._in_discard:
+        if not self._running:
             return
-        if result < 0:
+        # Las ventanas se leen de un registro y no de la última decisión: con
+        # una ventana cada 1/4 de su duración, dos señales encoladas podrían
+        # leer la misma y perder la otra. Se vacía siempre, para no arrastrar
+        # ventanas de la pausa al tramo limpio.
+        windows = self.classifier.drain_window_log()
+        if self._waiting_ready or self._cueing or self._in_discard:
             return
-        # El margen no viaja en la señal: se lee del clasificador, junto con
-        # el estímulo de esa misma ventana (misma lectura bajo lock). El
-        # contador evita registrar dos veces una misma ventana.
-        count, _rho, margin, predicted = self.classifier.last_raw_decision()
-        if count == self._last_decision_count or margin is None:
-            return
-        self._last_decision_count = count
-
-        was_correct = predicted == self._current_item
-        self._current_records.append((margin, was_correct))
-        self.window_classified.emit(self._current_item, predicted, margin, was_correct)
+        for margin, predicted in windows:
+            self._current_records.append((margin, predicted, predicted == self._current_item))
+            if len(self._current_records) % VOTES_PER_REVISION == 0:
+                block = self._current_records[-VOTES_PER_REVISION:]
+                decided = revision_decision(block, self._preview_threshold)
+                if decided is not None:
+                    self.revision_classified.emit(self._current_item, decided, decided == self._current_item)
 
     # ------------------------------------------------------------------
     def _stop_run(self) -> None:
@@ -537,7 +609,6 @@ class ThresholdCalibrator(QObject):
         self._cueing = False
         self._trial_elapsed = 0
         self._in_discard = True
-        self._last_decision_count = self.classifier.last_raw_decision()[0]
         self._trial_timer.start()
         self._align_timer.start()
 
@@ -553,7 +624,7 @@ class ThresholdCalibrator(QObject):
     def _end_item(self) -> None:
         self._in_discard = True
         self._records_by_item[self._item_position] = list(self._current_records)
-        hits = sum(1 for _, was_correct in self._current_records if was_correct)
+        hits = sum(1 for _, _, was_correct in self._current_records if was_correct)
         self.item_finished.emit(self._current_item, hits, len(self._current_records))
 
         self._item_position += 1
