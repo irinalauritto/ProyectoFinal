@@ -332,6 +332,14 @@ class SequenceWidget(QWidget):
         else:
             print(f"Error: El índice de estímulo {miss_index} no está en el diccionario de misses.")
 
+    def add_no_detection(self) -> None:
+        """Añade una marca para un estímulo que terminó sin ninguna detección."""
+        label = QLabel("—")
+        label.setAlignment(Qt.AlignCenter)
+        label.setToolTip("Sin detección")
+        label.setStyleSheet("color: #69707b; font-size: 22px; font-weight: bold;")
+        self.__add_detected_widget(label)
+
     def __add_detected_widget(self, label_img: QLabel) -> None:
         """
         Método interno para añadir un widget al layout de detectados y gestionar su posición.

@@ -14,6 +14,7 @@ desde `interfaz_ssvep/`.
 import os
 import sys
 import unittest
+from unittest import mock
 
 import numpy as np
 from sqlalchemy import create_engine, text
@@ -32,6 +33,7 @@ from ssvep.app.managers import PreferencesManager, UserManager  # noqa: E402
 from ssvep.app.models import Base  # noqa: E402
 from ssvep.app.repositories import PreferencesRepositorySQLAlchemy, UserRepositorySQLAlchemy  # noqa: E402
 from ssvep.app.threshold_calibrator import (  # noqa: E402
+    ThresholdCalibrator,
     build_item_sequence,
     replace_null_threshold,
     compute_margin,
@@ -402,10 +404,55 @@ class SummarizeThresholdTests(unittest.TestCase):
         self.assertEqual(summarize_threshold(RECORDS, 0.99, window_s=1.0)["itr"], 0.0)
 
     def test_item_outcomes_in_run_order(self):
-        outcomes = item_outcomes(RECORDS, 0.40, window_s=1.0)
-        self.assertEqual(outcomes[0], (True, 1.75))
-        self.assertEqual(outcomes[4], (True, 2.75))
-        self.assertIsNone(outcomes[5])
+        self.assertEqual(item_outcomes(RECORDS, 0.40), [True, True, True, True, True, None])
+        self.assertFalse(item_outcomes(RECORDS, 0.10)[4])
+
+
+class LivePreviewTests(unittest.TestCase):
+    def setUp(self):
+        prefs = UserPreferences(
+            classification_method="CCA",
+            time_window=1,
+            channels={0: "O1", 1: "Oz", 2: "O2"},
+            stimulus=[Stimulus(f, 0.0, "flic", "square") for f in (8.0, 9.0, 10.0)],
+            stimulus_on=[True, True, True],
+        )
+        self.validator = ThresholdCalibrator(
+            mock.MagicMock(), [8.0, 9.0, 10.0], prefs, sample_rate=250.0, harmonics=2,
+            min_items=2, seed=1, preview_threshold=0.3,
+        )
+        self.validator._running = True
+        self.validator._in_discard = False
+        self.validator._current_item = 1
+        self.shown = []
+        self.validator.revision_classified.connect(lambda *args: self.shown.append(args))
+
+    def _receive(self, windows):
+        self.validator.classifier._window_log = list(windows)
+        self.validator.receive_classification(0)
+
+    def test_only_first_decision_of_the_item_is_shown_but_all_windows_are_recorded(self):
+        self._receive([(0.5, 1)] * 8)
+        self.assertEqual(self.shown, [(1, 1, True)])
+        self.assertEqual(len(self.validator._current_records), 8)
+
+    def test_item_without_decision_is_reported_when_it_ends(self):
+        missing = []
+        self.validator.item_without_decision.connect(missing.append)
+        self._receive([(0.1, 1)] * 8)
+        self.validator._end_item()
+        self.assertEqual(missing, [1])
+
+    def test_item_with_decision_is_not_reported_as_missing(self):
+        missing = []
+        self.validator.item_without_decision.connect(missing.append)
+        self._receive([(0.5, 1)] * 4)
+        self.validator._end_item()
+        self.assertEqual(missing, [])
+
+    def test_revision_without_decision_does_not_use_up_the_item(self):
+        self._receive([(0.1, 1)] * 4 + [(0.5, 2)] * 4)
+        self.assertEqual(self.shown, [(1, 2, False)])
 
 
 class ThresholdPersistenceTests(unittest.TestCase):

@@ -303,17 +303,16 @@ def summarize_threshold(
     }
 
 
-def item_outcomes(records_by_item: RecordsByItem, t: float, window_s: float) -> List[Optional[Tuple[bool, float]]]:
+def item_outcomes(records_by_item: RecordsByItem, t: float) -> List[Optional[bool]]:
     """Resultado de cada ítem con umbral `t`, en orden de la corrida.
 
     Returns:
-        Por ítem, `(fue_correcta, segundos hasta decidir)`, o None si quedó
-        sin resolver.
+        Por ítem, si la decisión fue correcta, o None si quedó sin resolver.
     """
-    outcomes: List[Optional[Tuple[bool, float]]] = []
+    outcomes: List[Optional[bool]] = []
     for position in sorted(records_by_item):
         decision = item_decision(records_by_item[position], t)
-        outcomes.append(None if decision is None else (decision[1], windows_to_seconds(decision[0], window_s)))
+        outcomes.append(None if decision is None else decision[1])
     return outcomes
 
 
@@ -350,9 +349,13 @@ class ThresholdCalibrator(QObject):
             (`item_index` es el índice del estímulo; `item_num`, su posición 1..n).
         cueing(segundos_restantes): aviso previo al registro, cuenta regresiva.
         time_elapsed(segundos): segundos transcurridos en el registro del ítem actual.
-        revision_classified(item_index, predicho, fue_correcta): decisión de una
-            revisión de 4 ventanas con `preview_threshold` (solo vista previa: el
-            umbral final se calcula al terminar y no depende de este valor).
+        revision_classified(item_index, predicho, fue_correcta): primera decisión
+            del ítem con `preview_threshold`, como en uso real, donde ahí ya se
+            dispara la acción. Las ventanas se siguen registrando igual (solo
+            vista previa: el umbral final se calcula al terminar y no depende
+            de este valor).
+        item_without_decision(item_index): el ítem terminó sin ninguna decisión
+            con `preview_threshold` (ver `revision_classified`).
         item_finished(item_index, hits, ventanas_validas): resumen del ítem recién terminado.
         calibration_finished(resultado): corrida completa -- ver `_finish`.
         calibration_failed(motivo)
@@ -362,6 +365,7 @@ class ThresholdCalibrator(QObject):
     cueing = Signal(int)
     time_elapsed = Signal(int)
     revision_classified = Signal(int, int, bool)
+    item_without_decision = Signal(int)
     item_finished = Signal(int, int, int)
     calibration_finished = Signal(dict)
     calibration_failed = Signal(str)
@@ -451,6 +455,7 @@ class ThresholdCalibrator(QObject):
         self._item_position = 0
         self._current_item: Optional[int] = None
         self._current_records: List[Tuple[float, int, bool]] = []
+        self._current_item_decided = False
         self._records_by_item: RecordsByItem = {}
         self._cue_elapsed = 0
         self._trial_elapsed = 0
@@ -538,11 +543,12 @@ class ThresholdCalibrator(QObject):
             return
         for margin, predicted in windows:
             self._current_records.append((margin, predicted, predicted == self._current_item))
-            if len(self._current_records) % VOTES_PER_REVISION == 0:
-                block = self._current_records[-VOTES_PER_REVISION:]
-                decided = revision_decision(block, self._preview_threshold)
-                if decided is not None:
-                    self.revision_classified.emit(self._current_item, decided, decided == self._current_item)
+            if self._current_item_decided or len(self._current_records) % VOTES_PER_REVISION != 0:
+                continue
+            decided = revision_decision(self._current_records[-VOTES_PER_REVISION:], self._preview_threshold)
+            if decided is not None:
+                self._current_item_decided = True
+                self.revision_classified.emit(self._current_item, decided, decided == self._current_item)
 
     # ------------------------------------------------------------------
     def _stop_run(self) -> None:
@@ -584,6 +590,7 @@ class ThresholdCalibrator(QObject):
 
         self._current_item = self._item_order[self._item_position]
         self._current_records = []
+        self._current_item_decided = False
         self._in_discard = True
 
         self.item_started.emit(self._current_item, self._item_position + 1, len(self._item_order))
@@ -624,6 +631,8 @@ class ThresholdCalibrator(QObject):
     def _end_item(self) -> None:
         self._in_discard = True
         self._records_by_item[self._item_position] = list(self._current_records)
+        if not self._current_item_decided:
+            self.item_without_decision.emit(self._current_item)
         hits = sum(1 for _, _, was_correct in self._current_records if was_correct)
         self.item_finished.emit(self._current_item, hits, len(self._current_records))
 

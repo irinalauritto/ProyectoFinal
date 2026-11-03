@@ -1283,6 +1283,7 @@ class EegMainPage(QWidget):
             (validator.cueing, self._on_validacion_aviso),
             (validator.time_elapsed, self._on_validacion_tiempo),
             (validator.revision_classified, self._on_validacion_revision),
+            (validator.item_without_decision, self._on_validacion_sin_deteccion),
             (validator.calibration_finished, self._on_validacion_finalizada),
             (validator.calibration_failed, self._on_validacion_fallida),
             (self._validation_viewer.stimuli_ready, self._on_validacion_estimulos_listos),
@@ -1339,9 +1340,9 @@ class EegMainPage(QWidget):
         self._lbl_evaluacion_footer.setText(f"{self._val_item_text} — midiendo… {segundos}s")
 
     def _on_validacion_revision(self, _item_index: int, predicho: int, fue_correcta: bool) -> None:
-        # Vista previa con el umbral actual del paciente: se muestra cada
-        # revision de 4 ventanas que llega a una decision. El resultado que
-        # cuenta se calcula al terminar, con el umbral elegido.
+        # Vista previa con el umbral actual del paciente: la primera decision
+        # de cada item, como en uso real. El resultado que cuenta se calcula
+        # al terminar, con el umbral elegido.
         if self._eval_widgets is None:
             return
         eval_op, _eval_user, seq_op, _seq_user = self._eval_widgets
@@ -1351,6 +1352,10 @@ class EegMainPage(QWidget):
         else:
             eval_op.register_miss()
             seq_op.add_miss(predicho)
+
+    def _on_validacion_sin_deteccion(self, _item_index: int) -> None:
+        if self._eval_widgets is not None:
+            self._eval_widgets[2].add_no_detection()
 
     def _on_stop_test_request(self) -> None:
         # Boton "Detener" del operador, o cierre de alguna de las ventanas.
@@ -1436,14 +1441,11 @@ class EegMainPage(QWidget):
 
         def _resultados_por_item(umbral: float) -> list[str]:
             lineas = []
-            resultados = item_outcomes(result["records_by_item"], umbral, result["time_window"])
+            resultados = item_outcomes(result["records_by_item"], umbral)
             for num, (estimulo, resultado) in enumerate(zip(result["item_order"], resultados), start=1):
                 nombre = f"{STIMULUS_ICONS[estimulo]} {STIMULUS_LABELS[estimulo]}"
-                if resultado is None:
-                    lineas.append(f"{num}. {nombre}: sin resolver")
-                else:
-                    texto = "acierto" if resultado[0] else "error"
-                    lineas.append(f"{num}. {nombre}: {texto} ({resultado[1]:.1f} s)")
+                texto = "sin resolver" if resultado is None else "acierto" if resultado else "error"
+                lineas.append(f"{num}. {nombre}: {texto}")
             return lineas
 
         def _actualizar(umbral: float) -> None:
