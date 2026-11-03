@@ -12,7 +12,10 @@ Autora: Irina Lauritto
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QTimer
+from datetime import datetime
+from pathlib import Path
+
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -35,6 +38,8 @@ from PySide6.QtWidgets import (
 )
 
 from interfaz.eeg.session import NULL_STIMULUS_INDEX
+from interfaz.eeg.session_report import SessionLog, ask_finish_session, calibration_rows, print_session
+from interfaz.eeg.signal_recorder import session_folder
 from interfaz.pages.eeg.eeg_live_widget import EegLiveWidget
 from interfaz.pages.eeg.eeg_psd_widget import EegPsdWidget
 from interfaz.shell import patient_store
@@ -149,6 +154,8 @@ class EegMainPage(QWidget):
     validación y PSD/retroalimentación. Recibe un EegSession con un usuario
     ya cargado (`session.load_user(user_id)` ya hecho por quien la crea)."""
 
+    sesion_finalizada = Signal()  # el operador apretó "Finalizar sesión"
+
     def __init__(self, session, parent=None):
         super().__init__(parent)
         self._session = session
@@ -179,6 +186,14 @@ class EegMainPage(QWidget):
         self._calib_n_candidates = 0
         self._calib_n_repeats = 0
         self._calib_trials_done = 0
+        # "Guardar señales" y registro de la sesión para el PDF.
+        self._guardar_senales = False
+        self._calibrada_para_grabar = False
+        self._validada_para_grabar = False
+        self._carpeta_senales: Path | None = None
+        self._etapas_grabadas: dict[str, int] = {}
+        self._registro_sesion: SessionLog | None = None
+        self._inicio_estimulacion: datetime | None = None
 
         # Todo el contenido va dentro de un QScrollArea: con las 3 columnas
         # completas (canales+calibracion, estimulacion+validacion, señal+PSD)
@@ -223,9 +238,27 @@ class EegMainPage(QWidget):
     def _build_header(self) -> QVBoxLayout:
         layout = QVBoxLayout()
         layout.setSpacing(2)
+        fila = QHBoxLayout()
         title = QLabel("Control por EEG")
         title.setObjectName("PageTitle")
-        layout.addWidget(title)
+        fila.addWidget(title)
+        fila.addStretch(1)
+        self._lbl_guardar = QLabel("")
+        self._lbl_guardar.setObjectName("MutedLabel")
+        fila.addWidget(self._lbl_guardar)
+        self._chk_guardar = QCheckBox("Guardar señales")
+        self._chk_guardar.setToolTip(
+            "Guarda la señal cruda y los cálculos de la calibración, la validación y el uso online. "
+            "Pide calibrar y validar el método de entrada antes de usar el estimulador."
+        )
+        self._chk_guardar.toggled.connect(self._on_guardar_senales_toggled)
+        fila.addWidget(self._chk_guardar)
+        self._btn_finalizar = QPushButton("Finalizar sesión")
+        self._btn_finalizar.setObjectName("SecondaryButton")
+        self._btn_finalizar.setToolTip("Termina la sesión y permite imprimirla en un PDF.")
+        self._btn_finalizar.clicked.connect(self._on_finalizar_sesion_clicked)
+        fila.addWidget(self._btn_finalizar)
+        layout.addLayout(fila)
         return layout
 
     def _build_signal_panel(self) -> QFrame:
@@ -696,11 +729,15 @@ class EegMainPage(QWidget):
         # el pipeline (filtros/PSD/clasificador), asi que se corta el stream,
         # se guarda el perfil del usuario (queda para proximas sesiones, como
         # en vision) y se recarga todo antes de volver a arrancar.
+        self._registrar_cambio("Canales", ", ".join(prefs.channels.values()), ", ".join(new_channels.values()))
+        self._calibrada_para_grabar = False
+        self._validada_para_grabar = False
         self._session.stop_streaming()
         prefs.channels = new_channels
         self._session.save_preferences(prefs)
         self._load_from_preferences()
         self._session.start_streaming()
+        self._aplicar_requisitos_grabacion()
 
     def _open_head_dialog(self) -> None:
         if self._head_dialog is not None:
@@ -780,6 +817,8 @@ class EegMainPage(QWidget):
         umbral = self._slider_umbral.value() / 100.0
         if prefs is None or round(prefs.threshold * 100) == self._slider_umbral.value():
             return
+        self._registrar_cambio("Umbral", f"{prefs.threshold:.2f}", f"{umbral:.2f}")
+        self._session.recorder.add_event("umbral_manual", anterior=prefs.threshold, nuevo=umbral)
         self._session.save_threshold(umbral)
 
     def _on_duracion_changed(self, value: int) -> None:
@@ -846,7 +885,7 @@ class EegMainPage(QWidget):
 
         import builtins
 
-        from ssvep.app.frequency_calibrator import FrequencyCalibrator
+        from ssvep.app.frequency_calibrator import DEFAULT_ANCHOR_FREQ, FrequencyCalibrator
         from ssvep.app.stimulus_viewer_calibration import StimulusViewerCalibration
 
         # Solo puede haber un visor de estimulos abierto a la vez -- si el
@@ -885,6 +924,9 @@ class EegMainPage(QWidget):
         self._calibrator.trial_finished.connect(self._on_calibracion_trial_finalizado)
         self._calibrator.calibration_finished.connect(self._on_calibracion_finalizada)
         self._calibrator.calibration_failed.connect(self._on_calibracion_fallida)
+        if self._guardar_senales:
+            self._conectar_eventos_calibracion(self._calibrator)
+        self._iniciar_grabacion("calibracion", self._calibrator.classifier, {"ancla_hz": DEFAULT_ANCHOR_FREQ})
 
         self._set_calibracion_controles_habilitados(False)
         self._btn_calibrar.setText("Cancelar calibración")
@@ -901,6 +943,7 @@ class EegMainPage(QWidget):
         # directamente en vez de esperar una señal que no va a llegar.
         if self._calibrator is not None:
             self._calibrator.cancel()
+        self._terminar_grabacion("cancelada")
         self._lbl_calibracion_footer.setText("Calibración cancelada.")
         self._finalizar_calibracion()
 
@@ -974,6 +1017,16 @@ class EegMainPage(QWidget):
             return
         from ssvep.app.dataclasses import DEFAULT_THRESHOLD
 
+        self._registrar_cambio(
+            "Método de entrada", self._etiqueta_metodo(prefs.stimulus_on), INPUT_MODES[modo_key]["label"]
+        )
+        if prefs.threshold != DEFAULT_THRESHOLD:
+            self._registrar_cambio(
+                "Umbral (vuelve al valor por defecto al cambiar de método)",
+                f"{prefs.threshold:.2f}",
+                f"{DEFAULT_THRESHOLD:.2f}",
+            )
+        self._validada_para_grabar = False
         self._session.stop_streaming()
         prefs.stimulus_on = nuevo_stimulus_on
         # El umbral validado valia para los estimulos del metodo anterior (el
@@ -983,6 +1036,7 @@ class EegMainPage(QWidget):
         self._session.save_preferences(prefs)
         self._load_from_preferences()
         self._session.start_streaming()
+        self._aplicar_requisitos_grabacion()
 
         etiqueta = INPUT_MODES[modo_key]["label"]
         self._lbl_evaluacion_footer.setText(
@@ -1018,6 +1072,7 @@ class EegMainPage(QWidget):
         else:
             for chip in self._channel_chips.values():
                 chip.setEnabled(False)
+        self._aplicar_requisitos_grabacion()
 
     def _on_calibracion_candidata(self, freq: float, candidate_num: int, n_candidates: int) -> None:
         self._calib_current_freq = freq
@@ -1071,7 +1126,9 @@ class EegMainPage(QWidget):
         for clave in ("seed", "refresh_rate", "anchor_freq"):
             if result.get(clave) is not None:
                 registro[clave] = result[clave]
+        registro["intentos"] = result["trials"]
         self._registrar_resultado("calibracion", registro)
+        self._registrar_calibracion(result, modo, asignacion)
 
         accs = result["accuracies"]
         accs_text = ", ".join(f"{f:g}Hz: {accs[f]:.0f}%" for f in sorted(accs))
@@ -1096,6 +1153,7 @@ class EegMainPage(QWidget):
         # El propio FrequencyCalibrator/StimulusViewerCalibration ya se
         # detuvieron solos al emitir esta señal -- acá solo queda restaurar
         # la UI/sesion (igual que al cancelar) y avisar del error.
+        self._terminar_grabacion("fallida", {"motivo": motivo})
         self._finalizar_calibracion()
         self._lbl_calibracion_footer.setText("La calibración falló. Ver detalle.")
         QMessageBox.critical(self, "Calibración", f"La calibración no pudo continuar:\n\n{motivo}")
@@ -1105,11 +1163,16 @@ class EegMainPage(QWidget):
         nueva_freq = round(self._freq_spins[index].value(), 1)
         if prefs.stimulus[index].freq == nueva_freq:
             return
+        self._registrar_cambio(
+            f"Frecuencia de {STIMULUS_LABELS[index]}", f"{prefs.stimulus[index].freq:g} Hz", f"{nueva_freq:g} Hz"
+        )
+        self._validada_para_grabar = False
         self._session.stop_streaming()
         prefs.stimulus[index].freq = nueva_freq
         self._session.save_preferences(prefs)
         self._load_from_preferences()
         self._session.start_streaming()
+        self._aplicar_requisitos_grabacion()
 
     def _mostrar_ayuda_calibracion(self) -> None:
         leyenda = "\n".join(
@@ -1184,6 +1247,8 @@ class EegMainPage(QWidget):
         if not self._session.stimulus_viewer.is_running():
             return
         self._session.begin_stimulation()
+        self._inicio_estimulacion = datetime.now()
+        self._iniciar_grabacion("online", self._session.main_classifier)
         # La comunicacion empieza: AsTeRICS pasa a ser la ventana activa (el
         # clic en este boton dejo activa a la aplicacion y las teclas que se
         # manden irian a ella).
@@ -1218,6 +1283,7 @@ class EegMainPage(QWidget):
         # cierra su ventana propia o se devuelve la pestana a su lugar. No
         # hace nada si no habia nada abierto.
         if not corriendo:
+            self._terminar_estimulacion()
             self._asterics.close()
             # Solo en el cierre (no en cada refresco): se apagan el envio de
             # teclas y la voz, que se activaron al iniciar la estimulacion.
@@ -1234,6 +1300,9 @@ class EegMainPage(QWidget):
     # ------------------------------------------------------------------
     def _on_iniciar_prueba(self) -> None:
         if self._eval_widgets is not None:
+            return
+        if self._guardar_senales and not self._calibrada_para_grabar:
+            QMessageBox.warning(self, "Validación", "Para guardar señales, primero hay que calibrar.")
             return
 
         import builtins
@@ -1289,6 +1358,7 @@ class EegMainPage(QWidget):
             (self._validation_viewer.stimuli_ready, self._on_validacion_estimulos_listos),
             (self._session.classification_result, validator.receive_classification),
             (eval_op.stop_test_request, self._on_stop_test_request),
+            (eval_op.start_test_request, self._iniciar_grabacion_validacion),
             (eval_op.start_test_request, validator.start),
             (eval_user.window_closed, self._on_stop_test_request),
         ]
@@ -1306,6 +1376,7 @@ class EegMainPage(QWidget):
         self._sync_channel_widgets()
         self._actualizar_boton_estimulador()
         self._lbl_evaluacion_footer.setText("Validación lista: presioná \"Iniciar\" en la ventana del operador.")
+        self._aplicar_requisitos_grabacion()
 
         eval_op.show()
         eval_user.show()
@@ -1365,14 +1436,18 @@ class EegMainPage(QWidget):
         self._cerrar_ventanas_prueba()
 
     def _on_validacion_fallida(self, motivo: str) -> None:
+        self._terminar_grabacion("fallida", {"motivo": motivo})
         self._lbl_evaluacion_footer.setText("La validación falló. Ver detalle.")
         self._cerrar_ventanas_prueba()
         QMessageBox.critical(self, "Validación", f"La validación no pudo completarse:\n\n{motivo}")
 
     def _on_validacion_finalizada(self, result: dict) -> None:
+        # La etapa se cierra después del diálogo, para guardar el umbral elegido.
+        self._session.recorder.stop_capture()
         self._cerrar_ventanas_prueba()
 
         resumen = self._pedir_umbral_final(result)
+        self._registrar_validacion(result, resumen)
         if resumen is None:
             self._lbl_evaluacion_footer.setText(
                 f"Validación sin guardar (umbral calculado: {result['threshold']:.2f})."
@@ -1385,6 +1460,7 @@ class EegMainPage(QWidget):
         self._session.stop_streaming()
         prefs.threshold = resumen["threshold"]
         self._session.save_preferences(prefs)
+        self._validada_para_grabar = True
         self._registrar_resultado("validacion", {
             "umbral": resumen["threshold"],
             "umbral_automatico": result["threshold"],
@@ -1393,6 +1469,7 @@ class EegMainPage(QWidget):
         })
         self._load_from_preferences()
         self._session.start_streaming()
+        self._aplicar_requisitos_grabacion()
         self._lbl_evaluacion_footer.setText(
             f"Última validación: umbral {resumen['threshold']:.2f} — "
             f"{resumen['accuracy']:.0f}% de exactitud, ITR {resumen['itr']:.1f} bits/min"
@@ -1477,6 +1554,8 @@ class EegMainPage(QWidget):
         clasificador principal y los controles deshabilitados."""
         if self._eval_widgets is None:
             return
+        if self._session.recorder.capturing:
+            self._terminar_grabacion("cancelada")
         eval_op, eval_user, _seq_op, _seq_user = self._eval_widgets
         # Primero se desconecta: cerrar las ventanas vuelve a emitir
         # stop_test_request/window_closed.
@@ -1504,6 +1583,296 @@ class EegMainPage(QWidget):
         self._sync_freq_tiles()
         self._sync_channel_widgets()
         self._actualizar_boton_estimulador()
+        self._aplicar_requisitos_grabacion()
+
+    # ------------------------------------------------------------------
+    # Guardar señales: etapas obligatorias y grabación (ver signal_recorder.py)
+    # ------------------------------------------------------------------
+    def _on_guardar_senales_toggled(self, activo: bool) -> None:
+        self._guardar_senales = activo
+        self._calibrada_para_grabar = False
+        self._validada_para_grabar = False
+        if activo:
+            # El uso online recién se habilita después de calibrar y validar.
+            self._session.stimulus_viewer.stop_stim()
+            metodo = self._etiqueta_metodo(self._session.current_preferences.stimulus_on)
+            QMessageBox.information(
+                self,
+                "Guardar señales",
+                f"Para guardar señales hay que calibrar y después validar con el método {metodo}. "
+                "Recién entonces se habilita el estimulador.",
+            )
+        elif self._session.recorder.stage == "online":
+            self._terminar_grabacion("completa")
+        self._aplicar_requisitos_grabacion()
+
+    def _aplicar_requisitos_grabacion(self) -> None:
+        """Con "Guardar señales", exige el orden calibrar, validar y usar."""
+        ocupado = self._calibrator is not None or self._eval_widgets is not None
+        self._chk_guardar.setEnabled(not ocupado)
+        if ocupado:
+            return
+        grabando = self._guardar_senales
+        self._btn_prueba.setEnabled(not grabando or self._calibrada_para_grabar)
+        self._btn_estimulador.setEnabled(not grabando or (self._calibrada_para_grabar and self._validada_para_grabar))
+        self._actualizar_boton_estimulador()
+        if not grabando:
+            texto = ""
+        elif not self._calibrada_para_grabar:
+            texto = "Falta calibrar y validar"
+        elif not self._validada_para_grabar:
+            texto = "Falta validar"
+        else:
+            texto = "Listo para grabar el uso online"
+        self._lbl_guardar.setText(texto)
+
+    def _ruta_senal(self, etapa: str) -> Path:
+        if self._carpeta_senales is None:
+            entrada = patient_store.get_patient(getattr(self, "_ficha_id", None))
+            paciente = patient_store.patient_file(entrada).stem if entrada else "sin_ficha"
+            self._carpeta_senales = session_folder(paciente)
+        numero = self._etapas_grabadas.get(etapa, 0) + 1
+        self._etapas_grabadas[etapa] = numero
+        return self._carpeta_senales / f"{etapa}_{numero}.mat"
+
+    def _iniciar_grabacion(self, etapa: str, clasificador, extra: dict | None = None) -> None:
+        if not self._guardar_senales:
+            return
+        import builtins
+
+        prefs = self._session.current_preferences
+        info = {
+            "paciente": self._registro_sesion.paciente if self._registro_sesion else "",
+            "fecha": datetime.now().isoformat(timespec="seconds"),
+            "fs_hz": builtins.SAMPLE_RATE,
+            "canales": list(prefs.channels.values()),
+            "metodo": self._etiqueta_metodo(prefs.stimulus_on),
+            "ventana_s": prefs.time_window,
+            "umbral": prefs.threshold,
+            "refractario_s": self._spin_refractario.value(),
+            "frecuencias_hz": [stim.freq for stim in prefs.stimulus],
+            "estimulos": list(STIMULUS_LABELS),
+            "estimulos_activos": [float(on) for on in prefs.stimulus_on],
+            "filtros": self._session.filter_parameters(),
+            "fuente_simulada": self._session.is_simulated_source(),
+            **(extra or {}),
+        }
+        self._clasificador_grabado = clasificador
+        clasificador.set_window_observer(self._session.recorder.add_window)
+        self._session.recorder.begin(etapa, info, self._ruta_senal(etapa))
+
+    def _terminar_grabacion(self, estado: str, resultado: dict | None = None) -> None:
+        clasificador = getattr(self, "_clasificador_grabado", None)
+        if clasificador is not None:
+            clasificador.set_window_observer(None)
+            self._clasificador_grabado = None
+        try:
+            ruta = self._session.recorder.finish(estado, resultado)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Guardar señales", f"No se pudieron guardar las señales:\n\n{error}")
+            return
+        if ruta is not None and self._registro_sesion is not None:
+            self._registro_sesion.archivos.append(str(ruta))
+
+    def _conectar_eventos_calibracion(self, calibrador) -> None:
+        grabador = self._session.recorder
+        calibrador.candidate_started.connect(lambda freq, _n, _total: grabador.add_event("candidata", freq_hz=freq))
+        calibrador.trial_started.connect(lambda rep, _n: grabador.add_event("intento", repeticion=rep))
+        calibrador.resting.connect(lambda resto: grabador.add_event("inicio_parpadeo") if resto == 0 else None)
+        calibrador.trial_finished.connect(
+            lambda freq, aciertos, n: grabador.add_event("fin_intento", freq_hz=freq, aciertos=aciertos, ventanas=n)
+        )
+
+    def _iniciar_grabacion_validacion(self) -> None:
+        validador = self._validator
+        if validador is None or not self._guardar_senales:
+            return
+        self._iniciar_grabacion("validacion", validador.classifier, {"orden_items": validador.item_order})
+        grabador = self._session.recorder
+        conexiones = [
+            (validador.item_started, lambda item, num, _n: grabador.add_event("item", estimulo=item, numero=num)),
+            (
+                validador.revision_classified,
+                lambda item, pred, ok: grabador.add_event(
+                    "vista_previa", estimulo=item, predicho=pred, correcta=float(ok)
+                ),
+            ),
+            (validador.item_without_decision, lambda item: grabador.add_event("sin_deteccion", estimulo=item)),
+        ]
+        for senal, slot in conexiones:
+            senal.connect(slot)
+        self._test_connections.extend(conexiones)
+
+    def _terminar_estimulacion(self) -> None:
+        if self._inicio_estimulacion is None:
+            return
+        duracion = (datetime.now() - self._inicio_estimulacion).total_seconds()
+        self._inicio_estimulacion = None
+        if self._registro_sesion is not None:
+            self._registro_sesion.estimulaciones_s.append(duracion)
+        if self._session.recorder.stage == "online":
+            self._terminar_grabacion("completa", {"duracion_s": duracion})
+
+    # ------------------------------------------------------------------
+    # Registro de la sesión e impresión (ver session_report.py)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _etiqueta_metodo(stimulus_on) -> str:
+        return INPUT_MODES[_mode_for_stimulus_on(stimulus_on) or DEFAULT_INPUT_MODE]["label"]
+
+    def _registrar_cambio(self, parametro: str, anterior, nuevo) -> None:
+        if self._registro_sesion is not None:
+            self._registro_sesion.add_change(parametro, anterior, nuevo)
+
+    def _registrar_calibracion(self, result: dict, modo: str, asignacion: dict[int, float]) -> None:
+        por_frecuencia = {freq: STIMULUS_LABELS[i] for i, freq in asignacion.items()}
+        if self._registro_sesion is not None:
+            self._registro_sesion.calibraciones.append(
+                {
+                    "hora": datetime.now(),
+                    "metodo": INPUT_MODES[modo]["label"],
+                    "ancla": result["anchor_freq"],
+                    "refresco": result["refresh_rate"],
+                    "filas": calibration_rows(result, por_frecuencia),
+                }
+            )
+        self._calibrada_para_grabar = True
+        self._validada_para_grabar = False
+        self._terminar_grabacion(
+            "completa",
+            {
+                "candidatas": result["candidate_freqs"],
+                "exactitudes": [result["accuracies"].get(f, float("nan")) for f in result["candidate_freqs"]],
+                "seleccionadas": result["selected"],
+                "asignacion": [{"estimulo": STIMULUS_LABELS[i], "freq_hz": f} for i, f in asignacion.items()],
+                "intentos": result["trials"],
+                "decisiones": [list(d) for d in result["decisions"]],
+                "formato_decisiones": "candidata, etiqueta real, etiqueta predicha",
+                "semilla": result["seed"],
+                "refresco_hz": result["refresh_rate"],
+            },
+        )
+        self._aplicar_requisitos_grabacion()
+
+    def _registrar_validacion(self, result: dict, resumen: dict | None) -> None:
+        import numpy as np
+
+        from ssvep.app.threshold_calibrator import item_outcomes
+
+        umbral = resumen["threshold"] if resumen is not None else result["threshold"]
+        datos = resumen if resumen is not None else {
+            "accuracy": result["accuracy"],
+            "unresolved_fraction": result["unresolved_fraction"],
+            "itr": result["itr"],
+        }
+        resultados = item_outcomes(result["records_by_item"], umbral)
+        items = []
+        for num, (estimulo, resultado) in enumerate(zip(result["item_order"], resultados), start=1):
+            texto = "sin resolver" if resultado is None else "acierto" if resultado else "error"
+            items.append([num, f"{STIMULUS_ICONS[estimulo]} {STIMULUS_LABELS[estimulo]}", texto])
+        if self._registro_sesion is not None:
+            self._registro_sesion.validaciones.append(
+                {
+                    "hora": datetime.now(),
+                    "metodo": self._etiqueta_metodo(self._session.current_preferences.stimulus_on),
+                    "descartada": resumen is None,
+                    "umbral_barrido": result["swept_threshold"],
+                    "umbral_calculado": result["threshold"],
+                    "umbral_final": None if resumen is None else resumen["threshold"],
+                    "exactitud": datos["accuracy"],
+                    "sin_resolver": datos["unresolved_fraction"],
+                    "itr": datos["itr"],
+                    "items": items,
+                }
+            )
+        if resumen is not None and resumen["threshold"] != result["threshold"]:
+            self._registrar_cambio(
+                "Umbral (ajuste en la validación)", f"{result['threshold']:.2f}", f"{resumen['threshold']:.2f}"
+            )
+        if resumen is None:
+            self._validada_para_grabar = False
+        self._terminar_grabacion(
+            "completa",
+            {
+                "guardada": float(resumen is not None),
+                "umbral_barrido": result["swept_threshold"],
+                "umbral_calculado": result["threshold"],
+                "umbral_final": umbral,
+                "exactitud": datos["accuracy"],
+                "sin_resolver": datos["unresolved_fraction"],
+                "itr": datos["itr"],
+                "semilla": result["seed"],
+                "items": [
+                    {
+                        "numero": num,
+                        "estimulo": estimulo,
+                        "resultado": items[num - 1][2],
+                        "ventanas": np.asarray(result["records_by_item"][num - 1], dtype=float).reshape(-1, 3),
+                    }
+                    for num, estimulo in enumerate(result["item_order"], start=1)
+                ],
+                "formato_ventanas": "margen, estimulo, fue_correcta",
+            },
+        )
+        self._aplicar_requisitos_grabacion()
+
+    def sesion_abierta(self) -> bool:
+        return self._registro_sesion is not None
+
+    def _on_finalizar_sesion_clicked(self) -> None:
+        if self.finalizar_sesion(permitir_cancelar=True):
+            self.sesion_finalizada.emit()
+
+    def finalizar_sesion(self, permitir_cancelar: bool = False) -> bool:
+        """Termina la sesión y ofrece imprimirla. Devuelve False si se canceló.
+
+        Sin `permitir_cancelar` (cambio de paciente o cierre de la aplicación),
+        solo se pregunta si la sesión tuvo actividad.
+        """
+        registro = self._registro_sesion
+        if registro is None:
+            return True
+        imprimir = False
+        if permitir_cancelar or registro.has_activity():
+            imprimir = ask_finish_session(self, permitir_cancelar)
+            if imprimir is None:
+                return False
+
+        # Primero se cierra lo que esté en curso, para que quede en el registro.
+        if self._umbral_timer.isActive():
+            self._guardar_umbral()
+        if self._calibrator is not None and self._calibrator.is_running():
+            self._cancelar_calibracion()
+        self._cerrar_ventanas_prueba()
+        self._session.stop_streaming()
+        self._actualizar_boton_estimulador()
+
+        registro.fin = datetime.now()
+        registro.parametros = self._parametros_actuales()
+        self._registro_sesion = None
+        patient_store.end_session(getattr(self, "_ficha_id", None))
+        self._chk_guardar.blockSignals(True)
+        self._chk_guardar.setChecked(False)
+        self._chk_guardar.blockSignals(False)
+        self._guardar_senales = False
+        self._aplicar_requisitos_grabacion()
+        if imprimir:
+            print_session(self, registro, self._carpeta_senales)
+        return True
+
+    def _parametros_actuales(self) -> dict:
+        prefs = self._session.current_preferences
+        return {
+            "metodo": self._etiqueta_metodo(prefs.stimulus_on),
+            "umbral": prefs.threshold,
+            "canales": list(prefs.channels.values()),
+            "ventana_s": prefs.time_window,
+            "refractario_s": self._spin_refractario.value(),
+            "estimulos": [
+                {"nombre": STIMULUS_LABELS[i], "freq": stim.freq, "activo": bool(prefs.stimulus_on[i])}
+                for i, stim in enumerate(prefs.stimulus)
+            ],
+        }
 
     # ------------------------------------------------------------------
     # Ficha del paciente (ver interfaz/shell/patient_store.py)
@@ -1515,6 +1884,13 @@ class EegMainPage(QWidget):
         guarda (pulsación, refractario, tiempo de barrido) y, desde ahora, se
         refleja en la ficha cada cambio, la calibración y la validación."""
         self._ficha_id = patient_id
+        entrada = patient_store.get_patient(patient_id)
+        nombre = patient_store.full_name(entrada) if entrada else self._session.user_manager.get_user(
+            self._session.current_user_id
+        )["name"]
+        self._registro_sesion = SessionLog(paciente=nombre)
+        self._carpeta_senales = None
+        self._etapas_grabadas = {}
         if not getattr(self, "_ficha_conectada", False):
             self._ficha_conectada = True
             self._ficha_timer = QTimer(self)

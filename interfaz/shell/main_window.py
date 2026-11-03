@@ -72,6 +72,8 @@ class MainShell(QMainWindow):
             self.stack.addWidget(page)
 
         self.inicio_page.session_started.connect(self._on_session_started)
+        self.eeg_page.session_finished.connect(lambda: self._show(self.inicio_page, "inicio"))
+        self.emg_page.session_finished.connect(lambda: self._show(self.inicio_page, "inicio"))
         self.state.patient_changed.connect(self._on_patient_changed)
 
         # Arranca en Inicio, centrada y sin barra lateral.
@@ -99,6 +101,9 @@ class MainShell(QMainWindow):
                 self.inicio_page.notificar_sesion_no_disponible("EEG")
 
     def _on_session_started(self, modalidad: str) -> None:
+        # Una sesión nueva cierra la que haya quedado abierta.
+        self.emg_page.finalizar_sesion()
+        self.eeg_page.finalizar_sesion()
         if modalidad == "emg":
             patient = self.state.patient
             nombre_completo = patient.nombre_completo if patient else ""
@@ -160,6 +165,8 @@ class MainShell(QMainWindow):
             pass  # es solo limpieza: nunca debe molestar al arrancar
 
     def closeEvent(self, event) -> None:
+        self.emg_page.finalizar_sesion()
+        self.eeg_page.finalizar_sesion()
         patient = self.state.patient
         patient_store.end_session(patient.id if patient else None)
         self.inicio_page.cancelar_asterics()

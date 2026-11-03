@@ -275,6 +275,8 @@ class FrequencyCalibrator(QObject):
         self._trial_specs: List[Tuple[float, int]] = []
         self._trial_index = 0
         self._decisions: List[Tuple[float, int, int]] = []
+        self._trial_results: List[Dict[str, Any]] = []
+        self._current_repeat = 0
         self._current_freq: Optional[float] = None
         self._current_trial_decisions: List[Tuple[float, int, int]] = []
         self._trial_elapsed = 0
@@ -322,6 +324,7 @@ class FrequencyCalibrator(QObject):
         rng.shuffle(self._trial_specs)
         self._trial_index = 0
         self._decisions = []
+        self._trial_results = []
         self._refresh_rate = _detect_refresh_rate()
         # Se le pasa el refresco ya detectado (GDI, rapido) al visor para que
         # la ventana de estimulos no tenga que medirlo de nuevo con PsychoPy
@@ -365,6 +368,7 @@ class FrequencyCalibrator(QObject):
             return
 
         freq, repeat = self._trial_specs[self._trial_index]
+        self._current_repeat = repeat
         self._current_freq = freq
         self._current_trial_decisions = []
         self._trial_elapsed = 0
@@ -459,6 +463,14 @@ class FrequencyCalibrator(QObject):
     def _end_trial(self) -> None:
         self._decisions.extend(self._current_trial_decisions)
         hits = sum(1 for _, true_label, pred in self._current_trial_decisions if pred == true_label)
+        self._trial_results.append(
+            {
+                "freq": self._current_freq,
+                "repeticion": self._current_repeat + 1,
+                "aciertos": hits,
+                "ventanas": len(self._current_trial_decisions),
+            }
+        )
         self.trial_finished.emit(self._current_freq, hits, len(self._current_trial_decisions))
 
         # La ventana queda abierta entre trials (ver _advance_trial) -- solo
@@ -483,6 +495,8 @@ class FrequencyCalibrator(QObject):
             "discard_s": self._discard_s,
             "accuracies": accuracies,
             "selected": selected,
+            "trials": list(self._trial_results),
+            "decisions": list(self._decisions),
         }
         self.calibration_finished.emit(result)
 

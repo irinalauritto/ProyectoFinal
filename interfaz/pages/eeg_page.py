@@ -7,6 +7,7 @@ Autora: Irina Lauritto
 
 from pathlib import Path
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from interfaz.shell.app_state import SharedAppState
@@ -15,6 +16,8 @@ _SSVEP_DIR = Path(__file__).resolve().parent.parent.parent / "interfaz_ssvep"
 
 
 class EegPage(QWidget):
+    session_finished = Signal()  # el operador apretó "Finalizar sesión"
+
     def __init__(self, state: SharedAppState, parent=None):
         super().__init__(parent)
         self._state = state
@@ -29,7 +32,12 @@ class EegPage(QWidget):
         self._layout.addWidget(self._placeholder)
 
     def tiene_sesion_activa(self) -> bool:
-        return self._session is not None
+        return self._main_page is not None and self._main_page.sesion_abierta()
+
+    def finalizar_sesion(self) -> None:
+        """Cierra la sesión abierta (si hay), ofreciendo imprimirla si tuvo actividad."""
+        if self._main_page is not None:
+            self._main_page.finalizar_sesion()
 
     def iniciar_sesion(self, user_id: int) -> bool:
         """Arranca EegSession la primera vez y carga `user_id`.
@@ -49,6 +57,7 @@ class EegPage(QWidget):
 
             self._session.load_user(user_id)
             self._main_page = EegMainPage(self._session)
+            self._main_page.sesion_finalizada.connect(self.session_finished)
 
             self._layout.removeWidget(self._placeholder)
             self._placeholder.hide()

@@ -185,6 +185,9 @@ class EmgEngine(QObject):
         validation_finished(eventos_por_intento)
         parametros_modificados(): parámetros cambiados tras calibrar --
             conviene repetir la prueba de validación.
+        muestras_crudas(adc, envolvente_mV, eventos, rechazadas): una vez por tick,
+            para grabar la señal: valores crudos del ADC y, paralelos, envolvente,
+            activaciones y cruces del umbral rechazados por el refractario.
     """
 
     samples_ready = Signal(list, list)
@@ -195,6 +198,7 @@ class EmgEngine(QObject):
     validation_attempt_progress = Signal(int)
     validation_finished = Signal(list)
     parametros_modificados = Signal()
+    muestras_crudas = Signal(list, list, list, list)
 
     N_INTENTOS_VALIDACION = 3
 
@@ -237,6 +241,7 @@ class EmgEngine(QObject):
         # umbral de reactivación (más bajo que el de disparo).
         self.armado = True
         self.ultimo_evento_tiempo = None
+        self._evento_rechazado = False
 
         # --- Estado de la prueba de validación guiada ---
         # El avance de intento lo decide el terapeuta a mano (registrar_intento_actual),
@@ -279,12 +284,15 @@ class EmgEngine(QObject):
         # tick tras vaciar el buffer serie -- no una vez por muestra.
         valores: list[float] = []
         eventos: list[bool] = []
+        crudos: list[int] = []
+        rechazadas: list[bool] = []
         while self.ser.in_waiting:
             linea = self.ser.readline().decode(errors="ignore").strip()
             if not linea.isdigit():
                 continue
             # Conversión a mV
-            valor_crudo = _adc_a_mv(int(linea))
+            valor_adc = int(linea)
+            valor_crudo = _adc_a_mv(valor_adc)
 
             if MODO_SENAL == "RAW":
                 # Se genera la envolvente por software.
@@ -296,6 +304,7 @@ class EmgEngine(QObject):
             marca_tiempo = time.monotonic()
 
             es_evento = False
+            self._evento_rechazado = False
             if self.calibrando:
                 self.calibracion_muestras.append(valor)
             elif self.umbral is not None:
@@ -303,9 +312,12 @@ class EmgEngine(QObject):
 
             valores.append(valor)
             eventos.append(es_evento)
+            crudos.append(valor_adc)
+            rechazadas.append(self._evento_rechazado)
 
         if valores:
             self.samples_ready.emit(valores, eventos)
+            self.muestras_crudas.emit(crudos, valores, eventos, rechazadas)
 
         if self.calibrando:
             self._actualizar_progreso_calibracion()
@@ -347,6 +359,7 @@ class EmgEngine(QObject):
                 if refractario_cumplido:
                     self._aceptar_evento(marca_tiempo, valor)
                     return True
+                self._evento_rechazado = True
         else:
             if valor <= self.umbral_reactivacion:
                 self.armado = True
@@ -409,6 +422,9 @@ class EmgEngine(QObject):
         self.calibrando = True
         self.calibracion_muestras = []
         self.calibracion_inicio = time.monotonic()
+
+    def cancelar_calibracion(self) -> None:
+        self.calibrando = False
 
     def _actualizar_progreso_calibracion(self) -> None:
         transcurrido = time.monotonic() - self.calibracion_inicio
@@ -485,6 +501,10 @@ class EmgEngine(QObject):
         self.intento_actual = 0
         self.eventos_por_intento = []
         self._siguiente_intento()
+
+    def cancelar_prueba_validacion(self) -> None:
+        self.validando = False
+        self.esperando_intento = False
 
     def _siguiente_intento(self) -> None:
         self.intento_actual += 1

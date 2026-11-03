@@ -10,6 +10,7 @@ Autora: Irina Lauritto
 
 import serial
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QLabel, QMessageBox, QVBoxLayout, QWidget
 
 from emg.interfazEmg import BAUD_RATE, EmgEngine, _detectar_puerto_esp32, _elegir_puerto_manualmente #se importa la logica de interfazEmg.py para poder usarla en la pagina de EMG 
@@ -18,6 +19,8 @@ from interfaz.shell.app_state import SharedAppState
 
 
 class EmgPage(QWidget):
+    session_finished = Signal()  # el operador apretó "Finalizar sesión"
+
     def __init__(self, state: SharedAppState, parent=None):
         super().__init__(parent)
         self._state = state
@@ -33,7 +36,12 @@ class EmgPage(QWidget):
         self._layout.addWidget(self._placeholder)
 
     def tiene_sesion_activa(self) -> bool:
-        return self._engine is not None
+        return self._main_page is not None and self._main_page.sesion_abierta()
+
+    def finalizar_sesion(self) -> None:
+        """Cierra la sesión abierta (si hay), ofreciendo imprimirla si tuvo actividad."""
+        if self._main_page is not None:
+            self._main_page.finalizar_sesion()
 
     def iniciar_sesion(self, nombre_paciente: str) -> bool:
         """Detecta/abre el puerto de la ESP32 y arma la pantalla EMG propia.
@@ -46,7 +54,12 @@ class EmgPage(QWidget):
         if self._engine is not None:
             # No se llama a establecer_paciente: crearía una bitácora JSON por
             # sesión en logs/. El historial vive en la ficha (patients.json).
+            self._main_page.nombre_paciente = nombre_paciente
             self._main_page.avisar_calibracion_requerida()
+            if not self._engine.timer.isActive():
+                # Finalizar sesión detuvo la lectura: lo acumulado ya no sirve.
+                self._serial_conn.reset_input_buffer()
+                self._engine.start()
             return True
 
         puerto = _detectar_puerto_esp32()
@@ -65,6 +78,8 @@ class EmgPage(QWidget):
 
         self._engine = EmgEngine(self._serial_conn) #EmgEngine es la logica de interfazEmg.py, que se importa para poder usarla en la pagina de EMG. Acá se llama a la l+ogica pero si ui. 
         self._main_page = EmgMainPage(self._engine)
+        self._main_page.nombre_paciente = nombre_paciente
+        self._main_page.sesion_finalizada.connect(self.session_finished)
 
         self._layout.removeWidget(self._placeholder)
         self._placeholder.hide()

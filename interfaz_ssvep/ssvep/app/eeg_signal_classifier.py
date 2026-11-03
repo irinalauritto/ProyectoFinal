@@ -71,6 +71,7 @@ class BaseEEGClassifier:
 
         # Registro de ventanas para la Validación, ver enable_window_log().
         self._window_log: list[tuple[float, int]] | None = None
+        self._window_observer: Any = None
         self._filled_samples = 0
         self._window_full = False
 
@@ -104,6 +105,12 @@ class BaseEEGClassifier:
         with self._lock:
             self._window_log = []
             self._recalculate_steps_under_lock()
+
+    def set_window_observer(self, observer: Any) -> None:
+        """Llama a `observer(rho, margen, estímulo, voto, ventana_llena)` con cada
+        ventana clasificada, para grabarla (ver interfaz/eeg/signal_recorder.py).
+        `voto` es lo que devuelve el umbral para esa ventana. None lo quita."""
+        self._window_observer = observer
 
     def drain_window_log(self) -> list[tuple[float, int]]:
         """Devuelve y vacía las ventanas `(margen, estímulo)` registradas, en orden."""
@@ -237,6 +244,14 @@ class BaseEEGClassifier:
             if self._window_log is not None and self._window_full:
                 self._window_log.append((margin, stim_id))
 
+        vote = self._apply_threshold(margin, stim_id)
+        observer = self._window_observer
+        if observer is not None:
+            observer(rho, margin, stim_id, vote, self._window_full)
+        return vote
+
+    def _apply_threshold(self, margin: float, stim_id: int) -> int:
+        """Regla de decisión: estímulo con suficientes votos, o -1 si no hay detección."""
         if self._threshold <= 0:
             return stim_id
 

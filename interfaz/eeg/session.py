@@ -12,6 +12,8 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import QObject, QThread, Signal
 
+from interfaz.eeg.signal_recorder import SignalRecorder
+
 # Índice del estímulo "nulo" (Escape en Settings.__stimuli_config, "Nulo" en
 # la interfaz): al detectarlo no se envía ninguna tecla, solo se inicia el
 # período refractario. Solo está activo en el método Barrido.
@@ -136,6 +138,9 @@ class EegSession(QObject):
         # falta pagar el costo de SAPI si nunca se usa.
         self._validation_voice = None
 
+        # Grabación de señales, ver "Guardar señales" en eeg_main_page.py.
+        self.recorder = SignalRecorder()
+
         # --- Wiring interno ---
         self._wire_eeg_iface(self._eeg_iface)
 
@@ -150,11 +155,13 @@ class EegSession(QObject):
     def _wire_eeg_iface(self, iface) -> None:
         iface.streamStarted.connect(self.stream_started)
         iface.dataDecoded.connect(self._processing_worker.on_data_decoded)
+        iface.dataDecoded.connect(self.recorder.add_samples)
         iface.portException.connect(self.error_occurred)
 
     def _unwire_eeg_iface(self, iface) -> None:
         iface.streamStarted.disconnect(self.stream_started)
         iface.dataDecoded.disconnect(self._processing_worker.on_data_decoded)
+        iface.dataDecoded.disconnect(self.recorder.add_samples)
         iface.portException.disconnect(self.error_occurred)
 
     def _use_eeg_iface(self, iface) -> None:
@@ -169,6 +176,22 @@ class EegSession(QObject):
         self._unwire_eeg_iface(self._eeg_iface)
         self._eeg_iface = iface
         self._wire_eeg_iface(self._eeg_iface)
+
+    @property
+    def main_classifier(self):
+        """Clasificador del uso online (calibración y validación usan el suyo)."""
+        return self._classifier
+
+    def filter_parameters(self) -> dict:
+        lowcut, highcut, order, notch, media, bandpass = self._filters.get_parameters()
+        return {
+            "lowcut": lowcut,
+            "highcut": highcut,
+            "order": order,
+            "notch": bool(notch),
+            "media": bool(media),
+            "bandpass": bool(bandpass),
+        }
 
     def is_simulated_source(self) -> bool:
         """True si la adquisicion activa es una grabacion (EEGFileInterface)
@@ -443,6 +466,8 @@ class EegSession(QObject):
         # mas seguido que una deteccion real. Eso hacia que la ventana de 5s
         # casi siempre la "consumiera" un -1 justo al vencer, sin que
         # ninguna tecla real llegara a mandarse nunca.
+        tecla_enviada = False
+        bloqueada_por_refractario = False
         if self.enable_control and estimulador_abierto and result >= 0:
             import time
 
@@ -454,7 +479,17 @@ class EegSession(QObject):
                     if self.before_key is not None:
                         self.before_key()
                     self.keyboard.stim_received(result)
+                    tecla_enviada = True
                 self._last_action_time = now
+            else:
+                bloqueada_por_refractario = True
+        if result >= 0 and self.recorder.stage == "online":
+            self.recorder.add_event(
+                "decision",
+                estimulo=result,
+                tecla_enviada=float(tecla_enviada),
+                bloqueada_por_refractario=float(bloqueada_por_refractario),
+            )
 
     # ------------------------------------------------------------------
     def shutdown(self) -> None:

@@ -10,7 +10,10 @@ Autora: Irina Lauritto
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QTimer
+from datetime import datetime
+from pathlib import Path
+
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -28,6 +31,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from interfaz.eeg.session_report import SessionLog, ask_finish_session, print_session
+from interfaz.eeg.signal_recorder import SignalRecorder, session_folder
 from interfaz.pages.emg.emg_live_widget import EmgLiveWidget
 from interfaz.shell import patient_store
 from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
@@ -61,9 +66,23 @@ class EmgMainPage(QWidget):
     """Pantalla principal: señal en vivo, calibración, prueba de validación
     guiada y parámetros. Recibe un `EmgEngine` ya arrancado que viene de emg_page."""
 
+    sesion_finalizada = Signal()  # el operador apretó "Finalizar sesión"
+
     def __init__(self, engine, parent=None):
         super().__init__(parent)
         self._engine = engine
+        self.nombre_paciente = ""
+        # "Guardar señales" y registro de la sesión para el PDF.
+        self._grabador = SignalRecorder()
+        self._guardar_senales = False
+        self._calibrada_para_grabar = False
+        self._validada_para_grabar = False
+        self._carpeta_senales: Path | None = None
+        self._etapas_grabadas: dict[str, int] = {}
+        self._registro_sesion: SessionLog | None = None
+        self._inicio_online: datetime | None = None
+        self._tecla_previa = ""
+        self._duracion_previa = 0
         self._asterics = AstericsLauncher(parent=self)
         self._asterics.configured.connect(self._on_asterics_configured)
         engine.teclado = _TeclaHaciaAsterics(engine.teclado, lambda: self._asterics.activate())
@@ -108,9 +127,27 @@ class EmgMainPage(QWidget):
     def _build_header(self) -> QVBoxLayout:
         layout = QVBoxLayout()
         layout.setSpacing(2)
+        fila = QHBoxLayout()
         title = QLabel("Control por EMG")
         title.setObjectName("PageTitle")
-        layout.addWidget(title)
+        fila.addWidget(title)
+        fila.addStretch(1)
+        self._lbl_guardar = QLabel("")
+        self._lbl_guardar.setObjectName("MutedLabel")
+        fila.addWidget(self._lbl_guardar)
+        self._chk_guardar = QCheckBox("Guardar señales")
+        self._chk_guardar.setToolTip(
+            "Guarda la señal cruda y los cálculos de la calibración, la validación y el uso online. "
+            "Pide calibrar y validar antes de abrir AsTeRICS."
+        )
+        self._chk_guardar.toggled.connect(self._on_guardar_senales_toggled)
+        fila.addWidget(self._chk_guardar)
+        self._btn_finalizar = QPushButton("Finalizar sesión")
+        self._btn_finalizar.setObjectName("SecondaryButton")
+        self._btn_finalizar.setToolTip("Termina la sesión y permite imprimirla en un PDF.")
+        self._btn_finalizar.clicked.connect(self._on_finalizar_sesion_clicked)
+        fila.addWidget(self._btn_finalizar)
+        layout.addLayout(fila)
         return layout
 
     def _build_signal_panel(self) -> QFrame:
@@ -345,9 +382,12 @@ class EmgMainPage(QWidget):
         self._lbl_sens_valor.setText(f"{self._slider_sens.value() / 10:.1f}")
         self._engine.set_tecla(self._combo_tecla.currentText())
         self._engine.set_duracion_tecla_ms(self._spin_duracion.value())
+        self._tecla_previa = self._combo_tecla.currentText()
+        self._duracion_previa = self._spin_duracion.value()
 
     def _connect_engine(self) -> None:
         e = self._engine
+        e.muestras_crudas.connect(self._on_muestras_crudas)
         e.samples_ready.connect(self._signal_widget.append_samples)
         e.calibration_progress.connect(self._on_calibration_progress)
         e.calibration_finished.connect(self._on_calibration_finished)
@@ -411,6 +451,9 @@ class EmgMainPage(QWidget):
     # ------------------------------------------------------------------
     def _on_iniciar_calibracion(self) -> None:
         self._engine.iniciar_calibracion()
+        self._sincronizar_uso_online()
+        self._iniciar_grabacion("calibracion")
+        self._aplicar_requisitos_grabacion()
         self._btn_calibrar.setEnabled(False)
         self._barra_calibracion.setValue(0)
         self._lbl_calibracion.setText("Calibrando… mantenga el músculo relajado.")
@@ -433,10 +476,13 @@ class EmgMainPage(QWidget):
         self._btn_prueba.setEnabled(True)
         self._btn_omitir.setEnabled(True)
         self._lbl_prueba.setText("Calibración lista. Puede iniciar la prueba de validación.")
+        self._registrar_calibracion(umbral, media, sd)
 
     def _on_calibration_failed(self, motivo: str) -> None:
         self._btn_calibrar.setEnabled(True)
         self._lbl_calibracion.setText("Calibración fallida — reintentar")
+        self._terminar_grabacion("fallida", {"motivo": motivo})
+        self._aplicar_requisitos_grabacion()
         QMessageBox.critical(self, "Calibración fallida", motivo)
 
     # ------------------------------------------------------------------
@@ -445,6 +491,9 @@ class EmgMainPage(QWidget):
     def _on_sensibilidad_changed(self, valor_x10: int) -> None:
         sensibilidad = valor_x10 / 10.0
         self._lbl_sens_valor.setText(f"{sensibilidad:.1f}")
+        anterior = self._emgmod._espejar_escala_k(self._engine.k)
+        self._registrar_cambio("Sensibilidad", f"{anterior:.1f}", f"{sensibilidad:.1f}")
+        self._grabador.add_event("sensibilidad_manual", anterior=anterior, nuevo=sensibilidad)
         self._engine.set_k(sensibilidad)
         if self._engine.media_reposo is None:
             self._avisar_si_no_calibrado()
@@ -456,15 +505,21 @@ class EmgMainPage(QWidget):
         )
 
     def _on_refractario_changed(self, valor: int) -> None:
+        self._registrar_cambio("Tiempo refractario", f"{self._engine.refractario_ms} ms", f"{valor} ms")
+        self._grabador.add_event("refractario_manual", anterior=self._engine.refractario_ms, nuevo=valor)
         self._engine.set_refractario_ms(valor)
         if self._engine.umbral is None:
             self._avisar_si_no_calibrado()
 
     def _on_tecla_changed(self, _index: int) -> None:
+        self._registrar_cambio("Tecla", self._tecla_previa, self._combo_tecla.currentText())
+        self._tecla_previa = self._combo_tecla.currentText()
         self._engine.set_tecla(self._combo_tecla.currentText())
         self._avisar_si_no_calibrado()
 
     def _on_duracion_changed(self, valor: int) -> None:
+        self._registrar_cambio("Duración de la tecla", f"{self._duracion_previa} ms", f"{valor} ms")
+        self._duracion_previa = valor
         self._engine.set_duracion_tecla_ms(valor)
         self._avisar_si_no_calibrado()
         # La pulsación mínima que exige AsTeRICS se deriva de esta duración.
@@ -513,8 +568,12 @@ class EmgMainPage(QWidget):
         self._btn_omitir.setEnabled(False)
         self._ocultar_aviso_repetir_prueba()
         self._engine.iniciar_prueba_validacion()
+        self._sincronizar_uso_online()
+        self._iniciar_grabacion("validacion")
+        self._aplicar_requisitos_grabacion()
 
     def _on_validation_attempt_started(self, intento: int, total: int) -> None:
+        self._grabador.add_event("intento", numero=intento)
         self._btn_siguiente_intento.setEnabled(True)
         self._lbl_prueba.setText(
             f"Intento {intento}/{total}: contraiga y relaje el músculo, luego presione "
@@ -535,12 +594,264 @@ class EmgMainPage(QWidget):
         self._lbl_prueba.setText(f"{icono} Prueba finalizada — {resumen}")
         self._btn_prueba.setEnabled(True)
         self._btn_omitir.setEnabled(True)
+        self._registrar_validacion(eventos_por_intento, correcta)
 
     def _on_omitir_prueba(self) -> None:
         self._engine.omitir_prueba()
         self._ocultar_aviso_repetir_prueba()
+        if self._registro_sesion is not None:
+            self._registro_sesion.validaciones.append({"hora": datetime.now(), "omitida": True})
 
     # ------------------------------------------------------------------
+    # Guardar señales: etapas obligatorias y grabación (ver signal_recorder.py)
+    # ------------------------------------------------------------------
+    def _on_guardar_senales_toggled(self, activo: bool) -> None:
+        self._guardar_senales = activo
+        self._calibrada_para_grabar = False
+        self._validada_para_grabar = False
+        if activo:
+            # El uso online recién se habilita después de calibrar y validar.
+            self._asterics.close()
+            QMessageBox.information(
+                self,
+                "Guardar señales",
+                "Para guardar señales hay que calibrar y después hacer la prueba de validación. "
+                "Recién entonces se habilita AsTeRICS.",
+            )
+        self._sincronizar_uso_online()
+        self._aplicar_requisitos_grabacion()
+
+    def _aplicar_requisitos_grabacion(self) -> None:
+        """Con "Guardar señales", exige el orden calibrar, validar y usar."""
+        ocupado = self._engine.calibrando or self._engine.validando
+        self._chk_guardar.setEnabled(not ocupado)
+        self._btn_calibrar.setEnabled(not ocupado)
+        if ocupado:
+            return
+        grabando = self._guardar_senales
+        calibrado = self._engine.esta_calibrado()
+        self._btn_prueba.setEnabled(calibrado and (not grabando or self._calibrada_para_grabar))
+        self._btn_omitir.setEnabled(calibrado and not grabando)
+        self._btn_asterics.setEnabled(not grabando or (self._calibrada_para_grabar and self._validada_para_grabar))
+        if not grabando:
+            texto = ""
+        elif not self._calibrada_para_grabar:
+            texto = "Falta calibrar y validar"
+        elif not self._validada_para_grabar:
+            texto = "Falta validar"
+        else:
+            texto = "Grabando el uso online"
+        self._lbl_guardar.setText(texto)
+
+    def _sincronizar_uso_online(self, permitir: bool = True) -> None:
+        """EMG no tiene estimulador: el uso online es el tiempo en que la detección
+        está activa, con el umbral calibrado y fuera de calibración y validación.
+        Con "Guardar señales" empieza recién después de validar."""
+        activo = (
+            permitir
+            and self._registro_sesion is not None
+            and self._engine.esta_calibrado()
+            and not self._engine.calibrando
+            and not self._engine.validando
+            and (not self._guardar_senales or self._validada_para_grabar)
+        )
+        if activo and self._inicio_online is None:
+            self._inicio_online = datetime.now()
+            self._iniciar_grabacion("online")
+        elif not activo and self._inicio_online is not None:
+            duracion = (datetime.now() - self._inicio_online).total_seconds()
+            self._inicio_online = None
+            if self._registro_sesion is not None:
+                self._registro_sesion.estimulaciones_s.append(duracion)
+            if self._grabador.stage == "online":
+                self._terminar_grabacion("completa", {"duracion_s": duracion})
+        elif activo and self._guardar_senales and self._grabador.stage is None:
+            self._iniciar_grabacion("online")
+
+    def _ruta_senal(self, etapa: str) -> Path:
+        if self._carpeta_senales is None:
+            entrada = patient_store.get_patient(getattr(self, "_ficha_id", None))
+            paciente = patient_store.patient_file(entrada).stem if entrada else "sin_ficha"
+            self._carpeta_senales = session_folder(paciente, "emg_")
+        numero = self._etapas_grabadas.get(etapa, 0) + 1
+        self._etapas_grabadas[etapa] = numero
+        return self._carpeta_senales / f"{etapa}_{numero}.mat"
+
+    def _iniciar_grabacion(self, etapa: str) -> None:
+        if not self._guardar_senales:
+            return
+        e, m = self._engine, self._emgmod
+        info = {
+            "paciente": self._registro_sesion.paciente if self._registro_sesion else "",
+            "fecha": datetime.now().isoformat(timespec="seconds"),
+            "fs_hz": m.FS_HZ,
+            "canales": ["EMG"],
+            "unidad": "cuentas del ADC",
+            "adc_resolucion": m.ADC_RESOLUCION,
+            "adc_vref_mv": m.ADC_VREF_MV,
+            "modo_senal": m.MODO_SENAL,
+            "filtros": {
+                "pasaaltos_hz": m.HP_CORTE_HZ,
+                "notch_hz": m.NOTCH_FREQ_HZ,
+                "notch_q": m.NOTCH_Q,
+                "pasabajos_hz": m.LP_CORTE_HZ,
+            },
+            "histeresis_fraccion": m.HISTERESIS_FRACCION,
+            "k": e.k,
+            "sensibilidad": m._espejar_escala_k(e.k),
+            "umbral": e.umbral,
+            "refractario_ms": e.refractario_ms,
+            "tecla": self._combo_tecla.currentText(),
+            "duracion_tecla_ms": self._spin_duracion.value(),
+        }
+        self._grabador.begin(
+            etapa,
+            info,
+            self._ruta_senal(etapa),
+            signal_name="emg",
+            calculation_format="envolvente_mv, umbral_mv, activacion, rechazada_por_refractario",
+        )
+
+    def _terminar_grabacion(self, estado: str, resultado: dict | None = None) -> None:
+        try:
+            ruta = self._grabador.finish(estado, resultado)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Guardar señales", f"No se pudieron guardar las señales:\n\n{error}")
+            return
+        if ruta is not None and self._registro_sesion is not None:
+            self._registro_sesion.archivos.append(str(ruta))
+
+    def _on_muestras_crudas(self, crudos: list, envolvente: list, eventos: list, rechazadas: list) -> None:
+        if not self._grabador.capturing:
+            return
+        self._grabador.add_samples([crudos])
+        umbral = self._engine.umbral if self._engine.umbral is not None else float("nan")
+        self._grabador.add_calculations(
+            [[env, umbral, float(ev), float(rech)] for env, ev, rech in zip(envolvente, eventos, rechazadas)]
+        )
+        if self._grabador.stage == "online":
+            for ev in eventos:
+                if ev:
+                    self._grabador.add_event("activacion", tecla_enviada=float(self._engine.enviar_teclas))
+
+    # ------------------------------------------------------------------
+    # Registro de la sesión e impresión (ver session_report.py)
+    # ------------------------------------------------------------------
+    def _registrar_cambio(self, parametro: str, anterior, nuevo) -> None:
+        if self._registro_sesion is not None and anterior != nuevo:
+            self._registro_sesion.add_change(parametro, anterior, nuevo)
+
+    def _registrar_calibracion(self, umbral: float, media: float, sd: float) -> None:
+        e, m = self._engine, self._emgmod
+        sensibilidad = m._espejar_escala_k(e.k)
+        datos = {
+            "duracion_s": m.CALIBRACION_DURACION_S,
+            "muestras": len(e.calibracion_muestras),
+            "media": media,
+            "sd": sd,
+            "k": e.k,
+            "sensibilidad": sensibilidad,
+            "umbral": umbral,
+            "reactivacion": e.umbral_reactivacion,
+        }
+        if self._registro_sesion is not None:
+            self._registro_sesion.calibraciones.append({"hora": datetime.now(), **datos})
+        self._calibrada_para_grabar = True
+        self._validada_para_grabar = False
+        self._terminar_grabacion("completa", datos)
+        self._aplicar_requisitos_grabacion()
+        self._sincronizar_uso_online()
+
+    def _registrar_validacion(self, eventos_por_intento: list, correcta: bool) -> None:
+        e = self._engine
+        sensibilidad = self._emgmod._espejar_escala_k(e.k)
+        if self._registro_sesion is not None:
+            self._registro_sesion.validaciones.append(
+                {
+                    "hora": datetime.now(),
+                    "omitida": False,
+                    "intentos": list(eventos_por_intento),
+                    "correcta": correcta,
+                    "sensibilidad": sensibilidad,
+                    "refractario_ms": e.refractario_ms,
+                }
+            )
+        self._validada_para_grabar = True
+        self._terminar_grabacion(
+            "completa",
+            {
+                "eventos_por_intento": list(eventos_por_intento),
+                "correcta": float(correcta),
+                "sensibilidad": sensibilidad,
+                "refractario_ms": e.refractario_ms,
+            },
+        )
+        self._aplicar_requisitos_grabacion()
+        self._sincronizar_uso_online()
+
+    def sesion_abierta(self) -> bool:
+        return self._registro_sesion is not None
+
+    def _on_finalizar_sesion_clicked(self) -> None:
+        if self.finalizar_sesion(permitir_cancelar=True):
+            self.sesion_finalizada.emit()
+
+    def finalizar_sesion(self, permitir_cancelar: bool = False) -> bool:
+        """Termina la sesión y ofrece imprimirla. Devuelve False si se canceló.
+
+        Sin `permitir_cancelar` (cambio de paciente o cierre de la aplicación),
+        solo se pregunta si la sesión tuvo actividad.
+        """
+        registro = self._registro_sesion
+        if registro is None:
+            return True
+        imprimir = False
+        if permitir_cancelar or registro.has_activity() or self._inicio_online is not None:
+            imprimir = ask_finish_session(self, permitir_cancelar)
+            if imprimir is None:
+                return False
+
+        # Primero se cierra lo que esté en curso, para que quede en el registro.
+        self._sincronizar_uso_online(permitir=False)
+        if self._engine.calibrando or self._engine.validando:
+            self._engine.cancelar_calibracion()
+            self._engine.cancelar_prueba_validacion()
+            self._btn_siguiente_intento.setEnabled(False)
+            self._lbl_calibracion.setText("Calibración cancelada.")
+            self._terminar_grabacion("cancelada")
+        self._engine.stop()
+        self._asterics.close()
+
+        registro.fin = datetime.now()
+        registro.parametros = self._parametros_actuales()
+        self._registro_sesion = None
+        patient_store.end_session(getattr(self, "_ficha_id", None))
+        self._chk_guardar.blockSignals(True)
+        self._chk_guardar.setChecked(False)
+        self._chk_guardar.blockSignals(False)
+        self._guardar_senales = False
+        self._aplicar_requisitos_grabacion()
+        if imprimir:
+            print_session(self, registro, self._carpeta_senales)
+        return True
+
+    def _parametros_actuales(self) -> dict:
+        e = self._engine
+        umbral = "Sin calibrar" if e.umbral is None else f"{e.umbral:.2f} mV"
+        return {
+            "filas": [
+                ["Umbral de disparo", umbral],
+                ["Sensibilidad", f"{self._emgmod._espejar_escala_k(e.k):.1f}"],
+                ["k", f"{e.k:.1f}"],
+                ["Tiempo refractario", f"{e.refractario_ms} ms"],
+                ["Tecla", self._combo_tecla.currentText()],
+                ["Duración de la tecla", f"{self._spin_duracion.value()} ms"],
+                ["Tiempo de barrido (AsTeRICS)", f"{self._spin_barrido.value():g} s"],
+                ["Enviar teclas", "Sí" if self._chk_enviar_teclas.isChecked() else "No"],
+                ["Retroalimentación auditiva", "Sí" if self._chk_audio.isChecked() else "No"],
+            ]
+        }
+
     # ------------------------------------------------------------------
     # Ficha del paciente (ver interfaz/shell/patient_store.py)
     # ------------------------------------------------------------------
@@ -550,6 +861,12 @@ class EmgMainPage(QWidget):
         validación. NO restaura el umbral calibrado: la calibración se repite
         en cada sesión (depende de cómo quedó colocado el electrodo)."""
         self._ficha_id = patient_id
+        entrada = patient_store.get_patient(patient_id)
+        self._registro_sesion = SessionLog(
+            paciente=patient_store.full_name(entrada) if entrada else self.nombre_paciente, modalidad="EMG"
+        )
+        self._carpeta_senales = None
+        self._etapas_grabadas = {}
         if not getattr(self, "_ficha_conectada", False):
             self._ficha_conectada = True
             self._ficha_timer = QTimer(self)
@@ -569,6 +886,8 @@ class EmgMainPage(QWidget):
             self._engine.calibration_finished.connect(self._guardar_calibracion)
             self._engine.validation_finished.connect(self._guardar_validacion)
         self._restaurar_config()
+        self._sincronizar_uso_online()
+        self._aplicar_requisitos_grabacion()
 
     def _restaurar_config(self) -> None:
         cfg = patient_store.get_config(self._ficha_id, "emg")
@@ -610,6 +929,8 @@ class EmgMainPage(QWidget):
         finally:
             for w in widgets:
                 w.blockSignals(False)
+            self._tecla_previa = self._combo_tecla.currentText()
+            self._duracion_previa = self._spin_duracion.value()
 
     def _programar_guardado(self, *_args) -> None:
         if getattr(self, "_ficha_id", None):
