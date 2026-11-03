@@ -4,6 +4,8 @@ Retroalimentación auditiva por voz de los estímulos detectados.
 Usa la síntesis de voz nativa de Windows (SAPI, vía pywin32) para anunciar
 en voz alta, de forma asíncrona (sin bloquear), el estímulo que acaba de
 identificar el clasificador.
+
+Autora: Irina Lauritto
 """
 
 from typing import Dict, Optional

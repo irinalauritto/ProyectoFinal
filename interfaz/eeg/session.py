@@ -1,4 +1,5 @@
-"""EegSession: orquesta el pipeline de electroencefalografía (adquisicion, filtros, PSD,
+"""
+EegSession: orquesta el pipeline de electroencefalografía (adquisicion, filtros, PSD,
 clasificador CCA, evaluador, control por teclado, voz, estimulo visual). Reemplaza el rol 
 de AppController (presente en vision).
 

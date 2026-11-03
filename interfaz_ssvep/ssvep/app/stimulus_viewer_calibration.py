@@ -1,4 +1,5 @@
-"""Ventana de estímulos para la Calibración de frecuencias SSVEP.
+"""
+Ventana de estímulos para la Calibración de frecuencias SSVEP.
 
 Variante de `stimulus_viewer.py` con lo que necesita específicamente la
 calibración y que esa pantalla no ofrece: posiciones explícitas (los dos
@@ -13,6 +14,8 @@ duplicarlas -- ver los imports de abajo. `StimulusViewer.__monitor_scales`
 y `__work_area` son "privados" solo por convención (name mangling de
 Python, no impide el acceso); se llaman explícitamente por su nombre
 mangled en `__get_stimulus_regions` para no copiar esa lógica de ctypes.
+
+Autora: Irina Lauritto
 """
 
 from __future__ import annotations
