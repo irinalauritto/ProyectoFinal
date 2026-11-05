@@ -12,14 +12,15 @@ depuración de Chromium, se la puede leer y escribir:
   2. Primera vez (perfil nuevo): se crea el usuario "sin registro" y se carga
      el tablero "ARASAAC Comunicador Global Grid Core". Después, el profesional puede
      modificar todo a mano: el perfil conserva sus cambios.
-  3. Se escribe el bloque `inputConfig` del documento "MetaData" y se recarga
+  3. Se activa la barra superior del tablero (ver `_ensure_global_grid`).
+  4. Se escribe el bloque `inputConfig` del documento "MetaData" y se recarga
      la página para que AsTeRICS lo tome.
-  4. Se cierra la barra lateral de AsTeRICS (ver `_JS_CLOSE_SIDEBAR`).
+  5. Se cierra la barra lateral de AsTeRICS (ver `_JS_CLOSE_SIDEBAR`).
 
 Los selectores de la primera apertura no dependen del idioma de AsTeRICS
 (primer `button.big-button` y botón principal de la tarjeta del tablero).
 
-Nada de lo que esté fuera de `inputConfig` se modifica. Si AsTeRICS cambia su
+Fuera de esa barra, nada de lo que esté fuera de `inputConfig` se modifica. Si AsTeRICS cambia su
 formato interno, `configure()` devuelve `(False, motivo)` y el llamador debe
 avisar y seguir abriendo AsTeRICS sin configurar.
 
@@ -312,6 +313,28 @@ def profile_has_window() -> bool:
     return bool(found)
 
 
+def disable_translate(profile: Path) -> None:
+    """Apaga el traductor de Chrome en un perfil propio: su burbuja aparece sobre
+    AsTeRICS y tapa los botones de la barra superior del tablero. Es una preferencia
+    del perfil, porque los parámetros de inicio (--disable-features) no la quitan.
+
+    Un archivo que no se puede interpretar no se toca: reescribirlo borraría las
+    demás preferencias del perfil. Si Chrome está abierto, toma efecto la próxima vez."""
+    path = profile / "Default" / "Preferences"
+    try:
+        prefs = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        translate = prefs.setdefault("translate", {})
+        if translate.get("enabled") is False:
+            return
+        translate["enabled"] = False
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp = path.with_name(path.name + ".comando_aac")
+        temp.write_text(json.dumps(prefs), encoding="utf-8")
+        os.replace(temp, path)
+    except (OSError, ValueError, AttributeError) as exc:
+        _log(f"no se pudo apagar el traductor: {type(exc).__name__}: {exc}")
+
+
 def choose_debug_port() -> tuple[int, bool]:
     """Puerto a usar en este lanzamiento: `(puerto, instancia_existente)`.
 
@@ -456,6 +479,50 @@ _JS_CLOSE_SIDEBAR = (
     " close(); let n = 0; const t = setInterval(() => { close(); if (++n >= 30) clearInterval(t); }, 500);"
     " return true; })()"
 )
+
+# Botones "Activar" (primero) y "Desactivar" (segundo) del tablero global, en
+# #grids (ver manageGridsView.vue de AsTeRICS Grid); cada uno se oculta con
+# display:none según el estado. Mientras no estén cargadas las opciones de
+# #selectHomeGrid, AsTeRICS todavía no leyó los tableros y cree que no hay
+# tablero global: "Activar" lo crearía de nuevo y borraría el que exista.
+_JS_GLOBAL_GRID_STATE = (
+    "(() => { const b = document.querySelectorAll('#globalGridActions button');"
+    " if (b.length < 2 || document.querySelectorAll('#selectHomeGrid option').length < 2) return 'cargando';"
+    " return b[0].style.display === 'none' ? 'activa' : 'inactiva'; })()"
+)
+_JS_GLOBAL_GRID_ACTIVATE = "document.querySelector('#globalGridActions button').click(); true"
+
+
+def global_grid_is_active(meta: dict) -> bool:
+    """True si el documento "MetaData" dice que la barra superior está activa.
+    False también si no se puede leer (usuario registrado: está cifrado)."""
+    try:
+        inner = json.loads(meta["encryptedDataBase64"])
+        return bool(inner.get("globalGridActive") and inner.get("globalGridId"))
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return False
+
+
+def _ensure_global_grid(page: "_Page", meta: dict, wait: Callable[[Callable[[], bool], str], None]) -> None:
+    """Deja activa la barra superior del tablero: pictogramas seleccionados, ir a
+    inicio y volver al tablero anterior (el "tablero global" de AsTeRICS).
+
+    Se usa el botón de la propia AsTeRICS en vez de escribir en su base: crea el
+    tablero global con su formato, y funciona también con usuarios registrados,
+    cuyos datos están cifrados. Por eso, para ellos, hay que pasar por #grids en
+    cada apertura para ver el estado; con usuario sin registro solo si hace falta."""
+    if global_grid_is_active(meta):
+        return
+    origin = page.eval("location.hash")
+    page.eval("location.hash = '#grids'; true")
+    wait(lambda: page.eval(_JS_GLOBAL_GRID_STATE) != "cargando", "pantalla de tableros")
+    if page.eval(_JS_GLOBAL_GRID_STATE) == "inactiva":
+        page.eval(_JS_GLOBAL_GRID_ACTIVATE)
+        wait(lambda: page.eval(_JS_GLOBAL_GRID_STATE) == "activa", "activación de la barra superior")
+        _log("barra superior (tablero global) activada")
+    if str(origin).startswith("#grid/"):
+        page.eval(f"location.hash = {json.dumps(origin)}; true")
+        wait(lambda: page.eval("location.hash") == origin, "vuelta al tablero")
 
 
 def _js_read_meta(db_name: str) -> str:
@@ -665,6 +732,7 @@ def configure(
             _log("tablero por defecto cargado")
 
         wait(lambda: read_meta()["meta"] is not None, "configuración de AsTeRICS")
+        _ensure_global_grid(page, read_meta()["meta"], wait)
 
         # Leer - modificar - escribir, con reintento si AsTeRICS escribió a la vez.
         for _ in range(5):

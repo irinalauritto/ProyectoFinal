@@ -19,3 +19,6 @@ interfaz/data/patients.json
 logs/
 interfaz_emg/logs/
 interfaz_ssvep/vision_data/reportes/
+
+# Grabaciones de pantalla de las sesiones: muestran lo que comunica el paciente.
+senales/**/*.mp4

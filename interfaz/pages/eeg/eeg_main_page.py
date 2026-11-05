@@ -52,6 +52,7 @@ from interfaz.shell.asterics_launcher import (
     place_in_rect,
     set_topmost,
 )
+from interfaz.shell.screen_recorder import ScreenRecordingControl
 
 # Espacio que se deja entre AsTeRICS y los estímulos, como fracción del
 # tamaño del estímulo (con un mínimo en píxeles físicos): la ventana proyecta
@@ -194,6 +195,9 @@ class EegMainPage(QWidget):
         self._etapas_grabadas: dict[str, int] = {}
         self._registro_sesion: SessionLog | None = None
         self._inicio_estimulacion: datetime | None = None
+        self._grabacion_pantalla = ScreenRecordingControl(
+            self, self._asterics, self._ruta_grabacion_pantalla, self._on_grabacion_pantalla_guardada
+        )
 
         # Todo el contenido va dentro de un QScrollArea: con las 3 columnas
         # completas (canales+calibracion, estimulacion+validacion, señal+PSD)
@@ -243,6 +247,8 @@ class EegMainPage(QWidget):
         title.setObjectName("PageTitle")
         fila.addWidget(title)
         fila.addStretch(1)
+        fila.addWidget(self._grabacion_pantalla.label)
+        fila.addWidget(self._grabacion_pantalla.button)
         self._lbl_guardar = QLabel("")
         self._lbl_guardar.setObjectName("MutedLabel")
         fila.addWidget(self._lbl_guardar)
@@ -1198,7 +1204,12 @@ class EegMainPage(QWidget):
         # espacio libre; el parpadeo empieza recien con "Iniciar
         # estimulacion". La prueba de validacion usa su propio visor (ver
         # _on_iniciar_prueba), no pasa por aca.
+        self._grabacion_pantalla.ask_before_asterics()
+        if not self._session.stimulus_viewer.is_running():  # se cerró mientras se respondía
+            self._grabacion_pantalla.stop()
+            return
         if not self._asterics.open(place=self._ubicar_en_espacio_libre, settings=self._asterics_settings()):
+            self._grabacion_pantalla.stop()
             QMessageBox.warning(
                 self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado."
             )
@@ -1288,6 +1299,7 @@ class EegMainPage(QWidget):
             # Solo en el cierre (no en cada refresco): se apagan el envio de
             # teclas y la voz, que se activaron al iniciar la estimulacion.
             if self._estimulador_estaba_abierto:
+                self._grabacion_pantalla.stop()
                 self._chk_enviar_teclas.setChecked(False)
                 self._chk_audio.setChecked(False)
         self._estimulador_estaba_abierto = corriendo
@@ -1626,6 +1638,13 @@ class EegMainPage(QWidget):
             texto = "Listo para grabar el uso online"
         self._lbl_guardar.setText(texto)
 
+    def _ruta_grabacion_pantalla(self) -> Path:
+        return self._ruta_senal("pantalla").with_suffix(".mp4")
+
+    def _on_grabacion_pantalla_guardada(self, ruta: Path) -> None:
+        if self._registro_sesion is not None:
+            self._registro_sesion.archivos.append(str(ruta))
+
     def _ruta_senal(self, etapa: str) -> Path:
         if self._carpeta_senales is None:
             entrada = patient_store.get_patient(getattr(self, "_ficha_id", None))
@@ -1846,6 +1865,7 @@ class EegMainPage(QWidget):
         self._cerrar_ventanas_prueba()
         self._session.stop_streaming()
         self._actualizar_boton_estimulador()
+        self._grabacion_pantalla.stop()
 
         registro.fin = datetime.now()
         registro.parametros = self._parametros_actuales()
@@ -1961,6 +1981,7 @@ class EegMainPage(QWidget):
         self._asterics.close()
 
     def liberar_recursos(self) -> None:
+        self._grabacion_pantalla.stop()
         if self._umbral_timer.isActive():
             self._guardar_umbral()  # no perder un cambio hecho justo antes de salir
         self._cerrar_ventanas_prueba()

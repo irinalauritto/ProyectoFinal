@@ -1,0 +1,24 @@
+Medición de cuadros, 2026-11-05 12:56
+2 rondas de 30 s por condición
+
+Control positivo: provocadas 9, detectadas 9 -> OK, el detector funciona
+
+medición          cuadros  perdidos  eventos   máx ms  p99.9 ms  rápidos  válida
+solo_1               3600         0        0     11.3      11.1        0  sí
+asterics_1           3581        16       12     42.9      18.3        0  sí
+grabacion_1          3595         5        5     15.1      13.0        0  sí
+solo_2               3590         8        8     16.5      13.6        0  sí
+grabacion_2          3569        24       23     21.4      14.5        0  sí
+asterics_2           3594         5        5     14.5      13.2        0  sí
+
+Por condición (solo mediciones válidas):
+  solo: 8 perdidos de 7198 (0.11 %) en 1.0 min; por ronda: 0, 8
+  asterics: 21 perdidos de 7196 (0.29 %) en 1.0 min; por ronda: 16, 5
+  grabacion: 29 perdidos de 7193 (0.40 %) en 1.0 min; por ronda: 5, 24
+
+Refresco: medido 119.966 Hz | usado para el parpadeo: [120.0] Hz
+
+Cómo leerlo: el resultado vale para esta PC, estos estímulos y este tiempo. No ve lo que
+Windows o el monitor descarten después de entregado el cuadro (eso lo cubre la filmación).
+Muchos 'rápidos' indican que los cuadros se encolan o que no se espera el refresco: en ese
+caso los perdidos pueden estar subestimados.

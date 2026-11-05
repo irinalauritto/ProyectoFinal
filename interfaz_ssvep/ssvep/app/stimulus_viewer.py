@@ -67,6 +67,109 @@ def set_always_on_top(hwnd: int) -> None:
 
 
 # =========================================================================
+# Refresco de la pantalla de estimulación
+# =========================================================================
+
+class _Luid(ctypes.Structure):
+    _fields_ = [("low", wintypes.DWORD), ("high", wintypes.LONG)]
+
+
+class _PathSource(ctypes.Structure):
+    _fields_ = [("adapter", _Luid), ("id", ctypes.c_uint32), ("mode_index", ctypes.c_uint32), ("status", ctypes.c_uint32)]
+
+
+class _PathTarget(ctypes.Structure):
+    _fields_ = [
+        ("adapter", _Luid), ("id", ctypes.c_uint32), ("mode_index", ctypes.c_uint32),
+        ("technology", ctypes.c_uint32), ("rotation", ctypes.c_uint32), ("scaling", ctypes.c_uint32),
+        ("refresh_num", ctypes.c_uint32), ("refresh_den", ctypes.c_uint32),
+        ("scanline", ctypes.c_uint32), ("available", wintypes.BOOL), ("status", ctypes.c_uint32),
+    ]
+
+
+class _PathInfo(ctypes.Structure):
+    _fields_ = [("source", _PathSource), ("target", _PathTarget), ("flags", ctypes.c_uint32)]
+
+
+class _SourceName(ctypes.Structure):
+    _fields_ = [
+        ("type", ctypes.c_uint32), ("size", ctypes.c_uint32), ("adapter", _Luid), ("id", ctypes.c_uint32),
+        ("device", wintypes.WCHAR * 32),
+    ]
+
+
+class _MonitorInfoEx(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT),
+        ("dwFlags", wintypes.DWORD), ("szDevice", wintypes.WCHAR * 32),
+    ]
+
+
+def _refresh_by_device() -> Dict[str, float]:
+    """Refresco exacto (ej. 59,94) de cada pantalla activa, por nombre de
+    dispositivo. Es el valor que el monitor tiene configurado en Windows."""
+    user32 = ctypes.WinDLL("user32")
+    only_active_paths, source_name = 2, 1
+    n_paths, n_modes = ctypes.c_uint32(), ctypes.c_uint32()
+    if user32.GetDisplayConfigBufferSizes(only_active_paths, ctypes.byref(n_paths), ctypes.byref(n_modes)) != 0:
+        return {}
+    paths = (_PathInfo * n_paths.value)()
+    modes = (ctypes.c_ubyte * (64 * n_modes.value))()  # no se leen, pero la API los exige
+    if user32.QueryDisplayConfig(
+        only_active_paths, ctypes.byref(n_paths), paths, ctypes.byref(n_modes), modes, None
+    ) != 0:
+        return {}
+    rates: Dict[str, float] = {}
+    for path in paths[:n_paths.value]:
+        name = _SourceName(type=source_name, size=ctypes.sizeof(_SourceName), adapter=path.source.adapter, id=path.source.id)
+        if user32.DisplayConfigGetDeviceInfo(ctypes.byref(name)) == 0 and path.target.refresh_den:
+            rates[name.device] = path.target.refresh_num / path.target.refresh_den
+    return rates
+
+
+def _hmonitor_refresh(hmonitor: Any) -> Optional[float]:
+    """Refresco de un monitor de Windows, o None si no se puede saber."""
+    user32 = ctypes.WinDLL("user32")
+    user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(_MonitorInfoEx)]
+    info = _MonitorInfoEx()
+    info.cbSize = ctypes.sizeof(_MonitorInfoEx)
+    if not user32.GetMonitorInfoW(hmonitor, ctypes.byref(info)):
+        return None
+    return _refresh_by_device().get(info.szDevice)
+
+
+def window_refresh_rate(hwnd: int) -> Optional[float]:
+    """Refresco de la pantalla donde está la ventana `hwnd`."""
+    try:
+        user32 = ctypes.WinDLL("user32")
+        user32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
+        user32.MonitorFromWindow.restype = wintypes.HANDLE
+        return _hmonitor_refresh(user32.MonitorFromWindow(hwnd, 2))  # 2: la más cercana
+    except (OSError, ValueError):
+        return None
+
+
+def monitor_refresh_rate(index: int) -> Optional[float]:
+    """Refresco del monitor `index`, en el orden de Windows."""
+    try:
+        user32 = ctypes.WinDLL("user32")
+        user32.EnumDisplayMonitors.argtypes = [wintypes.HDC, ctypes.c_void_p, ctypes.c_void_p, wintypes.LPARAM]
+        found: List[Any] = []
+
+        def callback(hmonitor, _hdc, _rect, _lparam):
+            found.append(hmonitor)
+            return True
+
+        callback_ref = ctypes.WINFUNCTYPE(
+            wintypes.BOOL, wintypes.HANDLE, wintypes.HDC, ctypes.c_void_p, wintypes.LPARAM
+        )(callback)
+        user32.EnumDisplayMonitors(None, None, ctypes.cast(callback_ref, ctypes.c_void_p), 0)
+        return _hmonitor_refresh(found[index]) if 0 <= index < len(found) else None
+    except (OSError, ValueError):
+        return None
+
+
+# =========================================================================
 # Clase Principal: Widget de Visualización
 # =========================================================================
 
@@ -606,12 +709,13 @@ class _StimulusFlicker:
         stim_freq: float, 
         win: Any, 
         stim_theta: float = 0.0, 
-        refresh_rate: int = 60, 
-        stim_check: bool = False
+        refresh_rate: float = 60.0, 
+        stim_check: bool = False,
+        clock: Callable[[], float] = time.perf_counter,
     ) -> None:
         self.__win = win
-        self.__sequences: Optional[np.ndarray] = None
-        self.__idx_sequence = 0
+        self.__clock = clock
+        self.__start_time: Optional[float] = None
         self.__refresh_rate = refresh_rate
         self.__stim = stim
         self.__stim_inv = stim_inv
@@ -624,10 +728,13 @@ class _StimulusFlicker:
 
     def draw(self) -> None:
         """Dibuja el estado actual del estímulo (parpadeando) y avanza la secuencia."""
-        if self.__sequences is None:
-            self.__create_sequence()
         
-        current_state = bool(self.__sequences[self.__idx_sequence])
+        # El cuadro que corresponde sale del reloj, no de cuántos se dibujaron:
+        # si se pierde un cuadro, el parpadeo no se atrasa ni baja su frecuencia.
+        now = self.__clock()
+        if self.__start_time is None:
+            self.__start_time = now
+        current_state = self.__state(round((now - self.__start_time) * self.__refresh_rate))
         
         if self.__last_bool != current_state:
             self.__toggle_times.append(time.time())
@@ -638,7 +745,6 @@ class _StimulusFlicker:
             self.__stim_inv.draw()
             
         self.__last_bool = current_state
-        self.__idx_sequence = (self.__idx_sequence + 1) % len(self.__sequences)
         
         if len(self.__toggle_times) > 60:
             self.__mean_history()
@@ -671,15 +777,13 @@ class _StimulusFlicker:
                       f"Frecuencia media medida: {measured_freq:.2f} Hz")
         self.__toggle_times.clear()
 
-    def __create_sequence(self) -> None:
-        """Genera la secuencia booleana de parpadeo basada en la frecuencia y fase."""
+    def __state(self, frame: int) -> bool:
+        """Estado del estímulo en un cuadro. Se calcula para cada cuadro, sin
+        repetir una tabla: una tabla de un segundo solo puede generar múltiplos
+        de 1 Hz, y las frecuencias como 8,5 Hz se repartirían entre 8 y 9 Hz."""
         frames_per_cycle = self.__refresh_rate / self.__stim_freq
         theta_frames = (self.__stim_theta / (2 * np.pi)) * frames_per_cycle
-
-        self.__sequences = np.array([
-            ((k + theta_frames) % frames_per_cycle) < (frames_per_cycle / 2)
-            for k in range(self.__refresh_rate)
-        ])
+        return ((frame + theta_frames) % frames_per_cycle) < (frames_per_cycle / 2)
 
 
 class _StimuliGenerator:
@@ -984,12 +1088,12 @@ def _create_stimulus_frames(win: visual.Window, config: StimulusConfig) -> List[
     return frames
 
 
-def _get_refresh_rate(win: visual.Window) -> int:
-    """Detecta la tasa de refresco del monitor."""
-    refresh_rate = win.getActualFrameRate()
-    refresh_rate = int(refresh_rate) if refresh_rate is not None else 60
+def _get_refresh_rate(win: visual.Window) -> float:
+    """Refresco de la pantalla donde se abrió la ventana de estímulos. Lo informa
+    Windows; solo si no se puede saber se mide (con PsychoPy) o se asume 60 Hz."""
+    refresh_rate = window_refresh_rate(win.winHandle._hwnd) or win.getActualFrameRate() or 60.0
     print("refresh_rate detectado:", refresh_rate)
-    return refresh_rate
+    return float(refresh_rate)
 
 
 def _draw_static_stimuli(

@@ -90,6 +90,7 @@ class AstericsSetup(QObject):
         self._before = {hwnd for hwnd, _title, _cls in _list_windows()}
         try:
             profile.mkdir(parents=True, exist_ok=True)
+            cfg.disable_translate(profile)
             # Reutiliza la instancia viva del perfil (o espera a que una que se
             # está cerrando termine): ver asterics_config.choose_debug_port.
             port, _existing = cfg.choose_debug_port()

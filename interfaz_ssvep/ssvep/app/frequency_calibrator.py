@@ -162,28 +162,6 @@ def select_final_frequencies(
     return selected
 
 
-def _detect_refresh_rate() -> int:
-    """Tasa de refresco (Hz) del monitor principal, vía la API de Windows
-    (GDI `GetDeviceCaps`) -- independiente de `StimulusViewer`/PsychoPy
-    (que detectan la suya propia, pero solo la usan puertas adentro del
-    proceso de estímulos, sin exponerla). Se registra como metadato de la
-    corrida y se le pasa al visor (`set_refresh_rate`, ver `start`) para que
-    no tenga que medirla de nuevo; 60 Hz como valor de respaldo si la
-    consulta falla."""
-    try:
-        user32 = ctypes.windll.user32
-        gdi32 = ctypes.windll.gdi32
-        hdc = user32.GetDC(0)
-        try:
-            vrefresh_index = 116  # VREFRESH, ver wingdi.h
-            rate = gdi32.GetDeviceCaps(hdc, vrefresh_index)
-        finally:
-            user32.ReleaseDC(0, hdc)
-        return int(rate) if rate and rate > 1 else 60
-    except Exception:
-        return 60
-
-
 # =============================================================================
 # Orquestador (Qt, hardware real) -- no se testea unitariamente, ver arriba
 # =============================================================================
@@ -203,7 +181,7 @@ class FrequencyCalibrator(QObject):
     (`stimulus_viewer_calibration.py`): expone `load_stimulus_use(candidata,
     ancla)`, `update_stimulus_use(candidata, ancla)`, `start_stim()`,
     `start_rest()`, `start_flicker()`, `stop_stim()`, `is_running()` y la
-    señal `stimuli_ready` (y, opcionales, `set_refresh_rate()` y la señal
+    señal `stimuli_ready` (y, opcionales, `refresh_rate()` y la señal
     `stimulus_failed`).
 
     Primer trial: `load_stimulus_use()` + `start_stim()` -> espera
@@ -325,13 +303,9 @@ class FrequencyCalibrator(QObject):
         self._trial_index = 0
         self._decisions = []
         self._trial_results = []
-        self._refresh_rate = _detect_refresh_rate()
-        # Se le pasa el refresco ya detectado (GDI, rapido) al visor para que
-        # la ventana de estimulos no tenga que medirlo de nuevo con PsychoPy
-        # (ver StimulusViewerCalibration.set_refresh_rate).
-        set_refresh_rate = getattr(self._stimulus_viewer, "set_refresh_rate", None)
-        if set_refresh_rate is not None:
-            set_refresh_rate(self._refresh_rate)
+        # Solo se registra con el resultado: el visor usa el de su propia ventana.
+        refresh_rate = getattr(self._stimulus_viewer, "refresh_rate", None)
+        self._refresh_rate = round(refresh_rate(), 3) if refresh_rate is not None else 60
 
         self._advance_trial()
 

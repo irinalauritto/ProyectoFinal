@@ -38,6 +38,7 @@ from ssvep.app.stimulus_viewer import (
     _cover_taskbar_geometry,
     _create_window,
     _get_refresh_rate,
+    monitor_refresh_rate,
     _hex_to_psychopy_rgb,
 )
 
@@ -121,7 +122,6 @@ class StimulusViewerCalibration(QWidget):
 
         self.__candidate: Optional[Stimulus] = None
         self.__anchor: Optional[Stimulus] = None
-        self.__refresh_rate_override: Optional[int] = None
 
         self.__process: Optional[Process] = None
         self.__hwnd_queue: Optional[Queue] = None
@@ -161,15 +161,14 @@ class StimulusViewerCalibration(QWidget):
         if self.__stim_update_queue is not None:
             self.__stim_update_queue.put((candidate, anchor))
 
-    def set_refresh_rate(self, refresh_rate: Optional[int]) -> None:
-        """Evita que el proceso de renderizado tenga que medir el refresco
-        con PsychoPy (`Window.getActualFrameRate()`, que muestra "Attempting
-        to measure frame rate of screen, please wait ..." mientras hace
-        flips repetidos y puede demorar mucho o no converger nunca según el
-        monitor/driver -- ver FrequencyCalibrator, que ya detecta el
-        refresco por su cuenta vía GDI antes de arrancar el barrido).
-        Pasar `None` para volver a medirlo con PsychoPy como antes."""
-        self.__refresh_rate_override = refresh_rate
+    def refresh_rate(self) -> float:
+        """Refresco (Hz) del monitor donde se abre la ventana de estímulos."""
+        monitors = StimulusViewer._StimulusViewer__monitor_scales()
+        requested = self.__requested_monitor_index
+        if callable(requested):
+            requested = requested()
+        index = requested if requested is not None and 0 <= requested < len(monitors) else len(monitors) - 1
+        return monitor_refresh_rate(index) or 60.0
 
     def start_stim(self) -> None:
         """Abre la ventana. Arranca en descanso (candidata resaltada, sin
@@ -219,7 +218,6 @@ class StimulusViewerCalibration(QWidget):
                 self.__start_flicker_event,
                 self.__rest_event,
                 self.__timestamp_queue,
-                self.__refresh_rate_override,
                 self.__stim_update_queue,
             ),
             daemon=True,
@@ -349,7 +347,6 @@ def _calibration_stimulus_process(
     start_flicker_event: Event,
     rest_event: Event,
     timestamp_queue: Queue,
-    refresh_rate_override: Optional[int] = None,
     stim_update_queue: Optional[Queue] = None,
 ) -> None:
     """Función objetivo del proceso de renderizado (2 estímulos + descanso)."""
@@ -361,11 +358,7 @@ def _calibration_stimulus_process(
     pos_candidate = config.stimulus_positions[0]
     pos_anchor = config.stimulus_positions[1]
 
-    # Si ya se conoce el refresco (ver set_refresh_rate/FrequencyCalibrator),
-    # se evita _get_refresh_rate(win): mide con flips repetidos de PsychoPy y
-    # puede tardar mucho o no converger según el monitor/driver (pantalla de
-    # "Attempting to measure frame rate..." que se queda pegada).
-    refresh_rate = refresh_rate_override if refresh_rate_override else _get_refresh_rate(win)
+    refresh_rate = _get_refresh_rate(win)
 
     def _build_flickers(candidate_info, anchor_info):
         cand_stim, cand_inv = _StimuliGenerator.create_stimuli(

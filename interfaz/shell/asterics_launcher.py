@@ -354,6 +354,8 @@ class AstericsLauncher(QObject):
     # (ok, mensaje) al terminar de configurar AsTeRICS (ver asterics_config.py).
     configured = Signal(bool, str)
     _worker_done = Signal(bool, str, int)  # uso interno: (ok, mensaje, generacion)
+    window_placed = Signal()  # la ventana ya está abierta y en su lugar definitivo
+    window_not_found = Signal()  # se lanzó el navegador, pero no apareció la ventana
 
     def __init__(self, url: str = ASTERICS_URL, parent=None):
         super().__init__(parent)
@@ -386,6 +388,14 @@ class AstericsLauncher(QObject):
     def is_open(self) -> bool:
         return self._hwnd is not None and _window_visible(self._hwnd)
 
+    def is_opening(self) -> bool:
+        """True mientras se espera que aparezca la ventana recién lanzada."""
+        return self._poll_timer.isActive() and not self._close_when_found
+
+    def debug_port(self) -> Optional[int]:
+        """Puerto de control del navegador. None si se abrió sin él (navegador no Chromium)."""
+        return self._debug_port
+
     def open(
         self, place: Optional[Callable[[int], None]] = None, settings=None, topmost: bool = True
     ) -> bool:
@@ -417,6 +427,7 @@ class AstericsLauncher(QObject):
                 self._apply_place(self._hwnd)
             if settings is not None:
                 self.apply_settings(settings)
+            self.window_placed.emit()
             return True
 
         if reuse_pending:
@@ -507,6 +518,7 @@ class AstericsLauncher(QObject):
 
                     profile = cfg.profile_dir()
                     profile.mkdir(parents=True, exist_ok=True)
+                    cfg.disable_translate(profile)
                     # Reutiliza la instancia viva del perfil (o espera a que una
                     # que se está cerrando termine): ver asterics_config.py.
                     self._debug_port, _ = cfg.choose_debug_port()
@@ -586,8 +598,11 @@ class AstericsLauncher(QObject):
         if hwnd is None:
             if self._attempts >= _POLL_MAX_ATTEMPTS:
                 self._poll_timer.stop()
+                waiting_to_use = not self._close_when_found
                 self._close_when_found = False
                 self._launching = False
+                if waiting_to_use:
+                    self.window_not_found.emit()
             return
         self._poll_timer.stop()
         self._launching = False
@@ -607,6 +622,8 @@ class AstericsLauncher(QObject):
         if self._place is not None:
             self._apply_place(hwnd)
             self._replace_timer.start(_REPLACE_DELAY_MS)
+        else:
+            self.window_placed.emit()
 
     def _apply_place(self, hwnd: int) -> None:
         """Ubica la ventana y, junto al estimulador, la deja siempre visible
@@ -617,6 +634,7 @@ class AstericsLauncher(QObject):
     def _replace(self) -> None:
         if self._place is not None and self._hwnd is not None and _window_exists(self._hwnd):
             self._apply_place(self._hwnd)
+            self.window_placed.emit()
 
     @staticmethod
     def _restore(hwnd: int, rect: tuple[int, int, int, int], was_maximized: bool) -> None:

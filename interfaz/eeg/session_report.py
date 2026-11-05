@@ -235,6 +235,10 @@ def ask_finish_session(parent: Any, allow_cancel: bool) -> Optional[bool]:
     print_button = box.addButton("Imprimir PDF", QMessageBox.ButtonRole.AcceptRole)
     box.addButton("Finalizar sin imprimir", QMessageBox.ButtonRole.DestructiveRole)
     cancel_button = box.addButton("Cancelar", QMessageBox.ButtonRole.RejectRole) if allow_cancel else None
+    # QMessageBox calcula su ancho sin la negrita de la hoja de estilos: fijar
+    # el mínimo de cada botón evita que su texto quede cortado.
+    for button in box.buttons():
+        button.setMinimumWidth(button.sizeHint().width())
     box.exec()
     if cancel_button is not None and box.clickedButton() is cancel_button:
         return None

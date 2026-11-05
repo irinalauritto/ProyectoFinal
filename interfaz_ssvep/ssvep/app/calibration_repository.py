@@ -62,7 +62,7 @@ class CalibrationRunRepository:
             user_id=user_id,
             date=result["date"],
             seed=int(result["seed"]),
-            refresh_rate=int(result["refresh_rate"]),
+            refresh_rate=round(result["refresh_rate"]),
             anchor_freq=float(result["anchor_freq"]),
             accuracies_json=json.dumps(result["accuracies"]),
             selected_json=json.dumps(result["selected"]),

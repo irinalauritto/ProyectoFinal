@@ -37,6 +37,7 @@ from interfaz.pages.emg.emg_live_widget import EmgLiveWidget
 from interfaz.shell import patient_store
 from interfaz.shell.asterics_config import DEFAULT_SCAN_TIME_S, AstericsInputSettings
 from interfaz.shell.asterics_launcher import AstericsLauncher, patient_monitor_area, place_maximized
+from interfaz.shell.screen_recorder import ScreenRecordingControl
 
 
 class _TeclaHaciaAsterics:
@@ -83,9 +84,16 @@ class EmgMainPage(QWidget):
         self._inicio_online: datetime | None = None
         self._tecla_previa = ""
         self._duracion_previa = 0
+        # "Enviar teclas" acompaña a AsTeRICS; este timer detecta si la cierran a mano.
+        self._asterics_timer = QTimer(self)
+        self._asterics_timer.setInterval(1000)
+        self._asterics_timer.timeout.connect(self._verificar_asterics)
         self._asterics = AstericsLauncher(parent=self)
         self._asterics.configured.connect(self._on_asterics_configured)
         engine.teclado = _TeclaHaciaAsterics(engine.teclado, lambda: self._asterics.activate())
+        self._grabacion_pantalla = ScreenRecordingControl(
+            self, self._asterics, self._ruta_grabacion_pantalla, self._on_grabacion_pantalla_guardada
+        )
 
         import emg.interfazEmg as emgmod
 
@@ -132,6 +140,8 @@ class EmgMainPage(QWidget):
         title.setObjectName("PageTitle")
         fila.addWidget(title)
         fila.addStretch(1)
+        fila.addWidget(self._grabacion_pantalla.label)
+        fila.addWidget(self._grabacion_pantalla.button)
         self._lbl_guardar = QLabel("")
         self._lbl_guardar.setObjectName("MutedLabel")
         fila.addWidget(self._lbl_guardar)
@@ -328,9 +338,8 @@ class EmgMainPage(QWidget):
         self._chk_enviar_teclas = QCheckBox("Enviar teclas")
         self._chk_enviar_teclas.setToolTip(
             "Al detectarse una activación, envía la tecla elegida a la ventana activa. "
-            "Destildar para usar el EMG sin controlar nada (por ejemplo, para practicar)."
+            "Se activa al abrir AsTeRICS y se apaga al cerrarlo; también se puede cambiar a mano."
         )
-        self._chk_enviar_teclas.setChecked(True)
         self._chk_enviar_teclas.toggled.connect(self._engine.set_enviar_teclas)
         layout.addWidget(self._chk_enviar_teclas)
 
@@ -384,6 +393,7 @@ class EmgMainPage(QWidget):
         self._engine.set_duracion_tecla_ms(self._spin_duracion.value())
         self._tecla_previa = self._combo_tecla.currentText()
         self._duracion_previa = self._spin_duracion.value()
+        self._engine.set_enviar_teclas(False)
 
     def _connect_engine(self) -> None:
         e = self._engine
@@ -550,12 +560,30 @@ class EmgMainPage(QWidget):
         # maximiza en su monitor (el mismo del estimulador y la validación de
         # EEG), sin dejarla "siempre arriba" para no tapar la aplicación si hay
         # un solo monitor. Si ya estaba abierta, se la trae al frente.
+        if not self._asterics.is_open() and not self._asterics.is_opening():
+            self._grabacion_pantalla.ask_before_asterics()
         if not self._asterics.open(
             place=lambda hwnd: place_maximized(hwnd, patient_monitor_area()),
             settings=self._asterics_settings(),
             topmost=False,
         ):
+            self._grabacion_pantalla.stop()
             QMessageBox.warning(self, "AsTeRICS", "No se pudo abrir AsTeRICS en el navegador predeterminado.")
+            return
+        self._chk_enviar_teclas.setChecked(True)
+        self._asterics_timer.start()
+
+    def _verificar_asterics(self) -> None:
+        if not self._asterics.is_open() and not self._asterics.is_opening():
+            self._on_asterics_cerrado()
+
+    def _on_asterics_cerrado(self) -> None:
+        # El timer solo corre con AsTeRICS abierta. Sin este control, cerrarla "por
+        # las dudas" (al validar) cancelaría una grabación pedida para la próxima apertura.
+        if self._asterics_timer.isActive():
+            self._grabacion_pantalla.stop()
+        self._asterics_timer.stop()
+        self._chk_enviar_teclas.setChecked(False)
 
     # ------------------------------------------------------------------
     # Prueba de validacion
@@ -567,6 +595,8 @@ class EmgMainPage(QWidget):
         self._btn_prueba.setEnabled(False)
         self._btn_omitir.setEnabled(False)
         self._ocultar_aviso_repetir_prueba()
+        # Las contracciones de la prueba no deben llegar a AsTeRICS.
+        self.cerrar_asterics()
         self._engine.iniciar_prueba_validacion()
         self._sincronizar_uso_online()
         self._iniciar_grabacion("validacion")
@@ -611,7 +641,7 @@ class EmgMainPage(QWidget):
         self._validada_para_grabar = False
         if activo:
             # El uso online recién se habilita después de calibrar y validar.
-            self._asterics.close()
+            self.cerrar_asterics()
             QMessageBox.information(
                 self,
                 "Guardar señales",
@@ -626,7 +656,9 @@ class EmgMainPage(QWidget):
         ocupado = self._engine.calibrando or self._engine.validando
         self._chk_guardar.setEnabled(not ocupado)
         self._btn_calibrar.setEnabled(not ocupado)
+        self._chk_enviar_teclas.setEnabled(not self._engine.validando)
         if ocupado:
+            self._btn_asterics.setEnabled(not self._engine.validando)
             return
         grabando = self._guardar_senales
         calibrado = self._engine.esta_calibrado()
@@ -667,6 +699,13 @@ class EmgMainPage(QWidget):
                 self._terminar_grabacion("completa", {"duracion_s": duracion})
         elif activo and self._guardar_senales and self._grabador.stage is None:
             self._iniciar_grabacion("online")
+
+    def _ruta_grabacion_pantalla(self) -> Path:
+        return self._ruta_senal("pantalla").with_suffix(".mp4")
+
+    def _on_grabacion_pantalla_guardada(self, ruta: Path) -> None:
+        if self._registro_sesion is not None:
+            self._registro_sesion.archivos.append(str(ruta))
 
     def _ruta_senal(self, etapa: str) -> Path:
         if self._carpeta_senales is None:
@@ -820,7 +859,8 @@ class EmgMainPage(QWidget):
             self._lbl_calibracion.setText("Calibración cancelada.")
             self._terminar_grabacion("cancelada")
         self._engine.stop()
-        self._asterics.close()
+        self.cerrar_asterics()
+        self._grabacion_pantalla.stop()
 
         registro.fin = datetime.now()
         registro.parametros = self._parametros_actuales()
@@ -847,7 +887,6 @@ class EmgMainPage(QWidget):
                 ["Tecla", self._combo_tecla.currentText()],
                 ["Duración de la tecla", f"{self._spin_duracion.value()} ms"],
                 ["Tiempo de barrido (AsTeRICS)", f"{self._spin_barrido.value():g} s"],
-                ["Enviar teclas", "Sí" if self._chk_enviar_teclas.isChecked() else "No"],
                 ["Retroalimentación auditiva", "Sí" if self._chk_audio.isChecked() else "No"],
             ]
         }
@@ -879,7 +918,6 @@ class EmgMainPage(QWidget):
                 self._combo_tecla.currentIndexChanged,
                 self._spin_duracion.valueChanged,
                 self._spin_barrido.valueChanged,
-                self._chk_enviar_teclas.toggled,
                 self._chk_audio.toggled,
             ):
                 senal.connect(self._programar_guardado)
@@ -899,7 +937,7 @@ class EmgMainPage(QWidget):
         # se calibró en esta sesión).
         widgets = (
             self._slider_sens, self._spin_refractario, self._combo_tecla, self._spin_duracion,
-            self._spin_barrido, self._chk_enviar_teclas, self._chk_audio,
+            self._spin_barrido, self._chk_audio,
         )
         for w in widgets:
             w.blockSignals(True)
@@ -920,9 +958,6 @@ class EmgMainPage(QWidget):
                 self._engine.set_duracion_tecla_ms(self._spin_duracion.value())
             if isinstance(cfg.get("tiempo_barrido_s"), (int, float)):
                 self._spin_barrido.setValue(float(cfg["tiempo_barrido_s"]))
-            if isinstance(cfg.get("enviar_teclas"), bool):
-                self._chk_enviar_teclas.setChecked(cfg["enviar_teclas"])
-                self._engine.set_enviar_teclas(cfg["enviar_teclas"])
             if isinstance(cfg.get("retroalimentacion_auditiva"), bool):
                 self._chk_audio.setChecked(cfg["retroalimentacion_auditiva"])
                 self._engine.set_sonido(cfg["retroalimentacion_auditiva"])
@@ -945,7 +980,6 @@ class EmgMainPage(QWidget):
             "tecla": self._combo_tecla.currentText(),
             "duracion_tecla_ms": self._spin_duracion.value(),
             "tiempo_barrido_s": self._spin_barrido.value(),
-            "enviar_teclas": self._chk_enviar_teclas.isChecked(),
             "retroalimentacion_auditiva": self._chk_audio.isChecked(),
         })
 
@@ -969,6 +1003,8 @@ class EmgMainPage(QWidget):
 
     def cerrar_asterics(self) -> None:
         self._asterics.close()
+        self._on_asterics_cerrado()
 
     def liberar_recursos(self) -> None:
-        pass
+        self._grabacion_pantalla.stop()
+        self._asterics_timer.stop()
